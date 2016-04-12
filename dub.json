@@ -1,0 +1,19 @@
+{
+	"name" : "stdf2xls",
+    "buildTypes": {
+        "unittest": {
+            "buildOptions": ["unittests"]
+        },
+        "release": {
+            "buildOptions": ["releaseMode", "optimize"]
+        }
+    },
+	"description" : "Convert STDF data files to xlsx spreadhseet format",
+	"TargetType" : "executable",
+	"mainSourceFile" : "src/main.d",
+    "dependencies" : {
+        "d_util" : {
+            "path" : "../d_util"
+        }
+    }
+}

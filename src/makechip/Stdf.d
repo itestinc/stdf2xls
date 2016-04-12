@@ -1,6 +1,7 @@
 import std.stdio;
 import std.range;
 import std.array;
+import makechip.util.InputStream;
 import std.algorithm;
 
 class StdfReader
@@ -16,7 +17,7 @@ class StdfReader
         else src = new FastFileBinaryInputStream(filename, bufferSize);
     }
 
-    void read(void)
+    void read()
     {
         while (!src.empty)
         {
@@ -33,6 +34,7 @@ class StdfReader
             recordType |= (c & 0xFF);
             subType |= (d & 0xFF);
 
+        }
     }
 
 }
