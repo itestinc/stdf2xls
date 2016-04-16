@@ -1,38 +1,34 @@
 import makechip.util.Util;
 
-alias C = const CPU;
 
-static if (is (CPU : Identity!(uint, C)))
+
+
+alias C = immutable CPU;
+
+class CPU : Enum!(C), immutable (Identity!(uint, C))
 {
-    pragma(msg, "XXX");
-}
-
-
-
-class CPU : Identity!(uint, C)
-{
-    private static IdentityFactory1!(uint, C) map;
+    private static IdentityFactory!(uint, C) map;
     const ushort type;
 
     static this()
     {
-        map = new IdentityFactory1!(uint, C)();
+        map = new IdentityFactory!(uint, C)();
     }
 
-    private this(uint type)
+    private immutable this(uint type)
     {
+        super();
         this.type = cast(ushort) type;
     }
 
-    static ulong getInstanceCount() { return map.getInstanceCount(); }
+    static size_t getInstanceCount() { return map.getInstanceCount(); }
 
     static C getValue(uint type) 
     { 
-        return map.getValue(type, function(uint type) { return new CPU(type); }); 
+        return map.getValue(type, function(uint type) { return new C(type); }); 
     }
 
     static C getExistingValue(uint type) { return map.getExistingValue(type, null); }
-
 
 }
 
