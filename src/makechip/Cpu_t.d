@@ -3,7 +3,7 @@ import makechip.util.Util;
 import std.conv;
 import std.range;
 import std.bitmanip;
-import makechip.util.InputStream;
+import makechip.util.InputSource;
 
 class CPU : EnumValue!(const CPU)
 {
@@ -33,9 +33,9 @@ class CPU : EnumValue!(const CPU)
         return _0;
     }
 
-    ubyte getU1(InputStreamRange s) const
+    ubyte getU1(ByteReader s) const
     {
-        return s.nextChar();
+        return s.nextByte();
     }
 
     ubyte[] getU1Bytes(ubyte b) const
@@ -51,10 +51,10 @@ class CPU : EnumValue!(const CPU)
         return cast(ushort) (_0 + (_1 << 8));
     }
 
-    ushort getU2(InputStreamRange s) const
+    ushort getU2(ByteReader s) const
     {
-        ubyte b0 = s.nextChar();
-        ubyte b1 = s.nextChar();
+        ubyte b0 = s.nextByte();
+        ubyte b1 = s.nextByte();
         return getU2(b0, b1);
     }
 
@@ -83,12 +83,12 @@ class CPU : EnumValue!(const CPU)
         return _0 + (_1 << 8) + (_2 << 16) + (_3 << 24);
     }
 
-    uint getU4(InputStreamRange s) const
+    uint getU4(ByteReader s) const
     {
-        ubyte b0 = s.nextChar();
-        ubyte b1 = s.nextChar();
-        ubyte b2 = s.nextChar();
-        ubyte b3 = s.nextChar();
+        ubyte b0 = s.nextByte();
+        ubyte b1 = s.nextByte();
+        ubyte b2 = s.nextByte();
+        ubyte b3 = s.nextByte();
         return getU4(b0, b1, b2, b3);
     }
 
@@ -117,9 +117,9 @@ class CPU : EnumValue!(const CPU)
         return cast(byte) _0;
     }
 
-    byte getI1(InputStreamRange s) const
+    byte getI1(ByteReader s) const
     {
-        return cast(byte) s.nextChar();
+        return cast(byte) s.nextByte();
     }
 
     ubyte[] getI1Bytes(byte v) const
@@ -138,10 +138,10 @@ class CPU : EnumValue!(const CPU)
         return cast(short) (_0 + (_1 << 8));
     }
 
-    short getI2(InputStreamRange s) const
+    short getI2(ByteReader s) const
     {
-        ubyte b0 = s.nextChar();
-        ubyte b1 = s.nextChar();
+        ubyte b0 = s.nextByte();
+        ubyte b1 = s.nextByte();
         return getI2(b0, b1);
     }
 
@@ -170,12 +170,12 @@ class CPU : EnumValue!(const CPU)
         return _0 + (_1 << 8) + (_2 << 16) + (_3 << 24);
     }
 
-    int getI4(InputStreamRange s) const
+    int getI4(ByteReader s) const
     {
-        ubyte b0 = s.nextChar();
-        ubyte b1 = s.nextChar();
-        ubyte b2 = s.nextChar();
-        ubyte b3 = s.nextChar();
+        ubyte b0 = s.nextByte();
+        ubyte b1 = s.nextByte();
+        ubyte b2 = s.nextByte();
+        ubyte b3 = s.nextByte();
         return getI4(b0, b1, b2, b3);
     }
 
@@ -218,12 +218,12 @@ class CPU : EnumValue!(const CPU)
         return f.value;
     }
 
-    float getR4(InputStreamRange s) const
+    float getR4(ByteReader s) const
     {
-        byte b0 = s.nextChar();
-        byte b1 = s.nextChar();
-        byte b2 = s.nextChar();
-        byte b3 = s.nextChar();
+        byte b0 = s.nextByte();
+        byte b1 = s.nextByte();
+        byte b2 = s.nextByte();
+        byte b3 = s.nextByte();
         return getR4(b0, b1, b2, b3);
     }
 
@@ -249,16 +249,16 @@ class CPU : EnumValue!(const CPU)
         return d.value;
     }
         
-    double getR8(InputStreamRange s) const
+    double getR8(ByteReader s) const
     {
-        ubyte b0 = s.nextChar();
-        ubyte b1 = s.nextChar();
-        ubyte b2 = s.nextChar();
-        ubyte b3 = s.nextChar();
-        ubyte b4 = s.nextChar();
-        ubyte b5 = s.nextChar();
-        ubyte b6 = s.nextChar();
-        ubyte b7 = s.nextChar();
+        ubyte b0 = s.nextByte();
+        ubyte b1 = s.nextByte();
+        ubyte b2 = s.nextByte();
+        ubyte b3 = s.nextByte();
+        ubyte b4 = s.nextByte();
+        ubyte b5 = s.nextByte();
+        ubyte b6 = s.nextByte();
+        ubyte b7 = s.nextByte();
         return getR8(b0, b1, b2, b3, b4, b5, b6, b7);
     }
 
@@ -307,20 +307,20 @@ class CPU : EnumValue!(const CPU)
         return b;
     }
 
-    ubyte[] getDN(const ushort numBits,  InputStreamRange s) const
+    ubyte[] getDN(const ushort numBits,  ByteReader s) const
     {
         uint length = (numBits % 8 == 0) ? numBits / 8 : 1 + numBits / 8;
         ubyte[] b = new ubyte[length];
-        for (int i=0; i<b.length; i++) b[i] = s.nextChar();
+        for (int i=0; i<b.length; i++) b[i] = s.nextByte();
         return b;
     }
  
-    string getCN(InputStreamRange s) const
+    string getCN(ByteReader s) const
     {
-        uint l = cast(uint) s.nextChar();
+        uint l = cast(uint) s.nextByte();
         if (l == 0) return "";
         ubyte[] b = new ubyte[l];
-        for (int i=0; i<b.length; i++) b[i] = s.nextChar();
+        for (int i=0; i<b.length; i++) b[i] = s.nextByte();
         return cast(string) b;
     }
 
@@ -333,11 +333,11 @@ class CPU : EnumValue!(const CPU)
         return b;
     }
 
-    ubyte[] getBN(InputStreamRange s) const
+    ubyte[] getBN(ByteReader s) const
     {
-        uint l = s.nextChar();
+        uint l = s.nextByte();
         ubyte[] b = new ubyte[l];
-        for (int i=0; i<l; i++) b[i] = s.nextChar();
+        for (int i=0; i<l; i++) b[i] = s.nextByte();
         return b;
     }
 
@@ -350,10 +350,10 @@ class CPU : EnumValue!(const CPU)
         return b;
     }
 
-    ubyte[] getN1(InputStreamRange s) const
+    ubyte[] getN1(ByteReader s) const
     {
         ubyte[] b = new ubyte[2];
-        ubyte n = s.nextChar();
+        ubyte n = s.nextByte();
         b[0] = cast(ubyte) (0x0F & n);
         b[1] = cast(ubyte) ((0xF0 & n) >> 4);
         return b;

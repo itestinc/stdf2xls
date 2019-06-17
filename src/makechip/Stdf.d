@@ -3,7 +3,7 @@ import std.stdio;
 import std.range;
 import std.array;
 import std.traits;
-import makechip.util.InputStream;
+import makechip.util.InputSource;
 import makechip.util.Util;
 import std.algorithm;
 import std.conv;
@@ -28,7 +28,7 @@ final class RecordType : EnumValue!(const RecordType)
 
     override string toString() const
     {
-        return to!string(this);
+        return description;
     }
 
     static Record_t getRecordType(ubyte type, ubyte subType)
@@ -43,7 +43,7 @@ final class RecordType : EnumValue!(const RecordType)
 
 enum Record_t : const(RecordType)
 {
-    ATR = new const RecordType(null, "Audit Trail Record",                0,  20),
+    ATR = new const RecordType(null, "Audit Trail Record",                0, 20),
     BPS = new const RecordType(ATR, "Begin Program Selection Record",    20, 10),
     DTR = new const RecordType(BPS, "Datalog Text Record",               50, 30),
     DTX = new const RecordType(DTR, "Datalog Test Record",               50, 31),
@@ -120,34 +120,43 @@ union GenericDataHolder
     int f;
     float g;
     double h;
-    string i;
-    ubyte[] j;
+    char[] i;
+    DN j;
+    BN k;
 }
 
 struct GenericData
 {
-    const GenericDataHolder h;
-    const ushort numBits;
-    const GenericData_t type;
+    GenericDataHolder h;
+    private ushort numBits;
+    GenericData_t type;
 
-    this(Cpu_t cpu, GenericData_t type, InputStreamRange s)
+    this(GenericData_t type, ByteReader s)
     {
-        if (type == GenericData_t.U1) h.a = cpu.getU1(s);
-        else if (type == GenericData_t.U2) h.b = cpu.getU2(s);
-        else if (type == GenericData_t.U4) h.c = cpu.getU4(s);
-        else if (type == GenericData_t.I1) h.d = cpu.getI1(s);
-        else if (type == GenericData_t.I2) h.e = cpu.getI2(s);
-        else if (type == GenericData_t.I4) h.f = cpu.getI4(s);
-        else if (type == GenericData_t.R4) h.g = cpu.getR4(s);
-        else if (type == GenericData_t.R8) h.h = cpu.getR8(s);
-        else if (type == GenericData_t.CN) h.i = cpu.getCN(s);
-        else if (type == GenericData_t.BN) h.j = cpu.getBN(s);
+        if (type == GenericData_t.U1) h.a = get!U1(s);
+        else if (type == GenericData_t.U2) h.b = get!U2(s);
+        else if (type == GenericData_t.U4) h.c = get!U4(s);
+        else if (type == GenericData_t.I1) h.d = get!I1(s);
+        else if (type == GenericData_t.I2) h.e = get!I2(s);
+        else if (type == GenericData_t.I4) h.f = get!I4(s);
+        else if (type == GenericData_t.R4) h.g = get!R4(s);
+        else if (type == GenericData_t.R8) h.h = get!R8(s);
+        else if (type == GenericData_t.CN) h.i = get!CN(s);
+        else if (type == GenericData_t.BN) h.k = get!BN(s);
         else if (type == GenericData_t.DN)
         {
-            numBits = cpu.getU2(s);
-            h.j = cpu.getDN(numBits, s);
+            s.mark();
+            numBits = get!U2(s);
+            s.resetToMark();
+            h.j = get!DN(s);
         }
-        else h.j = cpu.getN1(s);
+        else 
+        {
+            ubyte b = s.getByte();
+            h.j.length = 2;
+            h.j[0] = cast(ubyte) (b & 0x0F);
+            h.j[1] = cast(ubyte) ((b & 0xF0) >> 4);
+        }
     }
 
     this(ubyte v)   { h.a = v; type = GenericData_t.U1; } 
@@ -158,10 +167,23 @@ struct GenericData
     this(int v)     { h.f = v; type = GenericData_t.I4; }
     this(float v)   { h.g = v; type = GenericData_t.R4; }
     this(double v)  { h.h = v; type = GenericData_t.R8; }
-    this(string v)  { h.i = v; type = GenericData_t.CN; }
-    this(ubyte[] v) { h.j = v; type = GenericData_t.BN; }
-    this(ushort numBits, ubyte[] v) { this.numBits = numBits; h.j = v; type = GenericData_t.DN; }
-    this(ubyte b0, ubyte b1) { h.j = [ b0, b1 ]; type = GenericData_t.N1; }
+    this(char[] v)  { h.i = v; type = GenericData_t.CN; }
+    this(DN      v) { h.j = v; type = GenericData_t.DN; }
+    this(BN      v) { h.k = v; type = GenericData_t.BN; }
+    this(ushort numBits, ubyte[] v) 
+    { 
+        this.numBits = numBits; 
+        h.j.length = v.length;
+        for (int i=0; i<v.length; i++) h.j[i] = v[i];
+        type = GenericData_t.DN; 
+    }
+    this(ubyte b0, ubyte b1) 
+    { 
+        h.k.length = 2;
+        h.k[0] = b0;
+        h.k[1] = b1; 
+        type = GenericData_t.N1; 
+    }
 
     string toString()
     {
@@ -185,26 +207,28 @@ struct GenericData
         }
     }
 
+    /*
     ubyte[] getBytes(Cpu_t cpu)
     {
         ubyte[] bs;
         switch (type) with (GenericData_t)
         {
-        case U1: bs = cpu.getU1Bytes(h.a); break;
-        case U2: bs = cpu.getU2Bytes(h.b); break;
-        case U4: bs = cpu.getU4Bytes(h.c); break;
-        case I1: bs = cpu.getI1Bytes(h.d); break;
-        case I2: bs = cpu.getI2Bytes(h.e); break;
-        case I4: bs = cpu.getI4Bytes(h.f); break;
-        case R4: bs = cpu.getR4Bytes(h.g); break;
-        case R8: bs = cpu.getR8Bytes(h.h); break;
-        case CN: bs = cpu.getCNBytes(h.i); break;
-        case BN: bs = cpu.getBNBytes(h.j); break;
-        case DN: bs = cpu.getDNBytes(numBits, h.j); break;
+        case U1: bs = getU1Bytes(h.a); break;
+        case U2: bs = getU2Bytes(h.b); break;
+        case U4: bs = getU4Bytes(h.c); break;
+        case I1: bs = getI1Bytes(h.d); break;
+        case I2: bs = getI2Bytes(h.e); break;
+        case I4: bs = getI4Bytes(h.f); break;
+        case R4: bs = getR4Bytes(h.g); break;
+        case R8: bs = getR8Bytes(h.h); break;
+        case CN: bs = getCNBytes(h.i); break;
+        case BN: bs = getBNBytes(h.j); break;
+        case DN: bs = getDNBytes(numBits, h.j); break;
         default: bs ~= h.a;
         }
         return bs;
     }
+    */
 
     ushort size() @property
     {
@@ -226,21 +250,370 @@ struct GenericData
         return 1;
     }
 }
+import std.typecons;
+// Field type holders
+alias CN = char[];
+alias C1 = char;
+alias U1 = ubyte;
+alias U2 = ushort;
+alias U4 = uint;
+alias I1 = byte;
+alias I2 = short;
+alias I4 = int;
+alias R4 = float;
+alias R8 = double;
+struct BN 
+{
+    ubyte[] myVal;
+    alias myVal this;
+}
 
+struct DN 
+{
+    ubyte[] myVal;
+    alias myVal this;
+}
+
+struct N1 
+{
+    ubyte myVal;
+    alias myVal this;
+}
+
+private T get(T)(ByteReader s)
+{
+    import std.bitmanip;
+    static if (is (T == R8))
+    {
+        long x = cast(ulong) s.getByte() + (cast(ulong) s.getByte() << 8) + (cast(ulong) s.getByte() << 16) +
+                 (cast(ulong) s.getByte() << 24) + (cast(ulong) s.getByte() << 32) + (cast(ulong) s.getByte() << 40) +
+                 (cast(ulong) s.getByte() << 48) + (cast(ulong) s.getByte() << 56);
+        DoubleRep d;
+        d.sign = (x & 0x8000000000000000L) == 0x8000000000000000L;
+        d.exponent = cast(ushort) ((x & 0x7FF0000000000000) >> 52);
+        d.fraction = x & 0xFFFFFFFFFFFFFL;
+        return d.value;
+    }
+    else
+    {
+        static if (is (T == U4))
+        {
+            return cast(uint) (s.getByte() + (s.getByte() << 8) + (s.getByte() << 16) + (s.getByte() << 24));
+        }
+        else
+        {
+            static if (is (T == R4))
+            {
+                int x = cast(uint) (s.getByte() + (s.getByte() << 8) + (s.getByte() << 16) + (s.getByte() << 24));
+                FloatRep f;
+                f.sign = (x & 0x80000000) == 0x80000000;
+                f.exponent = cast(ubyte) ((x & 0x7F800000) >> 23);
+                f.fraction = x & 0x007FFFFF;
+                return f.value;
+            }
+            else
+            {
+                static if (is (T == I4))
+                {
+                    return cast(int) (s.getByte() + (s.getByte() << 8) + (s.getByte() << 16) + (s.getByte() << 24));
+                }
+                else
+                {
+                    static if (is (T == CN))
+                    {
+                        size_t len = s.getByte();
+                        char[] c = new char[len];
+                        for (int i=0; i<len; i++) c[i] = cast(char) s.getByte();
+                        return c;
+                    }
+                    else
+                    {
+                        static if (is (T == U1))
+                        {
+                            return s.getByte();
+                        }
+                        else
+                        {
+                            static if (is (T == U2))
+                            {
+                                return cast(ushort) (s.getByte() + (s.getByte() << 8));
+                            }
+                            else
+                            {
+                                static if (is (T == I1))
+                                {
+                                    return cast(byte) s.getByte();
+                                }
+                                else
+                                {
+                                    static if (is (T == I2))
+                                    {
+                                        return cast(short) (s.getByte() + (s.getByte() << 8));
+                                    }
+                                    else
+                                    {
+                                        static if (is (T == BN))
+                                        {
+                                            size_t l = s.getByte();
+                                            ubyte[] b = new ubyte[l];
+                                            for (int i=0; i<l; i++) b[i] = s.getByte();
+                                            return cast(BN) b;
+                                        }
+                                        else
+                                        {
+                                            static if (is (T == DN))
+                                            { 
+                                                size_t nbits = get!(U2)(s);
+                                                size_t l = (nbits % 8 == 0) ? nbits/8 : nbits/8 + 1;
+                                                ubyte[] b = new ubyte[l];
+                                                for (int i=0; i<l; i++) b[i] = s.getByte();
+                                                DN dn = { myVal: b };
+                                                return dn;
+                                            }
+                                            else
+                                            {
+                                                static assert(false, "Unsupported type for get()" ~ T.toString());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct OptionalField(T)
+{
+    private bool empty;
+    private T val;
+    public const T defaultValue;
+    private size_t size;
+
+    @property T value()
+    {
+        return val;
+    }
+
+    @property void value(T newVal)
+    {
+        this.empty = false;
+        this.val = newVal;
+    }
+
+    @property bool isEmpty()
+    {
+        return empty;
+    }
+
+    public string toString()
+    {
+        return to!string(val);
+    }
+
+    this(T defaultValue)
+    {
+        this.defaultValue = defaultValue;
+        empty = true;
+    }
+
+    this(T val, T defaultValue)
+    {
+        this.defaultValue = defaultValue;
+        this.val = val;
+        empty = false;
+    }
+
+    @property size_t getSize()
+    {
+        return size;
+    }
+
+    this(ref size_t reclen, ByteReader s, T defaultValue)
+    {
+        empty = true;
+        this.defaultValue = defaultValue;
+        this.val = defaultValue;
+        size = 0;
+        static if (is (T == BN))
+        {
+            size_t l = s.front();
+            if (reclen > l)
+            {
+                val = get!(BN)(s);
+                reclen -= l + 1;
+                empty = false;
+                size = 1 + val.length;
+            }
+        }
+        else
+        {
+            static if (is (T : CN))
+            {
+                size_t l = s.front();
+                if (reclen > l)
+                {
+                    val = get!(CN)(s);
+                    reclen -= l + 1;
+                    empty = false;
+                    size = 1 + val.length;
+                }
+            }
+            else
+            {
+                static if (is (T == DN))
+                {
+                    size_t l = 0;
+                    if (reclen > 1)
+                    {
+                        s.mark();
+                        size_t nbits = cast(size_t) get!(U2)(s);
+                        s.resetToMark();
+                        l = (nbits % 8 == 0) ? nbits / 8 : (nbits / 8) + 1;
+                    }
+                    if (reclen > l + 1)
+                    {
+                        val = get!(DN)(s);
+                        reclen -= l + 2;
+                        empty = false;
+                        size = 2 + val.length;
+                    }
+                }
+                else
+                {
+                    size_t siz = T.sizeof;
+                    if (reclen >= siz)
+                    {
+                        val = get!(T)(s);
+                        reclen -= size;
+                        empty = false;
+                        size = siz;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// U1, U2, N1, R4, CN
+struct OptionalArray(T)
+{
+    private bool empty;
+    private T[] val;
+    private size_t size;
+
+    public T value(int index)
+    {
+        return val[index];
+    }
+
+    public size_t length()
+    {
+        return val.length;
+    }
+
+    @property bool isEmpty()
+    {
+        return empty;
+    }
+
+    @property size_t getSize()
+    {
+        return size;
+    }
+
+    public void value(T[] newVal)
+    {
+        val = newVal;
+        empty = false;
+    }
+
+    public string toString()
+    {
+        return to!string(val);
+    }
+
+    this(ref size_t reclen, size_t cnt, ByteReader s)
+    {
+        val = new T[0];
+        empty = true;
+        size = 0;
+        static if (is (T == N1))
+        {
+            size_t siz = 1;
+            if (reclen >= siz * (cnt+1)/2)
+            {
+                val.length = cnt;
+                for (int i=0; i<(cnt+1)/2; i++) 
+                {
+                    ubyte b = s.getByte();
+                    val[2*i] = cast(ubyte) (b & 0x0F);
+                    if ((2*i < val.length - 1) || (val.length % 2 == 0)) val[2*i+1] = cast(ubyte) ((b & 0xF0) >> 4);
+                }
+                empty = false;
+                reclen -= siz * (cnt+1)/2;
+                size = siz;
+            }
+        }
+        else
+        {
+            static if (is (T == CN))
+            {
+                val.length = cnt;
+                for (int i=0; i<cnt; i++)
+                {
+                    size_t len = s.front();
+                    if (reclen > len)
+                    {
+                        val[i] = getCN(s);
+                    }
+                    reclen -= len + 1;
+                    empty = false;
+                    size = len + 1;
+                }
+            }
+            else
+            {
+                static if (is (T == U1) || is (T == U2) || is (T == R4))
+                {
+                    size_t siz = T.sizeof;
+                    if (reclen >= siz * cnt)
+                    {
+                        val.length = cnt;
+                        for (int i=0; i<cnt; i++) val[i] = get!(T)(s);
+                        empty = false;
+                        reclen -= siz * cnt;
+                        size = siz;
+                    }
+                }
+                else
+                {
+                    assert(false, "Invalid type for OptionalArray: " ~ T.stringof);
+                }
+            }
+        }
+    }
+}
+
+struct FieldArray(T)
+{
+
+}
 
 class StdfReader
 {
-    private InputStreamRange src;
+    private ByteReader src;
     public const string filename;
-    private Cpu_t cpu = Cpu_t.PC;
     private StdfRecord[] records = new StdfRecord[100000];
     
     this(string filename, size_t bufferSize)
     {
         this.filename = filename;
         auto f = new File(filename, "rb");
-        if (f.size() > bufferSize) src = new FileBinaryInputStream(filename, bufferSize);
-        else src = new FastFileBinaryInputStream(filename, bufferSize);
+        src = new BinaryBufferedSource(filename, 10000000L);
     }
 
     StdfRecord[] getRecords() { return(records); }
@@ -248,48 +621,72 @@ class StdfReader
     void read()
     {
         records.length = 0;
-        while (!src.empty)
+        while (src.remaining() > 1)
         {
-            ushort reclen = cpu.getU2(src);
-            ubyte rtype = cpu.getU1(src);
-            ubyte stype = cpu.getU1(src);
+            //writeln("ptr = ", src.getPtr());
+            //src.mark();
+            size_t reclen = get!(U2)(src);
+            if (reclen < 2) break;
+            ubyte rtype = get!(U1)(src);
+            ubyte stype = get!(U1)(src);
+            //src.resetToMark();
+            //writeln("rtype = ", rtype, " stype = ", stype, " reclen = ", reclen);
             Record_t type = RecordType.getRecordType(rtype, stype);
+            //writeln("type = ", type.toString());
             if (type is null)
             {
                 writeln("Corrupt file: ", filename, " invalid record type:");
                 writeln("type = ", rtype, " subtype = ", stype);
                 throw new Exception(filename);
             }
+            //ubyte[] buf = new ubyte[reclen+4];
+            //for (int i=0; i<reclen+4; i++) buf[i] = src.getByte();
+            //src.resetToMark();
+            //for (int i=0; i<4; i++) src.getByte();
+            //int j = 0;
+            //for (int i=0; i<(reclen+4); i++)
+           // {
+           //     writef("%2X ", buf[i]);
+           //     j += 3;
+           //     if (j >= 81) 
+           //     {
+           //         writeln("");
+           //         j = 0;
+           //     }
+           // }
+           //writeln("");
             StdfRecord r;
             switch (type.ordinal) with (Record_t)
             {
-                case ATR.ordinal: r = new AuditTrailRecord(cpu, reclen, src); break;
-                case BPS.ordinal: r = new BeginProgramSelectionRecord(cpu, reclen, src); break;
-                case DTR.ordinal: r = new DatalogTextRecord(cpu, reclen, src); break;
-                case EPS.ordinal: r = new EndProgramSelectionRecord(cpu, reclen, src); break;
-                case FAR.ordinal: r = new FileAttributesRecord(cpu, reclen, src); break;
-                case FTR.ordinal: r = new FunctionalTestRecord(cpu, reclen, src); break;
-                case GDR.ordinal: r = new GenericDataRecord(cpu, reclen, src); break;
-                case HBR.ordinal: r = new HardwareBinRecord(cpu, reclen, src); break;
-                case MIR.ordinal: r = new MasterInformationRecord(cpu, reclen, src); break;
-                case MPR.ordinal: r = new MultipleResultParametricRecord(cpu, reclen, src); break;
-                case MRR.ordinal: r = new MasterResultsRecord(cpu, reclen, src); break;
-                case PCR.ordinal: r = new PartCountRecord(cpu, reclen, src); break;
-                case PGR.ordinal: r = new PinGroupRecord(cpu, reclen, src); break;
-                case PIR.ordinal: r = new PartInformationRecord(cpu, reclen, src); break;
-                case PLR.ordinal: r = new PinListRecord(cpu, reclen, src); break;
-                case PMR.ordinal: r = new PinMapRecord(cpu, reclen, src); break;
-                case PRR.ordinal: r = new PartResultsRecord(cpu, reclen, src); break;
-                case PTR.ordinal: r = new ParametricTestRecord(cpu, reclen, src); break;
-                case RDR.ordinal: r = new RetestDataRecord(cpu, reclen, src); break;
-                case SBR.ordinal: r = new SoftwareBinRecord(cpu, reclen, src); break;
-                case SDR.ordinal: r = new SiteDescriptionRecord(cpu, reclen, src); break;
-                case TSR.ordinal: r = new TestSynopsisRecord(cpu, reclen, src); break;
-                case WCR.ordinal: r = new WaferConfigurationRecord(cpu, reclen, src); break;
-                case WIR.ordinal: r = new WaferInformationRecord(cpu, reclen, src); break;
-                case WRR.ordinal: r = new WaferResultsRecord(cpu, reclen, src); break;
+                case ATR.ordinal: r = new AuditTrailRecord(reclen, src); break;
+                case BPS.ordinal: r = new BeginProgramSelectionRecord(reclen, src); break;
+                case DTR.ordinal: r = new DatalogTextRecord(reclen, src); break;
+                case EPS.ordinal: r = new EndProgramSelectionRecord(reclen, src); break;
+                case FAR.ordinal: r = new FileAttributesRecord(reclen, src); break;
+                case FTR.ordinal: r = new FunctionalTestRecord(reclen, src); break;
+                case GDR.ordinal: r = new GenericDataRecord(reclen, src); break;
+                case HBR.ordinal: r = new HardwareBinRecord(reclen, src); break;
+                case MIR.ordinal: r = new MasterInformationRecord(reclen, src); break;
+                case MPR.ordinal: r = new MultipleResultParametricRecord(reclen, src); break;
+                case MRR.ordinal: r = new MasterResultsRecord(reclen, src); break;
+                case PCR.ordinal: r = new PartCountRecord(reclen, src); break;
+                case PGR.ordinal: r = new PinGroupRecord(reclen, src); break;
+                case PIR.ordinal: r = new PartInformationRecord(reclen, src); break;
+                case PLR.ordinal: r = new PinListRecord(reclen, src); break;
+                case PMR.ordinal: r = new PinMapRecord(reclen, src); break;
+                case PRR.ordinal: r = new PartResultsRecord(reclen, src); break;
+                case PTR.ordinal: r = new ParametricTestRecord(reclen, src); break;
+                case RDR.ordinal: r = new RetestDataRecord(reclen, src); break;
+                case SBR.ordinal: r = new SoftwareBinRecord(reclen, src); break;
+                case SDR.ordinal: r = new SiteDescriptionRecord(reclen, src); break;
+                case TSR.ordinal: r = new TestSynopsisRecord(reclen, src); break;
+                case WCR.ordinal: r = new WaferConfigurationRecord(reclen, src); break;
+                case WIR.ordinal: r = new WaferInformationRecord(reclen, src); break;
+                case WRR.ordinal: r = new WaferResultsRecord(reclen, src); break;
                 default: throw new Exception("Unknown record type: " ~ type.stringof);
             }
+            //writeln(r.toString());
+            //stdout.flush();
             records ~= r;
         }
     }
@@ -297,21 +694,19 @@ class StdfReader
 
 class StdfRecord
 {
-    const Cpu_t cpu;
     const Record_t recordType;
-    protected ushort reclen;
+    protected size_t reclen;
 
-    this(const Cpu_t cpu, const Record_t recordType, ushort reclen)
+    this(const Record_t recordType, size_t reclen)
     {
-        this.cpu = cpu;
         this.recordType = recordType;
         this.reclen = reclen;
     }
 
     abstract override string toString();
 
-    abstract ubyte[] getBytes();
-    protected abstract ushort getReclen();
+    //abstract ubyte[] getBytes();
+    protected abstract size_t getReclen();
 
     bool isTestRecord()
     {
@@ -319,10 +714,11 @@ class StdfRecord
         return t == Record_t.FTR || t == Record_t.PTR || t == Record_t.MPR || t == Record_t.DTX;
     }
 
+    /*
     ubyte[] getHeaderBytes()
     {
         ubyte[] b = new ubyte[4 + reclen];
-        auto bs = cpu.getU2Bytes(reclen);
+        auto bs = getU2Bytes(reclen);
         b[0] = bs[0];
         b[1] = bs[1];
         b[2] = recordType.recordType;
@@ -330,53 +726,55 @@ class StdfRecord
         b.length = 4;
         return b;
     }
-
+    */
 }
 
+//        date = DateTime(1970, 1, 1, 0, 0, 0) + dur!"seconds"(d);
 class AuditTrailRecord : StdfRecord
 {
-    const DateTime date;
-    const string cmdLine;
+    U4 date;
+    CN cmdLine;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.ATR, reclen);
-        uint d = cpu.getU4(s);
-        date = DateTime(1970, 1, 1, 0, 0, 0) + dur!"seconds"(d);
-        cmdLine = cpu.getCN(s); 
+        super(Record_t.ATR, reclen);
+        date = get!U4(s);
+        cmdLine = get!CN(s); 
     }
 
-    this(Cpu_t cpu, DateTime date, string cmdLine)
+    this(U4 date, CN cmdLine)
     {
-        super(cpu, Record_t.ATR, 0);
+        super(Record_t.ATR, 0);
         this.date = date;
         this.cmdLine = cmdLine;
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         return cast(ushort) (4 + cmdLine.length + 1);
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
         Duration d = date - DateTime(1970, 1, 1, 0, 0, 0); 
         uint dt = cast(uint) d.total!"seconds";
-        auto b1 = cpu.getU4Bytes(dt);
+        auto b1 = getU4Bytes(dt);
         foreach(c; b1) bs ~= c;
-        auto b2 = cpu.getCNBytes(cmdLine);
+        auto b2 = getCNBytes(cmdLine);
         foreach(c; b2) bs ~= c;
         return bs;
     }
+    */
 
     override string toString()
     {
         auto app = appender!string();
         app.put(recordType.description);
         app.put(":\n    date = ");
-        app.put(date.toString());
+        app.put(to!string(date));
         app.put("\n    cmdLine = ");
         app.put(cmdLine);
         app.put("\n");
@@ -386,69 +784,73 @@ class AuditTrailRecord : StdfRecord
 
 class BeginProgramSelectionRecord : StdfRecord
 {
-    const string seqName;
+    private const CN seqName;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.BPS, reclen);
-        seqName = cpu.getCN(s);
+        super(Record_t.BPS, reclen);
+        seqName = get!(CN)(s);
     }
 
-    this(Cpu_t cpu, string seqName)
+    this(string seqName)
     {
-        super(cpu, Record_t.BPS, 0);
+        super(Record_t.BPS, 0);
         this.seqName = seqName;
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         return cast(ushort) (1 + seqName.length);
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
-        auto b1 = cpu.getCNBytes(seqName);
+        auto b1 = getCNBytes(seqName);
         foreach(c; b1) bs ~= c;
         return bs;
     }
+    */
 
     override string toString()
     {
-        return recordType.description ~ ":\n    seqName = " ~ seqName ~ "\n";
+        return recordType.description ~ ":\n    seqName = " ~ to!string(seqName) ~ "\n";
     }
 }
 
 class DatalogTextRecord : StdfRecord
 {
-    const string text;
+    const CN text;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.DTR, reclen);
-        text = cpu.getCN(s);
+        super(Record_t.DTR, reclen);
+        text = get!(CN)(s);
     }
 
-    this(Cpu_t cpu, string text)
+    this(string text)
     {
-        super(cpu, Record_t.DTR, 0);
+        super(Record_t.DTR, 0);
         this.text = text;
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         return cast(ushort) (1 + text.length);
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
-        auto b = cpu.getCNBytes(text);
+        auto b = getCNBytes(text);
         foreach(c; b) bs ~= c;
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -464,26 +866,28 @@ class DatalogTextRecord : StdfRecord
 class EndProgramSelectionRecord : StdfRecord
 {
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.EPS, reclen);
+        super(Record_t.EPS, reclen);
     }
 
     this(Cpu_t cpu)
     {
-        super(cpu, Record_t.EPS, cast(ushort) 0);
+        super(Record_t.EPS, cast(ushort) 0);
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         return 0;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -493,39 +897,42 @@ class EndProgramSelectionRecord : StdfRecord
 
 class FileAttributesRecord : StdfRecord
 {
-    private ubyte stdfVersion;
+    private U1 stdfVersion;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(Cpu_t.getCpuType(cpu.getU1(s)), Record_t.FAR, reclen);
-        stdfVersion = cpu.getU1(s);
+        super(Record_t.FAR, reclen);
+        auto cpu_type = get!(U1)(s);
+        if (cpu_type != 2) assert(false, "INVALID CPU TYPE: " ~ to!string(cpu_type));
+        stdfVersion = get!(U1)(s);
     }
 
-    this(Cpu_t cpu, uint stdfVersion)
+    this(uint stdfVersion)
     {
-        super(cpu, Record_t.FAR, cast(ushort) 2);
+        super(Record_t.FAR, cast(ushort) 2);
         this.stdfVersion = cast(ubyte) stdfVersion;
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         return cast(ushort) 2;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
-        bs ~= cpu.type;
+        bs ~= type;
         bs ~= stdfVersion;
         return bs;
     }
+    */
 
     override string toString()
     {
         auto app = appender!string();
         app.put(recordType.description);
-        app.put(":\n    cpu = ");
-        app.put(cpu.toString());
+        app.put(":\n    cpu = PC");
         app.put("    stdfVersion = ");
         app.put(to!string(stdfVersion));
         app.put("\n");
@@ -535,20 +942,20 @@ class FileAttributesRecord : StdfRecord
 
 abstract class TestRecord : StdfRecord
 {
-    const uint test_num;
-    const ubyte head_num;
-    const ubyte site_num;
-    const ubyte test_flg;
+    const U4 test_num;
+    const U1 head_num;
+    const U1 site_num;
+    const U1 test_flg;
 
-    this(Cpu_t cpu, 
-         ushort reclen, 
+    this( 
+         size_t reclen, 
          Record_t type, 
-         const uint test_num, 
-         const ubyte head_num, 
-         const ubyte site_num, 
-         const ubyte test_flg)
+         const U4 test_num, 
+         const U1 head_num, 
+         const U1 site_num, 
+         const U1 test_flg)
     {
-        super(cpu, type, reclen);
+        super(type, reclen);
         this.test_num = test_num;
         this.head_num = head_num;
         this.site_num = site_num;
@@ -569,154 +976,115 @@ abstract class TestRecord : StdfRecord
         return app.data;
     }
 
-    override abstract protected ushort getReclen();
-    override abstract ubyte[] getBytes();
+    override abstract protected size_t getReclen();
+    //override abstract ubyte[] getBytes();
     override abstract string toString();
 
 }
 
 class FunctionalTestRecord : TestRecord
 {
-    const (optional!ubyte) opt_flag;
-    const optional!uint cycl_cnt;
-    const optional!uint rel_vadr;
-    const optional!uint rept_cnt;
-    const optional!uint num_fail;
-    const optional!int xfail_ad;
-    const optional!int yfail_ad;
-    const optional!short vect_off;
-    const optional!ushort rtn_icnt;
-    const optional!ushort pgm_icnt;
-    const ushort[] rtn_indx;
-    const ubyte[] rtn_stat;
-    const ushort[] pgm_indx;
-    const ubyte[] pgm_stat;
-    const ubyte[] fail_pin;
-    const string vect_nam;
-    const string time_set;
-    const string op_code;
-    const string test_txt;
-    const string alarm_id;
-    const string prog_txt;
-    const string rslt_txt;
-    optional!ubyte patg_num;
-    const ubyte[] spin_map;
-    private ushort fail_pin_bits;
-    private ushort spin_map_bits;
+    OptionalField!U1 opt_flag;
+    OptionalField!U4 cycl_cnt;
+    OptionalField!U4 rel_vadr;
+    OptionalField!U4 rept_cnt;
+    OptionalField!U4 num_fail;
+    OptionalField!I4 xfail_ad;
+    OptionalField!I4 yfail_ad;
+    OptionalField!I2 vect_off;
+    OptionalField!U2 rtn_icnt;
+    OptionalField!U2 pgm_icnt;
+    OptionalArray!U2 rtn_indx;
+    OptionalArray!N1 rtn_stat;
+    OptionalArray!U2 pgm_indx;
+    OptionalArray!N1 pgm_stat;
+    OptionalField!DN fail_pin;
+    OptionalField!CN vect_nam;
+    OptionalField!CN time_set;
+    OptionalField!CN op_code;
+    OptionalField!CN test_txt;
+    OptionalField!CN alarm_id;
+    OptionalField!CN prog_txt;
+    OptionalField!CN rslt_txt;
+    OptionalField!U1 patg_num;
+    OptionalField!DN spin_map;
+    private ushort failPinBits;
+    private ushort spinMapBits;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, reclen, Record_t.FTR, cpu.getU4(s), cpu.getU1(s), cpu.getU1(s), cpu.getU1(s));
-        int l = cast(int) reclen;
-        l -= 7;
-        if (l >= 1) opt_flag = cpu.getU1(s); l--;
-        if (l >= 4) cycl_cnt = cpu.getU4(s); l -= 4;
-        if (l >= 4) rel_vadr = cpu.getU4(s); l -= 4;
-        if (l >= 4) rept_cnt = cpu.getU4(s); l -= 4;
-        if (l >= 4) num_fail = cpu.getU4(s); l -= 4;
-        if (l >= 4) xfail_ad = cpu.getI4(s); l -= 4;
-        if (l >= 4) yfail_ad = cpu.getI4(s); l -= 4;
-        if (l >= 2) vect_off = cpu.getI2(s); l -= 2;
-        if (l >= 2) rtn_icnt = cpu.getU2(s); l -= 2;
-        if (l >= 2) pgm_icnt = cpu.getU2(s); l -= 2;
-        if (l > 0)
+        super(reclen, Record_t.FTR, get!U4(s), get!U1(s), get!U1(s), get!U1(s));
+        reclen -= 7;
+        opt_flag = OptionalField!U1(reclen, s, 0xFF);
+        cycl_cnt = OptionalField!U4(reclen, s, 0);
+        rel_vadr = OptionalField!U4(reclen, s, 0);
+        rept_cnt = OptionalField!U4(reclen, s, 0);
+        num_fail = OptionalField!U4(reclen, s, 0);
+        xfail_ad = OptionalField!I4(reclen, s, 0);
+        yfail_ad = OptionalField!I4(reclen, s, 0);
+        vect_off = OptionalField!I2(reclen, s, 0);
+        rtn_icnt = OptionalField!U2(reclen, s, 0);
+        pgm_icnt = OptionalField!U2(reclen, s, 0);
+        rtn_indx = OptionalArray!U2(reclen, rtn_icnt.value, s);
+        rtn_stat = OptionalArray!N1(reclen, rtn_icnt.value, s);
+        pgm_indx = OptionalArray!U2(reclen, pgm_icnt.value, s);
+        pgm_stat = OptionalArray!N1(reclen, pgm_icnt.value, s);
+        if (reclen > 1)
         {
-            auto indx = new ushort[rtn_icnt];
-            for (int i=0; i<rtn_icnt; i++) 
-            {
-                indx[i] = cpu.getU2(s);
-                l -= 2;
-            }
-            rtn_indx = indx;
+            s.mark();
+            failPinBits = get!U2(s);
+            s.resetToMark();
         }
-        if (l > 0)
+        fail_pin = OptionalField!DN(reclen, s, cast(DN) new ubyte[0]);
+        vect_nam = OptionalField!CN(reclen, s, new char[0]);
+        time_set = OptionalField!CN(reclen, s, new char[0]);
+        op_code  = OptionalField!CN(reclen, s, new char[0]);
+        test_txt = OptionalField!CN(reclen, s, new char[0]);
+        alarm_id = OptionalField!CN(reclen, s, new char[0]);
+        prog_txt = OptionalField!CN(reclen, s, new char[0]);
+        rslt_txt = OptionalField!CN(reclen, s, new char[0]);
+        patg_num = OptionalField!U1(reclen, s, 0);
+        if (reclen > 1)
         {
-            auto stat = new ubyte[rtn_icnt];
-            for (int i=0; i<rtn_icnt; i++) 
-            {
-                stat[i] = cpu.getU1(s);
-                l--;
-            }
-            rtn_stat = stat;
+            s.mark();
+            spinMapBits = get!U2(s);
+            s.resetToMark();
         }
-        if (l > 0)
-        {
-            auto indx = new ushort[pgm_icnt];
-            for (int i=0; i<pgm_icnt; i++)
-            {
-                indx[i] = cpu.getU2(s);
-                l -= 2;
-            }
-            pgm_indx = indx;
-        }
-        if (l > 0)
-        {
-            auto stat = new ubyte[pgm_icnt];
-            for (int i=0; i<pgm_icnt; i++)
-            {
-                stat[i] = cpu.getU1(s);
-                l--;
-            }
-            pgm_stat = stat;
-        }
-        if (l >= 2)
-        {
-            fail_pin_bits = cpu.getU2(s);
-            if (fail_pin_bits > 0) fail_pin = cpu.getDN(fail_pin_bits, s);
-            l -= (fail_pin.length + 2);
-        }
-        if (l > 0) { vect_nam = cpu.getCN(s); l -= (1 + vect_nam.length); }
-        if (l > 0) { time_set = cpu.getCN(s); l -= (1 + time_set.length); }
-        if (l > 0) { op_code = cpu.getCN(s); l -= (1 + op_code.length); }
-        if (l > 0) { test_txt = cpu.getCN(s); l -= (1 + test_txt.length); }
-        if (l > 0) { alarm_id = cpu.getCN(s); l -= (1 + alarm_id.length); }
-        if (l > 0) { prog_txt = cpu.getCN(s); l -= (1 + prog_txt.length); }
-        if (l > 0) { rslt_txt = cpu.getCN(s); l -= (1 + rslt_txt.length); }
-        if (l >= 1) { patg_num = cpu.getU1(s); l--; }
-        if (l > 0)
-        {
-            spin_map_bits = cpu.getU2(s);
-            l -= 2;
-            if (spin_map_bits > 0)
-            { 
-                spin_map = cpu.getDN(spin_map_bits, s);
-            }
-        }
+        spin_map = OptionalField!DN(reclen, s, cast(DN) new ubyte[0]);
     }
 
-    this(Cpu_t cpu,
-         const uint test_num,
-         const ubyte head_num,
-         const ubyte site_num,
-         const ubyte test_flg,
-         const optional!ubyte opt_flag,
-         const optional!uint cycl_cnt,
-         const optional!uint rel_vadr,
-         const optional!uint rept_cnt,
-         const optional!uint num_fail,
-         const optional!int xfail_ad,
-         const optional!int yfail_ad,
-         const optional!short vect_off,
-         const optional!ushort rtn_icnt,
-         const optional!ushort pgm_icnt,
-         const ushort[] rtn_indx,
-         const ubyte[] rtn_stat,
-         const ushort[] pgm_indx,
-         const ubyte[] pgm_stat,
-         const uint fail_pin_bits,
-         const ubyte[] fail_pin,
-         const string vect_nam,
-         const string time_set,
-         const string op_code,
-         const string test_txt,
-         const string alarm_id,
-         const string prog_txt,
-         const string rslt_txt,
-         optional!ubyte patg_num,
-         const uint spin_map_bits,
-         const ubyte[] spin_map)
+    this(U4 test_num,
+         U1 head_num,
+         U1 site_num,
+         U1 test_flg,
+         OptionalField!U1 opt_flag,
+         OptionalField!U4 cycl_cnt,
+         OptionalField!U4 rel_vadr,
+         OptionalField!U4 rept_cnt,
+         OptionalField!U4 num_fail,
+         OptionalField!I4 xfail_ad,
+         OptionalField!I4 yfail_ad,
+         OptionalField!I2 vect_off,
+         OptionalField!U2 rtn_icnt,
+         OptionalField!U2 pgm_icnt,
+         OptionalArray!U2 rtn_indx,
+         OptionalArray!N1 rtn_stat,
+         OptionalArray!U2 pgm_indx,
+         OptionalArray!N1 pgm_stat,
+         uint failPinBits,
+         OptionalField!DN fail_pin,
+         OptionalField!CN vect_nam,
+         OptionalField!CN time_set,
+         OptionalField!CN op_code,
+         OptionalField!CN test_txt,
+         OptionalField!CN alarm_id,
+         OptionalField!CN prog_txt,
+         OptionalField!CN rslt_txt,
+         OptionalField!U1 patg_num,
+         uint spinMapBits,
+         OptionalField!DN spin_map)
     {
-        super(cpu, 0, Record_t.FTR, test_num, head_num, site_num, test_flg);
+        super(0, Record_t.FTR, test_num, head_num, site_num, test_flg);
         this.opt_flag = opt_flag;
         this.cycl_cnt = cycl_cnt;
         this.rel_vadr = rel_vadr;
@@ -731,7 +1099,7 @@ class FunctionalTestRecord : TestRecord
         this.rtn_stat = rtn_stat;
         this.pgm_indx = pgm_indx;
         this.pgm_stat = pgm_stat;
-        this.fail_pin_bits = cast(ushort) fail_pin_bits;
+        this.failPinBits = cast(ushort) failPinBits;
         this.fail_pin = fail_pin;
         this.vect_nam = vect_nam;
         this.time_set = time_set;
@@ -741,74 +1109,76 @@ class FunctionalTestRecord : TestRecord
         this.prog_txt = prog_txt;
         this.rslt_txt = rslt_txt;
         this.patg_num = patg_num;
-        this.spin_map_bits = cast(ushort) spin_map_bits;
+        this.spinMapBits = cast(ushort) spinMapBits;
         this.spin_map = spin_map;
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
-        uint l = 7;
-        if (opt_flag.valid) l += 1; else return cast(ushort) l;
-        if (cycl_cnt.valid) l += 4; else return cast(ushort) l;
-        if (rel_vadr.valid) l += 4; else return cast(ushort) l;
-        if (rept_cnt.valid) l += 4; else return cast(ushort) l;
-        if (num_fail.valid) l += 4; else return cast(ushort) l;
-        if (xfail_ad.valid) l += 4; else return cast(ushort) l;
-        if (yfail_ad.valid) l += 4; else return cast(ushort) l;
-        if (vect_off.valid) l += 2; else return cast(ushort) l;
-        if (rtn_icnt.valid) l += 2; else return cast(ushort) l;
-        if (pgm_icnt.valid) l += 2; else return cast(ushort) l;
-        if (rtn_indx !is null) l += rtn_indx.length * 2; else return cast(ushort) l;
-        if (rtn_stat !is null) l += rtn_stat.length; else return cast(ushort) l;
-        if (pgm_indx !is null) l += pgm_indx.length * 2; else return cast(ushort) l;
-        if (pgm_stat !is null) l += pgm_stat.length; else return cast(ushort) l;
-        if (fail_pin !is null) l += (2 + fail_pin.length); else return cast(ushort) l;
-        if (vect_nam !is null) l += (1 + vect_nam.length); else return cast(ushort) l;
-        if (time_set !is null) l += (1 + time_set.length); else return cast(ushort) l;
-        if (op_code !is null) l +=  (1 + op_code.length); else return cast(ushort) l;
-        if (test_txt !is null) l += (1 + test_txt.length); else return cast(ushort) l;
-        if (alarm_id !is null) l += (1 + alarm_id.length); else return cast(ushort) l;
-        if (prog_txt !is null) l += (1 + prog_txt.length); else return cast(ushort) l;
-        if (rslt_txt !is null) l += (1 + rslt_txt.length); else return cast(ushort) l;
-        if (patg_num.valid) l += 1; else return cast(ushort) l;
-        if (spin_map !is null) l += (2 + spin_map.length);
-        return cast(ushort) l;
+        size_t l = 7;
+        l += opt_flag.getSize();
+        l += cycl_cnt.getSize();
+        l += rel_vadr.getSize();
+        l += rept_cnt.getSize();
+        l += num_fail.getSize();
+        l += xfail_ad.getSize();
+        l += yfail_ad.getSize();
+        l += vect_off.getSize();
+        l += rtn_icnt.getSize();
+        l += pgm_icnt.getSize();
+        l += rtn_indx.getSize();
+        l += rtn_stat.getSize();
+        l += pgm_indx.getSize();
+        l += pgm_stat.getSize();
+        l += fail_pin.getSize();
+        l += vect_nam.getSize();
+        l += time_set.getSize();
+        l +=  op_code.getSize();
+        l += test_txt.getSize();
+        l += alarm_id.getSize();
+        l += prog_txt.getSize();
+        l += rslt_txt.getSize();
+        l += patg_num.getSize();
+        l += spin_map.getSize();
+        return l;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
-        bs ~= cpu.getU4Bytes(test_num);
-        bs ~= cpu.getU1Bytes(head_num);
-        bs ~= cpu.getU1Bytes(site_num);
-        bs ~= cpu.getU1Bytes(test_flg);
-        if (opt_flag.valid) bs ~= cpu.getU1Bytes(opt_flag);
-        if (cycl_cnt.valid) bs ~= cpu.getU4Bytes(cycl_cnt);
-        if (rel_vadr.valid) bs ~= cpu.getU4Bytes(rel_vadr);
-        if (rept_cnt.valid) bs ~= cpu.getU4Bytes(rept_cnt);
-        if (num_fail.valid) bs ~= cpu.getU4Bytes(num_fail);
-        if (xfail_ad.valid) bs ~= cpu.getI4Bytes(xfail_ad);
-        if (yfail_ad.valid) bs ~= cpu.getI4Bytes(yfail_ad);
-        if (vect_off.valid) bs ~= cpu.getI2Bytes(vect_off);
-        if (rtn_icnt.valid) bs ~= cpu.getU2Bytes(rtn_icnt);
-        if (pgm_icnt.valid) bs ~= cpu.getU2Bytes(pgm_icnt);
-        if (rtn_indx !is null) foreach(u; rtn_indx) bs ~= cpu.getU2Bytes(u);
-        if (rtn_stat !is null) foreach(b; rtn_stat) bs ~= cpu.getU1Bytes(b);
-        if (pgm_indx !is null) foreach(u; pgm_indx) bs ~= cpu.getU2Bytes(u);
-        if (pgm_stat !is null) foreach(b; pgm_stat) bs ~= cpu.getU1Bytes(b);
-        if (fail_pin !is null) bs ~= cpu.getDNBytes(fail_pin_bits, fail_pin);
-        if (vect_nam !is null) bs ~= cpu.getCNBytes(vect_nam);
-        if (time_set !is null) bs ~= cpu.getCNBytes(time_set);
-        if (op_code !is null) bs ~= cpu.getCNBytes(op_code);
-        if (test_txt !is null) bs ~= cpu.getCNBytes(test_txt);
-        if (alarm_id !is null) bs ~= cpu.getCNBytes(alarm_id);
-        if (prog_txt !is null) bs ~= cpu.getCNBytes(prog_txt);
-        if (rslt_txt !is null) bs ~= cpu.getCNBytes(rslt_txt);
-        if (patg_num.valid) bs ~= cpu.getU1Bytes(patg_num);
-        if (spin_map !is null) bs ~= cpu.getDNBytes(spin_map_bits, spin_map);
+        bs ~= getU4Bytes(test_num);
+        bs ~= getU1Bytes(head_num);
+        bs ~= getU1Bytes(site_num);
+        bs ~= getU1Bytes(test_flg);
+        if (opt_flag.valid) bs ~= getU1Bytes(opt_flag);
+        if (cycl_cnt.valid) bs ~= getU4Bytes(cycl_cnt);
+        if (rel_vadr.valid) bs ~= getU4Bytes(rel_vadr);
+        if (rept_cnt.valid) bs ~= getU4Bytes(rept_cnt);
+        if (num_fail.valid) bs ~= getU4Bytes(num_fail);
+        if (xfail_ad.valid) bs ~= getI4Bytes(xfail_ad);
+        if (yfail_ad.valid) bs ~= getI4Bytes(yfail_ad);
+        if (vect_off.valid) bs ~= getI2Bytes(vect_off);
+        if (rtn_icnt.valid) bs ~= getU2Bytes(rtn_icnt);
+        if (pgm_icnt.valid) bs ~= getU2Bytes(pgm_icnt);
+        if (rtn_indx !is null) foreach(u; rtn_indx) bs ~= getU2Bytes(u);
+        if (rtn_stat !is null) foreach(b; rtn_stat) bs ~= getU1Bytes(b);
+        if (pgm_indx !is null) foreach(u; pgm_indx) bs ~= getU2Bytes(u);
+        if (pgm_stat !is null) foreach(b; pgm_stat) bs ~= getU1Bytes(b);
+        if (fail_pin !is null) bs ~= getDNBytes(fail_pin_bits, fail_pin);
+        if (vect_nam !is null) bs ~= getCNBytes(vect_nam);
+        if (time_set !is null) bs ~= getCNBytes(time_set);
+        if (op_code !is null) bs ~= getCNBytes(op_code);
+        if (test_txt !is null) bs ~= getCNBytes(test_txt);
+        if (alarm_id !is null) bs ~= getCNBytes(alarm_id);
+        if (prog_txt !is null) bs ~= getCNBytes(prog_txt);
+        if (rslt_txt !is null) bs ~= getCNBytes(rslt_txt);
+        if (patg_num.valid) bs ~= getU1Bytes(patg_num);
+        if (spin_map !is null) bs ~= getDNBytes(spin_map_bits, spin_map);
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -816,30 +1186,30 @@ class FunctionalTestRecord : TestRecord
         app.put(recordType.description);
         app.put(":\n");
         app.put(getString());        
-        if (opt_flag.valid) { app.put("    opt_flag = "); app.put(to!string(opt_flag)); }
-        if (cycl_cnt.valid) { app.put("\n    cycl_cnt = "); app.put(to!string(cycl_cnt)); }
-        if (rel_vadr.valid) { app.put("\n    rel_vadr = "); app.put(to!string(rel_vadr)); }
-        if (rept_cnt.valid) { app.put("\n    rept_cnt = "); app.put(to!string(rept_cnt)); }
-        if (num_fail.valid) { app.put("\n    num_fail = "); app.put(to!string(num_fail)); }
-        if (xfail_ad.valid) { app.put("\n    xfail_ad = "); app.put(to!string(xfail_ad)); }
-        if (yfail_ad.valid) { app.put("\n    yfail_ad = "); app.put(to!string(yfail_ad)); }
-        if (vect_off.valid) { app.put("\n    vect_off = "); app.put(to!string(vect_off)); }
-        if (rtn_icnt.valid) { app.put("\n    rtn_icnt = "); app.put(to!string(rtn_icnt)); }
-        if (pgm_icnt.valid) { app.put("\n    pgm_icnt = "); app.put(to!string(pgm_icnt)); }
-        if (rtn_indx !is null) { app.put("\n    rtn_indx = "); app.put(to!string(rtn_indx)); }
-        if (rtn_stat !is null) { app.put("\n    rtn_stat = "); app.put(to!string(rtn_stat)); }
-        if (pgm_indx !is null) { app.put("\n    pgm_indx = "); app.put(to!string(pgm_indx)); }
-        if (pgm_stat !is null) { app.put("\n    pgm_stat = "); app.put(to!string(pgm_stat)); }
-        if (fail_pin !is null) { app.put("\n    fail_pin = "); app.put(to!string(fail_pin)); }
-        if (vect_nam !is null) { app.put("\n    vect_nam = "); app.put(vect_nam); }
-        if (time_set !is null) { app.put("\n    time_set = "); app.put(time_set); }
-        if (op_code !is null) { app.put("\n    op_code = "); app.put(op_code); }
-        if (test_txt !is null) { app.put("\n    test_txt = "); app.put(test_txt); }
-        if (alarm_id !is null) { app.put("\n    alarm_id = "); app.put(alarm_id); }
-        if (prog_txt !is null) { app.put("\n    prog_txt = "); app.put(prog_txt); }
-        if (rslt_txt !is null) { app.put("\n    rslt_txt = "); app.put(rslt_txt); }
-        if (patg_num.valid) { app.put("\n    patg_num = "); app.put(to!string(patg_num)); }
-        if (spin_map !is null) { app.put("\n    spin_map = "); app.put(to!string(spin_map)); }
+        if (!opt_flag.empty) { app.put("    opt_flag = "); app.put(to!string(opt_flag)); }
+        if (!cycl_cnt.empty) { app.put("\n    cycl_cnt = "); app.put(to!string(cycl_cnt)); }
+        if (!rel_vadr.empty) { app.put("\n    rel_vadr = "); app.put(to!string(rel_vadr)); }
+        if (!rept_cnt.empty) { app.put("\n    rept_cnt = "); app.put(to!string(rept_cnt)); }
+        if (!num_fail.empty) { app.put("\n    num_fail = "); app.put(to!string(num_fail)); }
+        if (!xfail_ad.empty) { app.put("\n    xfail_ad = "); app.put(to!string(xfail_ad)); }
+        if (!yfail_ad.empty) { app.put("\n    yfail_ad = "); app.put(to!string(yfail_ad)); }
+        if (!vect_off.empty) { app.put("\n    vect_off = "); app.put(to!string(vect_off)); }
+        if (!rtn_icnt.empty) { app.put("\n    rtn_icnt = "); app.put(to!string(rtn_icnt)); }
+        if (!pgm_icnt.empty) { app.put("\n    pgm_icnt = "); app.put(to!string(pgm_icnt)); }
+        if (!rtn_indx.empty) { app.put("\n    rtn_indx = "); app.put(to!string(rtn_indx)); }
+        if (!rtn_stat.empty) { app.put("\n    rtn_stat = "); app.put(to!string(rtn_stat)); }
+        if (!pgm_indx.empty) { app.put("\n    pgm_indx = "); app.put(to!string(pgm_indx)); }
+        if (!pgm_stat.empty) { app.put("\n    pgm_stat = "); app.put(to!string(pgm_stat)); }
+        if (!fail_pin.empty) { app.put("\n    fail_pin = "); app.put(to!string(fail_pin)); }
+        if (!vect_nam.empty) { app.put("\n    vect_nam = "); app.put(to!string(vect_nam)); }
+        if (!time_set.empty) { app.put("\n    time_set = "); app.put(to!string(time_set)); }
+        if (!op_code.empty) { app.put("\n    op_code = "); app.put(to!string(op_code)); }
+        if (!test_txt.empty) { app.put("\n    test_txt = "); app.put(to!string(test_txt)); }
+        if (!alarm_id.empty) { app.put("\n    alarm_id = "); app.put(to!string(alarm_id)); }
+        if (!prog_txt.empty) { app.put("\n    prog_txt = "); app.put(to!string(prog_txt)); }
+        if (!rslt_txt.empty) { app.put("\n    rslt_txt = "); app.put(to!string(rslt_txt)); }
+        if (!patg_num.empty) { app.put("\n    patg_num = "); app.put(to!string(patg_num)); }
+        if (!spin_map.empty) { app.put("\n    spin_map = "); app.put(to!string(spin_map)); }
         return app.data;
     }
 }
@@ -848,31 +1218,31 @@ class GenericDataRecord : StdfRecord
 {
     private GenericData[] data;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.GDR, reclen);
-        ushort fld_cnt = cpu.getU2(s);
+        super(Record_t.GDR, reclen);
+        ushort fld_cnt = get!U2(s);
         for (ushort i=0; i<fld_cnt; i++)
         {
-            GenericData_t type = getDataType(cpu.getU1(s));
+            GenericData_t type = getDataType(get!U1(s));
             if (type == GenericData_t.B0)
             {
                 i--;
                 continue;
             }
-            auto d = GenericData(cpu, type, s);
+            auto d = GenericData(type, s);
             data ~= d;
         }
     }
 
-    this(Cpu_t cpu, GenericData[] data)
+    this(GenericData[] data)
     {
-        super(cpu, Record_t.GDR, 0);
+        super(Record_t.GDR, 0);
         foreach(d; data) this.data ~= d;
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         ushort l = 2;
         foreach(d; data)
@@ -883,10 +1253,11 @@ class GenericDataRecord : StdfRecord
         return l;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
-        bs ~= cpu.getU2Bytes(cast(ushort) data.length);
+        bs ~= getU2Bytes(cast(ushort) data.length);
         foreach(d; data)
         {
             auto b = d.getBytes(cpu);
@@ -895,6 +1266,7 @@ class GenericDataRecord : StdfRecord
         }
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -912,40 +1284,42 @@ class GenericDataRecord : StdfRecord
 
 class HardwareBinRecord : StdfRecord
 {
-    const ubyte head_num;
-    const ubyte site_num;
-    const ushort hbin_num;
-    const uint hbin_cnt;
+    const U1 head_num;
+    const U1 site_num;
+    const U2 hbin_num;
+    const U4 hbin_cnt;
     const char hbin_pf;
-    const string hbin_nam;
+    const CN hbin_nam;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this( size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.HBR, reclen);
-        head_num = cpu.getU1(s);
-        site_num = cpu.getU1(s);
-        hbin_num = cpu.getU2(s);
-        hbin_cnt = cpu.getU4(s);
-        hbin_pf = cast(char) cpu.getU1(s);
-        hbin_nam = cpu.getCN(s);
+        super(Record_t.HBR, reclen);
+        head_num = get!U1(s);
+        site_num = get!U1(s);
+        hbin_num = get!U2(s);
+        hbin_cnt = get!U4(s);
+        hbin_pf = cast(char) get!U1(s);
+        hbin_nam = get!CN(s);
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         return cast(ushort) (10 + hbin_nam.length);
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
-        bs ~= cpu.getU1Bytes(head_num);
-        bs ~= cpu.getU1Bytes(site_num);
-        bs ~= cpu.getU2Bytes(hbin_num);
-        bs ~= cpu.getU4Bytes(hbin_cnt);
+        bs ~= getU1Bytes(head_num);
+        bs ~= getU1Bytes(site_num);
+        bs ~= getU2Bytes(hbin_num);
+        bs ~= getU4Bytes(hbin_cnt);
         bs ~= cast(ubyte) hbin_pf;
-        bs ~= cpu.getCNBytes(hbin_nam);
+        bs ~= getCNBytes(hbin_nam);
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -964,131 +1338,130 @@ class HardwareBinRecord : StdfRecord
 
 class MasterInformationRecord : StdfRecord
 {
-    const DateTime setup_t;
-    const DateTime start_t;
-    const ubyte stat_num;
-    const char mode_cod;
-    const char rtst_cod;
-    const char prot_cod;
-    const ushort burn_tim;
-    const char cmod_cod;
-    const string lot_id;
-    const string part_typ;
-    const string node_nam;
-    const string tstr_typ;
-    const string job_nam;
-    const string job_rev;
-    const string sblot_id;
-    const string oper_nam;
-    const string exec_typ;
-    const string exec_ver;
-    const string test_cod;
-    const string tst_temp;
-    const string user_txt;
-    const string aux_file;
-    const string pkg_typ;
-    const string famly_id;
-    const string date_cod;
-    const string facil_id;
-    const string floor_id;
-    const string proc_id;
-    const string oper_frq;
-    const string spec_nam;
-    const string spec_ver;
-    const string flow_id;
-    const string setup_id;
-    const string dsgn_rev;
-    const string eng_id;
-    const string rom_cod;
-    const string serl_num;
-    const string supr_nam;
+    U4 setup_t;
+    U4 start_t;
+    U1 stat_num;
+    C1 mode_cod;
+    C1 rtst_cod;
+    C1 prot_cod;
+    U2 burn_tim;
+    C1 cmod_cod;
+    CN lot_id;
+    CN part_typ;
+    CN node_nam;
+    CN tstr_typ;
+    CN job_nam;
+    CN job_rev;
+    CN sblot_id;
+    CN oper_nam;
+    CN exec_typ;
+    CN exec_ver;
+    CN test_cod;
+    CN tst_temp;
+    CN user_txt;
+    CN aux_file;
+    CN pkg_typ;
+    CN famly_id;
+    CN date_cod;
+    CN facil_id;
+    CN floor_id;
+    CN proc_id;
+    CN oper_frq;
+    CN spec_nam;
+    CN spec_ver;
+    CN flow_id;
+    CN setup_id;
+    CN dsgn_rev;
+    CN eng_id;
+    CN rom_cod;
+    CN serl_num;
+    CN supr_nam;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    //    start_t = DateTime(1970, 1, 1, 0, 0, 0) + dur!"seconds"(d);
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.MIR, reclen);
-        uint d = cpu.getU4(s);
-        setup_t = DateTime(1970, 1, 1, 0, 0, 0) + dur!"seconds"(d);
-        d = cpu.getU4(s);
-        start_t = DateTime(1970, 1, 1, 0, 0, 0) + dur!"seconds"(d);
-        stat_num = cpu.getU1(s);
-        mode_cod = cast(char) cpu.getU1(s);
-        rtst_cod = cast(char) cpu.getU1(s);
-        prot_cod = cast(char) cpu.getU1(s);
-        burn_tim = cpu.getU2(s);
-        cmod_cod = cast(char) cpu.getU1(s);
-        lot_id = cpu.getCN(s);
-        part_typ = cpu.getCN(s);
-        node_nam = cpu.getCN(s);
-        tstr_typ = cpu.getCN(s);
-        job_nam = cpu.getCN(s);
-        job_rev = cpu.getCN(s);
-        sblot_id = cpu.getCN(s);
-        oper_nam = cpu.getCN(s);
-        exec_typ = cpu.getCN(s);
-        exec_ver = cpu.getCN(s);
-        test_cod = cpu.getCN(s);
-        tst_temp = cpu.getCN(s);
-        user_txt = cpu.getCN(s);
-        aux_file = cpu.getCN(s);
-        pkg_typ = cpu.getCN(s);
-        famly_id = cpu.getCN(s);
-        date_cod = cpu.getCN(s);
-        facil_id = cpu.getCN(s);
-        floor_id = cpu.getCN(s);
-        proc_id = cpu.getCN(s);
-        oper_frq = cpu.getCN(s);
-        spec_nam = cpu.getCN(s);
-        spec_ver = cpu.getCN(s);
-        flow_id = cpu.getCN(s);
-        setup_id = cpu.getCN(s);
-        dsgn_rev = cpu.getCN(s);
-        eng_id = cpu.getCN(s);
-        rom_cod = cpu.getCN(s);
-        serl_num = cpu.getCN(s);
-        supr_nam = cpu.getCN(s);
+        super(Record_t.MIR, reclen);
+        setup_t  = get!U4(s);
+        start_t  = get!U4(s);
+        stat_num = get!U1(s);
+        mode_cod = cast(char) get!U1(s);
+        rtst_cod = cast(char) get!U1(s);
+        prot_cod = cast(char) get!U1(s);
+        burn_tim = get!U2(s);
+        cmod_cod = cast(char) get!U1(s);
+        lot_id   = get!CN(s);
+        part_typ = get!CN(s);
+        node_nam = get!CN(s);
+        tstr_typ = get!CN(s);
+        job_nam  = get!CN(s);
+        job_rev  = get!CN(s);
+        sblot_id = get!CN(s);
+        oper_nam = get!CN(s);
+        exec_typ = get!CN(s);
+        exec_ver = get!CN(s);
+        test_cod = get!CN(s);
+        tst_temp = get!CN(s);
+        user_txt = get!CN(s);
+        aux_file = get!CN(s);
+        pkg_typ  = get!CN(s);
+        famly_id = get!CN(s);
+        date_cod = get!CN(s);
+        facil_id = get!CN(s);
+        floor_id = get!CN(s);
+        proc_id  = get!CN(s);
+        oper_frq = get!CN(s);
+        spec_nam = get!CN(s);
+        spec_ver = get!CN(s);
+        flow_id  = get!CN(s);
+        setup_id = get!CN(s);
+        dsgn_rev = get!CN(s);
+        eng_id   = get!CN(s);
+        rom_cod  = get!CN(s);
+        serl_num = get!CN(s);
+        supr_nam = get!CN(s);
     }
 
-    this(Cpu_t cpu,
-         const DateTime setup_t,
-         const DateTime start_t,
-         const ubyte stat_num,
-         const char mode_cod,
-         const char rtst_cod,
-         const char prot_cod,
-         const ushort burn_tim,
-         const char cmod_cod,
-         const string lot_id,
-         const string part_typ,
-         const string node_nam,
-         const string tstr_typ,
-         const string job_nam,
-         const string job_rev,
-         const string sblot_id,
-         const string oper_nam,
-         const string exec_typ,
-         const string exec_ver,
-         const string test_cod,
-         const string tst_temp,
-         const string user_txt,
-         const string aux_file,
-         const string pkg_typ,
-         const string famly_id,
-         const string date_cod,
-         const string facil_id,
-         const string floor_id,
-         const string proc_id,
-         const string oper_frq,
-         const string spec_nam,
-         const string spec_ver,
-         const string flow_id,
-         const string setup_id,
-         const string dsgn_rev,
-         const string eng_id,
-         const string rom_cod,
-         const string serl_num,
-         const string supr_nam)
+    this(
+         U4 setup_t,
+         U4 start_t,
+         U1 stat_num,
+         C1 mode_cod,
+         C1 rtst_cod,
+         C1 prot_cod,
+         U2 burn_tim,
+         C1 cmod_cod,
+         CN lot_id,
+         CN part_typ,
+         CN node_nam,
+         CN tstr_typ,
+         CN job_nam,
+         CN job_rev,
+         CN sblot_id,
+         CN oper_nam,
+         CN exec_typ,
+         CN exec_ver,
+         CN test_cod,
+         CN tst_temp,
+         CN user_txt,
+         CN aux_file,
+         CN pkg_typ,
+         CN famly_id,
+         CN date_cod,
+         CN facil_id,
+         CN floor_id,
+         CN proc_id,
+         CN oper_frq,
+         CN spec_nam,
+         CN spec_ver,
+         CN flow_id,
+         CN setup_id,
+         CN dsgn_rev,
+         CN eng_id,
+         CN rom_cod,
+         CN serl_num,
+         CN supr_nam)
     {
-        super(cpu, Record_t.MIR, 0);
+        super(Record_t.MIR, 0);
         this.setup_t = setup_t;
         this.start_t = start_t;
         this.stat_num = stat_num;
@@ -1131,96 +1504,98 @@ class MasterInformationRecord : StdfRecord
     }
 
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
-        ushort l = 15;
-        l += cast(ushort) (1 + lot_id.length);
-        l += cast(ushort) (1 + part_typ.length);
-        l += cast(ushort) (1 + node_nam.length);
-        l += cast(ushort) (1 + tstr_typ.length);
-        l += cast(ushort) (1 + job_nam.length);
-        l += cast(ushort) (1 + job_rev.length);
-        l += cast(ushort) (1 + sblot_id.length);
-        l += cast(ushort) (1 + oper_nam.length);
-        l += cast(ushort) (1 + exec_typ.length);
-        l += cast(ushort) (1 + exec_ver.length);
-        l += cast(ushort) (1 + test_cod.length);
-        l += cast(ushort) (1 + tst_temp.length);
-        l += cast(ushort) (1 + user_txt.length);
-        l += cast(ushort) (1 + aux_file.length);
-        l += cast(ushort) (1 + pkg_typ.length);
-        l += cast(ushort) (1 + famly_id.length);
-        l += cast(ushort) (1 + date_cod.length);
-        l += cast(ushort) (1 + facil_id.length);
-        l += cast(ushort) (1 + floor_id.length);
-        l += cast(ushort) (1 + proc_id.length);
-        l += cast(ushort) (1 + oper_frq.length);
-        l += cast(ushort) (1 + spec_nam.length);
-        l += cast(ushort) (1 + spec_ver.length);
-        l += cast(ushort) (1 + flow_id.length);
-        l += cast(ushort) (1 + setup_id.length);
-        l += cast(ushort) (1 + dsgn_rev.length);
-        l += cast(ushort) (1 + eng_id.length);
-        l += cast(ushort) (1 + rom_cod.length);
-        l += cast(ushort) (1 + serl_num.length);
-        l += cast(ushort) (1 + supr_nam.length);
+        size_t l = 15;
+        l += 1 + lot_id.length;
+        l += 1 + part_typ.length;
+        l += 1 + node_nam.length;
+        l += 1 + tstr_typ.length;
+        l += 1 + job_nam.length;
+        l += 1 + job_rev.length;
+        l += 1 + sblot_id.length;
+        l += 1 + oper_nam.length;
+        l += 1 + exec_typ.length;
+        l += 1 + exec_ver.length;
+        l += 1 + test_cod.length;
+        l += 1 + tst_temp.length;
+        l += 1 + user_txt.length;
+        l += 1 + aux_file.length;
+        l += 1 + pkg_typ.length;
+        l += 1 + famly_id.length;
+        l += 1 + date_cod.length;
+        l += 1 + facil_id.length;
+        l += 1 + floor_id.length;
+        l += 1 + proc_id.length;
+        l += 1 + oper_frq.length;
+        l += 1 + spec_nam.length;
+        l += 1 + spec_ver.length;
+        l += 1 + flow_id.length;
+        l += 1 + setup_id.length;
+        l += 1 + dsgn_rev.length;
+        l += 1 + eng_id.length;
+        l += 1 + rom_cod.length;
+        l += 1 + serl_num.length;
+        l += 1 + supr_nam.length;
         return 0;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
         Duration d = setup_t - DateTime(1970, 1, 1, 0, 0, 0); 
         uint dt = cast(uint) d.total!"seconds";
-        bs ~= cpu.getU4Bytes(dt);
+        bs ~= getU4Bytes(dt);
         d = start_t - DateTime(1970, 1, 1, 0, 0, 0); 
         dt = cast(uint) d.total!"seconds";
-        bs ~= cpu.getU4Bytes(dt);
+        bs ~= getU4Bytes(dt);
         bs ~= stat_num;
         bs ~= cast(ubyte) mode_cod;
         bs ~= cast(ubyte) rtst_cod;
         bs ~= cast(ubyte) prot_cod;
-        bs ~= cpu.getU2Bytes(burn_tim);
+        bs ~= getU2Bytes(burn_tim);
         bs ~= cast(ubyte) cmod_cod;
-        bs ~= cpu.getCNBytes(lot_id);
-        bs ~= cpu.getCNBytes(part_typ);
-        bs ~= cpu.getCNBytes(node_nam);
-        bs ~= cpu.getCNBytes(tstr_typ);
-        bs ~= cpu.getCNBytes(job_nam);
-        bs ~= cpu.getCNBytes(job_rev);
-        bs ~= cpu.getCNBytes(sblot_id);
-        bs ~= cpu.getCNBytes(oper_nam);
-        bs ~= cpu.getCNBytes(exec_typ);
-        bs ~= cpu.getCNBytes(exec_ver);
-        bs ~= cpu.getCNBytes(test_cod);
-        bs ~= cpu.getCNBytes(tst_temp);
-        bs ~= cpu.getCNBytes(user_txt);
-        bs ~= cpu.getCNBytes(aux_file);
-        bs ~= cpu.getCNBytes(pkg_typ);
-        bs ~= cpu.getCNBytes(famly_id);
-        bs ~= cpu.getCNBytes(date_cod);
-        bs ~= cpu.getCNBytes(facil_id);
-        bs ~= cpu.getCNBytes(floor_id);
-        bs ~= cpu.getCNBytes(proc_id);
-        bs ~= cpu.getCNBytes(oper_frq);
-        bs ~= cpu.getCNBytes(spec_nam);
-        bs ~= cpu.getCNBytes(spec_ver);
-        bs ~= cpu.getCNBytes(flow_id);
-        bs ~= cpu.getCNBytes(setup_id);
-        bs ~= cpu.getCNBytes(dsgn_rev);
-        bs ~= cpu.getCNBytes(eng_id);
-        bs ~= cpu.getCNBytes(rom_cod);
-        bs ~= cpu.getCNBytes(serl_num);
-        bs ~= cpu.getCNBytes(supr_nam);
+        bs ~= getCNBytes(lot_id);
+        bs ~= getCNBytes(part_typ);
+        bs ~= getCNBytes(node_nam);
+        bs ~= getCNBytes(tstr_typ);
+        bs ~= getCNBytes(job_nam);
+        bs ~= getCNBytes(job_rev);
+        bs ~= getCNBytes(sblot_id);
+        bs ~= getCNBytes(oper_nam);
+        bs ~= getCNBytes(exec_typ);
+        bs ~= getCNBytes(exec_ver);
+        bs ~= getCNBytes(test_cod);
+        bs ~= getCNBytes(tst_temp);
+        bs ~= getCNBytes(user_txt);
+        bs ~= getCNBytes(aux_file);
+        bs ~= getCNBytes(pkg_typ);
+        bs ~= getCNBytes(famly_id);
+        bs ~= getCNBytes(date_cod);
+        bs ~= getCNBytes(facil_id);
+        bs ~= getCNBytes(floor_id);
+        bs ~= getCNBytes(proc_id);
+        bs ~= getCNBytes(oper_frq);
+        bs ~= getCNBytes(spec_nam);
+        bs ~= getCNBytes(spec_ver);
+        bs ~= getCNBytes(flow_id);
+        bs ~= getCNBytes(setup_id);
+        bs ~= getCNBytes(dsgn_rev);
+        bs ~= getCNBytes(eng_id);
+        bs ~= getCNBytes(rom_cod);
+        bs ~= getCNBytes(serl_num);
+        bs ~= getCNBytes(supr_nam);
         return bs;
     }
+    */
 
     override string toString()
     {
         auto app = appender!string();
         app.put("MasterInformationRecord:");
-        app.put("\n    setup_t = ");  app.put(setup_t.toString());
-        app.put("\n    start_t = ");  app.put(start_t.toString());
+        app.put("\n    setup_t = ");  app.put(to!string(setup_t));
+        app.put("\n    start_t = ");  app.put(to!string(start_t));
         app.put("\n    stat_num = "); app.put(to!string(stat_num));
         app.put("\n    mode_cod = "); app.put(to!string(mode_cod));
         app.put("\n    rtst_cod = "); app.put(to!string(rtst_cod));
@@ -1264,18 +1639,18 @@ class MasterInformationRecord : StdfRecord
 
 class ParametricRecord : TestRecord
 {
-    const ubyte parm_flg;
+    U1 parm_flg;
     
-    this(Cpu_t cpu, 
-         ushort reclen, 
+    this( 
+         size_t reclen, 
          Record_t type, 
-         const uint test_num, 
-         const ubyte head_num, 
-         const ubyte site_num, 
-         const ubyte test_flg,
-         const ubyte parm_flg)
+         U4 test_num, 
+         U1 head_num, 
+         U1 site_num, 
+         U1 test_flg,
+         U1 parm_flg)
     {
-        super(cpu, reclen, type, test_num, head_num, site_num, test_flg);
+        super(reclen, type, test_num, head_num, site_num, test_flg);
         this.parm_flg = parm_flg;
     }
  
@@ -1288,118 +1663,98 @@ class ParametricRecord : TestRecord
         return app.data;
     }
 
-    override abstract protected ushort getReclen();
-    override abstract ubyte[] getBytes();
+    override abstract protected size_t getReclen();
+    //override abstract ubyte[] getBytes();
     override abstract string toString();
 }
 
 
 class MultipleResultParametricRecord : ParametricRecord
 {
-    const ushort rtn_icnt;
-    const ushort rslt_cnt;
-    const ubyte[] rtn_stat;
-    const float[] rtn_rslt;
-    const string test_txt;
-    const string alarm_id;
-    const optional!ubyte opt_flag;
-    const optional!byte res_scal;
-    const optional!byte llm_scal;
-    const optional!byte hlm_scal;
-    const optional!float lo_limit;
-    const optional!float hi_limit;
-    const optional!float start_in;
-    const optional!float incr_in;
-    const ushort[] rtn_indx;
-    const string units;
-    const string units_in;
-    const string c_resfmt;
-    const string c_llmfmt;
-    const string c_hlmfmt;
-    const optional!float lo_spec;
-    const optional!float hi_spec;
+    OptionalField!U2 rtn_icnt;
+    OptionalField!U2 rslt_cnt;
+    OptionalArray!N1 rtn_stat;
+    OptionalArray!R4 rtn_rslt;
+    OptionalField!CN test_txt;
+    OptionalField!CN alarm_id;
+    OptionalField!U1 opt_flag;
+    OptionalField!I1 res_scal;
+    OptionalField!I1 llm_scal;
+    OptionalField!I1 hlm_scal;
+    OptionalField!R4 lo_limit;
+    OptionalField!R4 hi_limit;
+    OptionalField!R4 start_in;
+    OptionalField!R4 incr_in;
+    OptionalArray!U2 rtn_indx;
+    OptionalField!CN units;
+    OptionalField!CN units_in;
+    OptionalField!CN c_resfmt;
+    OptionalField!CN c_llmfmt;
+    OptionalField!CN c_hlmfmt;
+    OptionalField!R4 lo_spec;
+    OptionalField!R4 hi_spec;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, reclen, Record_t.MPR, cpu.getU4(s), cpu.getU1(s), cpu.getU1(s), cpu.getU1(s), cpu.getU1(s));
-        int l = cast(int) reclen;
-        l -= 8;
-        rtn_icnt = cpu.getU2(s); l -= 2;
-        rslt_cnt = cpu.getU2(s); l -= 2;
-        auto stat = new ubyte[rtn_icnt];
-        for (int i=0; i<rtn_icnt; i++) stat[i] = cpu.getU1(s);
-        rtn_stat = stat;
-        l -= (2 * rtn_icnt);
-        auto rslt = new float[rslt_cnt];
-        for (int i=0; i<rslt_cnt; i++) rslt[i] = cpu.getR4(s);
-        rtn_rslt = rslt;
-        l -= (2 * rslt_cnt);
-        test_txt = cpu.getCN(s);
-        l -= (1 + test_txt.length);
-        alarm_id = cpu.getCN(s);
-        l -= (1 + alarm_id.length);
-        if (l >= 1) { opt_flag = cpu.getU1(s); l--; }
-        if (l >= 1) { res_scal = cpu.getI1(s); l--; }
-        if (l >= 1) { llm_scal = cpu.getI1(s); l--; }
-        if (l >= 1) { hlm_scal = cpu.getI1(s); l--; }
-        if (l >= 4) { lo_limit = cpu.getR4(s); l -= 4; }
-        if (l >= 4) { hi_limit = cpu.getR4(s); l -= 4; }
-        if (l >= 4) { start_in = cpu.getR4(s); l -= 4; }
-        if (l >= 4) { incr_in  = cpu.getR4(s); l -= 4; }
-        if (l >= 2 * rtn_icnt) 
-        {
-            auto indx = new ushort[rtn_icnt];
-            for (int i=0; i<rtn_icnt; i++) indx[i] = cpu.getU2(s);
-            rtn_indx = indx;
-            l -= (2 * rtn_indx.length);
-        }
-        if (l > 0) { units = cpu.getCN(s); l -= (1 + units.length); }
-        if (l > 0) { units_in = cpu.getCN(s); l -= (1 + units_in.length); }
-        if (l > 0) { c_resfmt = cpu.getCN(s); l -= (1 + c_resfmt.length); }
-        if (l > 0) { c_llmfmt = cpu.getCN(s); l -= (1 + c_llmfmt.length); }
-        if (l > 0) { c_hlmfmt = cpu.getCN(s); l -= (1 + c_hlmfmt.length); }
-        if (l >= 4) { lo_spec = cpu.getR4(s); l -= 4; }
-        if (l > 0) { hi_spec = cpu.getR4(s); l -= 4; }
+        super(reclen, Record_t.MPR, get!U4(s), get!U1(s), get!U1(s), get!U1(s), get!U1(s));
+        reclen -= 8;
+        rtn_icnt = OptionalField!U2(reclen, s, 0);
+        rslt_cnt = OptionalField!U2(reclen, s, 0);
+        rtn_stat = OptionalArray!N1(reclen, rtn_icnt.value, s);
+        rtn_rslt = OptionalArray!R4(reclen, rslt_cnt.value, s);
+        test_txt = OptionalField!CN(reclen, s, new char[0]);
+        alarm_id = OptionalField!CN(reclen, s, new char[0]);
+        opt_flag = OptionalField!U1(reclen, s, 0);
+        res_scal = OptionalField!I1(reclen, s, 0);
+        llm_scal = OptionalField!I1(reclen, s, 0);
+        hlm_scal = OptionalField!I1(reclen, s, 0);
+        lo_limit = OptionalField!R4(reclen, s, 0.0f);
+        hi_limit = OptionalField!R4(reclen, s, 0.0f);
+        start_in = OptionalField!R4(reclen, s, 0.0f);
+        incr_in  = OptionalField!R4(reclen, s, 0.0f);
+        rtn_indx = OptionalArray!U2(reclen, rtn_icnt.value, s);
+        units    = OptionalField!CN(reclen, s, new char[0]);
+        units_in = OptionalField!CN(reclen, s, new char[0]);
+        c_resfmt = OptionalField!CN(reclen, s, new char[0]);
+        c_llmfmt = OptionalField!CN(reclen, s, new char[0]);
+        c_hlmfmt = OptionalField!CN(reclen, s, new char[0]);
+        lo_spec  = OptionalField!R4(reclen, s, 0.0f);
+        hi_spec  = OptionalField!R4(reclen, s, 0.0f);
     }
  
-    this(Cpu_t cpu,
-         const uint test_num,
-         const ubyte head_num,
-         const ubyte site_num,
-         const ubyte test_flg,
-         const ubyte parm_flg,
-         const ushort rtn_icnt,
-         const ushort rslt_cnt,
-         const ubyte[] rtn_stat,
-         const float[] rtn_rslt,
-         const string test_txt,
-         const string alarm_id,
-         const optional!ubyte opt_flag,
-         const optional!byte res_scal,
-         const optional!byte llm_scal,
-         const optional!byte hlm_scal,
-         const optional!float lo_limit,
-         const optional!float hi_limit,
-         const optional!float start_in,
-         const optional!float incr_in,
-         const ushort[] rtn_indx,
-         const string units,
-         const string units_in,
-         const string c_resfmt,
-         const string c_llmfmt,
-         const string c_hlmfmt,
-         const optional!float lo_spec,
-         const optional!float hi_spec)
+    this(U4 test_num,
+         U1 head_num,
+         U1 site_num,
+         U1 test_flg,
+         U1 parm_flg,
+         OptionalField!U2 rtn_icnt,
+         OptionalField!U2 rslt_cnt,
+         OptionalArray!N1 rtn_stat,
+         OptionalArray!R4 rtn_rslt,
+         OptionalField!CN test_txt,
+         OptionalField!CN alarm_id,
+         OptionalField!U1 opt_flag,
+         OptionalField!I1 res_scal,
+         OptionalField!I1 llm_scal,
+         OptionalField!I1 hlm_scal,
+         OptionalField!R4 lo_limit,
+         OptionalField!R4 hi_limit,
+         OptionalField!R4 start_in,
+         OptionalField!R4 incr_in,
+         OptionalArray!U2 rtn_indx,
+         OptionalField!CN units,
+         OptionalField!CN units_in,
+         OptionalField!CN c_resfmt,
+         OptionalField!CN c_llmfmt,
+         OptionalField!CN c_hlmfmt,
+         OptionalField!R4 lo_spec,
+         OptionalField!R4 hi_spec)
     {
-        super(cpu, 0, Record_t.MPR, test_num, head_num, site_num, test_flg, parm_flg);
+        super(0, Record_t.MPR, test_num, head_num, site_num, test_flg, parm_flg);
         this.rtn_icnt = rtn_icnt;
         this.rslt_cnt = rslt_cnt;
-        auto stat = new ubyte[rtn_stat.length];
-        foreach(i, d; rtn_stat) stat[i] = d;
-        this.rtn_stat = stat;
-        auto rslt = new float[rtn_rslt.length];
-        foreach(i, d; rtn_rslt) rslt[i] = d;
-        this.rtn_rslt = rslt;
+        this.rtn_stat = rtn_stat;
+        this.rtn_rslt = rtn_rslt;
         this.test_txt = test_txt;
         this.alarm_id = alarm_id;
         this.opt_flag = opt_flag;
@@ -1410,9 +1765,7 @@ class MultipleResultParametricRecord : ParametricRecord
         this.hi_limit = hi_limit;
         this.start_in = start_in;
         this.incr_in = incr_in;
-        auto indx = new ushort[rtn_indx.length];
-        foreach(i, d; rtn_indx) indx[i] = d;
-        this.rtn_indx = indx;
+        this.rtn_indx = rtn_indx;
         this.units = units;
         this.units_in = units_in;
         this.c_resfmt = c_resfmt;
@@ -1423,123 +1776,124 @@ class MultipleResultParametricRecord : ParametricRecord
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
-        ushort l = 12;
-        l += rtn_stat.length;
-        l += (4 * rtn_rslt.length);
-        l += (1 + test_txt.length);
-        l += (1 + alarm_id.length);
-        if (opt_flag.valid) l++;
-        if (res_scal.valid) l++;
-        if (llm_scal.valid) l++;
-        if (hlm_scal.valid) l++;
-        if (lo_limit.valid) l += 4;
-        if (hi_limit.valid) l += 4;
-        if (start_in.valid) l += 4;
-        if (incr_in.valid)  l += 4;
-        if (rtn_indx !is null) l += (2 * rtn_indx.length);
-        if (units !is null) l += (1 + units.length);
-        if (units_in !is null) l += (1 + units_in.length);
-        if (c_resfmt !is null) l += (1 + c_resfmt.length);
-        if (c_llmfmt !is null) l += (1 + c_llmfmt.length);
-        if (c_hlmfmt !is null) l += (1 + c_hlmfmt.length);
-        if (lo_spec.valid) l += 4;
-        if (hi_spec.valid) l += 4;
+        size_t l = 12;
+        l += rtn_stat.getSize();
+        l += rtn_rslt.getSize();
+        l += test_txt.getSize();
+        l += alarm_id.getSize();
+        l += opt_flag.getSize();
+        l += res_scal.getSize();
+        l += llm_scal.getSize();
+        l += hlm_scal.getSize();
+        l += lo_limit.getSize();
+        l += hi_limit.getSize();
+        l += start_in.getSize();
+        l += incr_in.getSize();
+        l += rtn_indx.getSize();
+        l += units.getSize();
+        l += units_in.getSize();
+        l += c_resfmt.getSize();
+        l += c_llmfmt.getSize();
+        l += c_hlmfmt.getSize();
+        l += lo_spec.getSize();
+        l += hi_spec.getSize();
         return l;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
-        bs ~= cpu.getU4Bytes(test_num);
-        bs ~= cpu.getU1Bytes(head_num);
-        bs ~= cpu.getU1Bytes(site_num);
-        bs ~= cpu.getU1Bytes(test_flg);
-        bs ~= cpu.getU1Bytes(parm_flg);
-        bs ~= cpu.getU2Bytes(rtn_icnt);
-        bs ~= cpu.getU2Bytes(rslt_cnt);
-        foreach(d; rtn_stat) bs ~= cpu.getU1Bytes(d);
-        foreach(d; rtn_rslt) bs ~= cpu.getR4Bytes(d);
-        bs ~= cpu.getCNBytes(test_txt);
-        bs ~= cpu.getCNBytes(alarm_id);
+        bs ~= getU4Bytes(test_num);
+        bs ~= getU1Bytes(head_num);
+        bs ~= getU1Bytes(site_num);
+        bs ~= getU1Bytes(test_flg);
+        bs ~= getU1Bytes(parm_flg);
+        bs ~= getU2Bytes(rtn_icnt);
+        bs ~= getU2Bytes(rslt_cnt);
+        foreach(d; rtn_stat) bs ~= getU1Bytes(d);
+        foreach(d; rtn_rslt) bs ~= getR4Bytes(d);
+        bs ~= getCNBytes(test_txt);
+        bs ~= getCNBytes(alarm_id);
         if (opt_flag.valid) bs ~= opt_flag;
-        if (res_scal.valid) bs ~= cpu.getI1Bytes(res_scal);
-        if (llm_scal.valid) bs ~= cpu.getI1Bytes(llm_scal);
-        if (hlm_scal.valid) bs ~= cpu.getI1Bytes(hlm_scal);
-        if (lo_limit.valid) bs ~= cpu.getR4Bytes(lo_limit);
-        if (hi_limit.valid) bs ~= cpu.getR4Bytes(hi_limit);
-        if (start_in.valid) bs ~= cpu.getR4Bytes(start_in);
-        if (incr_in.valid)  bs ~= cpu.getR4Bytes(incr_in);
-        foreach(d; rtn_indx) bs ~= cpu.getU2Bytes(d);
-        if (units !is null) bs ~= cpu.getCNBytes(units);
-        if (units_in !is null) bs ~= cpu.getCNBytes(units_in);
-        if (c_resfmt !is null) bs ~= cpu.getCNBytes(c_resfmt);
-        if (c_llmfmt !is null) bs ~= cpu.getCNBytes(c_llmfmt);
-        if (c_hlmfmt !is null) bs ~= cpu.getCNBytes(c_hlmfmt);
-        if (lo_spec.valid) bs ~= cpu.getR4Bytes(lo_spec);
-        if (hi_spec.valid) bs ~= cpu.getR4Bytes(hi_spec);
+        if (res_scal.valid) bs ~= getI1Bytes(res_scal);
+        if (llm_scal.valid) bs ~= getI1Bytes(llm_scal);
+        if (hlm_scal.valid) bs ~= getI1Bytes(hlm_scal);
+        if (lo_limit.valid) bs ~= getR4Bytes(lo_limit);
+        if (hi_limit.valid) bs ~= getR4Bytes(hi_limit);
+        if (start_in.valid) bs ~= getR4Bytes(start_in);
+        if (incr_in.valid)  bs ~= getR4Bytes(incr_in);
+        foreach(d; rtn_indx) bs ~= getU2Bytes(d);
+        if (units !is null) bs ~= getCNBytes(units);
+        if (units_in !is null) bs ~= getCNBytes(units_in);
+        if (c_resfmt !is null) bs ~= getCNBytes(c_resfmt);
+        if (c_llmfmt !is null) bs ~= getCNBytes(c_llmfmt);
+        if (c_hlmfmt !is null) bs ~= getCNBytes(c_hlmfmt);
+        if (lo_spec.valid) bs ~= getR4Bytes(lo_spec);
+        if (hi_spec.valid) bs ~= getR4Bytes(hi_spec);
         return bs;
     }
+    */
 
     override string toString()
     {
         auto app = appender!string();
         app.put("MultipleResultParametricRecord:\n");
         app.put(getString());
-        app.put("    parm_flg = "); app.put(to!string(parm_flg));
         app.put("\n    rtn_icnt = "); app.put(to!string(rtn_icnt));
         app.put("\n    rslt_cnt = "); app.put(to!string(rslt_cnt));
         app.put("\n    rtn_stat = "); app.put(to!string(rtn_stat));
         app.put("\n    rtn_rslt = "); app.put(to!string(rtn_rslt));
-        app.put("\n    test_txt = "); app.put(test_txt);
-        app.put("\n    alarm_id = "); app.put(alarm_id);
+        app.put("\n    test_txt = "); app.put(test_txt.toString());
+        app.put("\n    alarm_id = "); app.put(alarm_id.toString());
 
-        if (opt_flag.valid) { app.put("\n    opt_flag = "); app.put(to!string(opt_flag)); }
-        if (res_scal.valid) { app.put("\n    res_scal = "); app.put(to!string(res_scal)); }
-        if (llm_scal.valid) { app.put("\n    llm_scal = "); app.put(to!string(llm_scal)); }
-        if (hlm_scal.valid) { app.put("\n    hlm_scal = "); app.put(to!string(hlm_scal)); }
-        if (lo_limit.valid) { app.put("\n    lo_limit = "); app.put(to!string(lo_limit)); }
-        if (hi_limit.valid) { app.put("\n    hi_limit = "); app.put(to!string(hi_limit)); }
-        if (start_in.valid) { app.put("\n    start_in = "); app.put(to!string(start_in)); }
-        if (incr_in.valid) { app.put("\n    incr_in = "); app.put(to!string(incr_in)); }
-        if (rtn_indx !is null) { app.put("\n    rtn_indx = "); app.put(to!string(rtn_indx)); }
-        if (units !is null) { app.put("\n    units = "); app.put(units); }
-        if (units_in !is null) { app.put("\n    units_in = "); app.put(units_in); }
-        if (c_resfmt !is null) { app.put("\n    c_resfmt = "); app.put(c_resfmt); }
-        if (c_llmfmt !is null) { app.put("\n    c_llmfmt = "); app.put(c_llmfmt); }
-        if (c_hlmfmt !is null) { app.put("\n    c_hlmfmt = "); app.put(c_hlmfmt); }
-        if (lo_spec.valid) { app.put("\n    lo_spec = "); app.put(to!string(lo_spec)); }
-        if (hi_spec.valid) { app.put("\n    hi_spec = "); app.put(to!string(hi_spec)); }
+        if (!opt_flag.empty) { app.put("\n    opt_flag = "); app.put(to!string(opt_flag)); }
+        if (!res_scal.empty) { app.put("\n    res_scal = "); app.put(to!string(res_scal)); }
+        if (!llm_scal.empty) { app.put("\n    llm_scal = "); app.put(to!string(llm_scal)); }
+        if (!hlm_scal.empty) { app.put("\n    hlm_scal = "); app.put(to!string(hlm_scal)); }
+        if (!lo_limit.empty) { app.put("\n    lo_limit = "); app.put(to!string(lo_limit)); }
+        if (!hi_limit.empty) { app.put("\n    hi_limit = "); app.put(to!string(hi_limit)); }
+        if (!start_in.empty) { app.put("\n    start_in = "); app.put(to!string(start_in)); }
+        if (!incr_in.empty) { app.put("\n    incr_in = "); app.put(to!string(incr_in)); }
+        if (!rtn_indx.empty) { app.put("\n    rtn_indx = "); app.put(to!string(rtn_indx)); }
+        if (!units.empty) { app.put("\n    units = "); app.put(units.toString()); }
+        if (!units_in.empty) { app.put("\n    units_in = "); app.put(units_in.toString()); }
+        if (!c_resfmt.empty) { app.put("\n    c_resfmt = "); app.put(c_resfmt.toString()); }
+        if (!c_llmfmt.empty) { app.put("\n    c_llmfmt = "); app.put(c_llmfmt.toString()); }
+        if (!c_hlmfmt.empty) { app.put("\n    c_hlmfmt = "); app.put(c_hlmfmt.toString()); }
+        if (!lo_spec.empty) { app.put("\n    lo_spec = "); app.put(to!string(lo_spec.toString())); }
+        if (!hi_spec.empty) { app.put("\n    hi_spec = "); app.put(to!string(hi_spec.toString())); }
         app.put("\n");
         return app.data;
     }
 }
 
+//        finish_t = DateTime(1970, 1, 1, 0, 0, 0) + dur!"seconds"(d);
 class MasterResultsRecord : StdfRecord
 {
-    const DateTime finish_t;
-    const char disp_cod;
-    const string usr_desc;
-    const string exc_desc;
+    U4 finish_t;
+    C1 disp_cod;
+    CN usr_desc;
+    CN exc_desc;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.MRR, reclen);
-        uint d = cpu.getU4(s);
-        finish_t = DateTime(1970, 1, 1, 0, 0, 0) + dur!"seconds"(d);
-        disp_cod = cast(char) cpu.getU1(s);
-        usr_desc = cpu.getCN(s);
-        exc_desc = cpu.getCN(s);
+        super(Record_t.MRR, reclen);
+        finish_t = get!U4(s);
+        disp_cod = cast(char) get!U1(s);
+        usr_desc = get!CN(s);
+        exc_desc = get!CN(s);
     }
 
-    this(Cpu_t cpu, 
-         const DateTime finish_t, 
-         const char disp_cod, 
-         const string usr_desc, 
-         const string exc_desc)
+    this( 
+         U4 finish_t, 
+         C1 disp_cod, 
+         CN usr_desc, 
+         CN exc_desc)
     {
-        super(cpu, Record_t.MRR, 0);
+        super(Record_t.MRR, 0);
         this.finish_t = finish_t;
         this.disp_cod = disp_cod;
         this.usr_desc = usr_desc;
@@ -1547,7 +1901,7 @@ class MasterResultsRecord : StdfRecord
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         ushort l = 5;
         l += (1 + usr_desc.length);
@@ -1555,23 +1909,25 @@ class MasterResultsRecord : StdfRecord
         return l;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
         auto d = finish_t - DateTime(1970, 1, 1, 0, 0, 0); 
         auto dt = cast(uint) d.total!"seconds";
-        bs ~= cpu.getU4Bytes(dt);
+        bs ~= getU4Bytes(dt);
         bs ~= cast(ubyte) disp_cod;
-        bs ~= cpu.getCNBytes(usr_desc);
-        bs ~= cpu.getCNBytes(exc_desc);
+        bs ~= getCNBytes(usr_desc);
+        bs ~= getCNBytes(exc_desc);
         return bs;
     }
+    */
 
     override string toString()
     {
         auto app = appender!string();
         app.put("MasterResultsRecord:");
-        app.put("\n    finish_t = "); app.put(finish_t.toString());
+        app.put("\n    finish_t = "); app.put(to!string(finish_t));
         app.put("\n    disp_cod = "); app.put(to!string(disp_cod));
         app.put("\n    usr_desc = "); app.put(usr_desc);
         app.put("\n    exc_desc = "); app.put(exc_desc);
@@ -1582,36 +1938,36 @@ class MasterResultsRecord : StdfRecord
 
 class PartCountRecord : StdfRecord
 {
-    const ubyte head_num;
-    const ubyte site_num;
-    const uint part_cnt;
-    const uint rtst_cnt;
-    const uint abrt_cnt;
-    const uint good_cnt;
-    const uint func_cnt;
+    U1 head_num;
+    U1 site_num;
+    U4 part_cnt;
+    U4 rtst_cnt;
+    U4 abrt_cnt;
+    U4 good_cnt;
+    U4 func_cnt;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this( size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.PCR, reclen);
-        head_num = cpu.getU1(s);
-        site_num = cpu.getU1(s);
-        part_cnt = cpu.getU4(s);
-        rtst_cnt = cpu.getU4(s);
-        abrt_cnt = cpu.getU4(s);
-        good_cnt = cpu.getU4(s);
-        func_cnt = cpu.getU4(s);
+        super(Record_t.PCR, reclen);
+        head_num = get!U1(s);
+        site_num = get!U1(s);
+        part_cnt = get!U4(s);
+        rtst_cnt = get!U4(s);
+        abrt_cnt = get!U4(s);
+        good_cnt = get!U4(s);
+        func_cnt = get!U4(s);
     }
 
-    this(Cpu_t cpu,
-         const ubyte head_num,
-         const ubyte site_num,
-         const uint part_cnt,
-         const uint rtst_cnt,
-         const uint abrt_cnt,
-         const uint good_cnt,
-         const uint func_cnt)
+    this(
+         U1 head_num,
+         U1 site_num,
+         U4 part_cnt,
+         U4 rtst_cnt,
+         U4 abrt_cnt,
+         U4 good_cnt,
+         U4 func_cnt)
     {
-        super(cpu, Record_t.PCR, 0);
+        super(Record_t.PCR, 0);
         this.head_num = head_num;
         this.site_num = site_num;
         this.part_cnt = part_cnt;
@@ -1622,23 +1978,25 @@ class PartCountRecord : StdfRecord
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         return 22;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
         bs ~= head_num;
         bs ~= site_num;
-        bs ~= cpu.getU4Bytes(part_cnt);
-        bs ~= cpu.getU4Bytes(rtst_cnt);
-        bs ~= cpu.getU4Bytes(abrt_cnt);
-        bs ~= cpu.getU4Bytes(good_cnt);
-        bs ~= cpu.getU4Bytes(func_cnt);
+        bs ~= getU4Bytes(part_cnt);
+        bs ~= getU4Bytes(rtst_cnt);
+        bs ~= getU4Bytes(abrt_cnt);
+        bs ~= getU4Bytes(good_cnt);
+        bs ~= getU4Bytes(func_cnt);
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -1658,39 +2016,37 @@ class PartCountRecord : StdfRecord
 
 class PinGroupRecord : StdfRecord
 {
-    const ushort grp_indx;
-    const string grp_nam;
-    const ushort indx_cnt;
-    const ushort[] pmr_indx;
+    U2 grp_indx;
+    CN grp_nam;
+    U2 indx_cnt;
+    U2[] pmr_indx;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.PGR, reclen);
-        grp_indx = cpu.getU2(s);
-        grp_nam = cpu.getCN(s);
-        indx_cnt = cpu.getU2(s);
-        auto indx = new ushort[indx_cnt];
-        for (int i=0; i<indx_cnt; i++) indx[i] = cpu.getU2(s);
-        pmr_indx = indx;
+        super(Record_t.PGR, reclen);
+        grp_indx = get!U2(s);
+        grp_nam = get!CN(s);
+        indx_cnt = get!U2(s);
+        pmr_indx = new U2[indx_cnt];
+        for (int i=0; i<indx_cnt; i++) pmr_indx[i] = get!U2(s);
     }
 
-    this(Cpu_t cpu,
-         const ushort grp_indx,
-         const string grp_nam,
-         const ushort indx_cnt,
-         const ushort[] pmr_indx)
+    this(
+         U2 grp_indx,
+         CN grp_nam,
+         U2 indx_cnt,
+         U2[] pmr_indx)
     {
-         super(cpu, Record_t.PGR, 0);
+         super(Record_t.PGR, 0);
          this.grp_indx = grp_indx;
          this.grp_nam = grp_nam;
          this.indx_cnt = indx_cnt;
-         auto indx = new ushort[indx_cnt];
-         foreach(i, d; pmr_indx) indx[i] = d;
-         this.pmr_indx = indx;
+         this.pmr_indx = new U2[indx_cnt];
+         foreach(i, d; pmr_indx) this.pmr_indx[i] = d;
          reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         ushort l = 4;
         l += (1 + grp_nam.length);
@@ -1698,15 +2054,17 @@ class PinGroupRecord : StdfRecord
         return l;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
-        bs ~= cpu.getU2Bytes(grp_indx);
-        bs ~= cpu.getCNBytes(grp_nam);
-        bs ~= cpu.getU2Bytes(indx_cnt);
-        foreach(d; pmr_indx) bs ~= cpu.getU2Bytes(d);
+        bs ~= getU2Bytes(grp_indx);
+        bs ~= getCNBytes(grp_nam);
+        bs ~= getU2Bytes(indx_cnt);
+        foreach(d; pmr_indx) bs ~= getU2Bytes(d);
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -1723,29 +2081,30 @@ class PinGroupRecord : StdfRecord
 
 class PartInformationRecord : StdfRecord
 {
-    const ubyte head_num;
-    const ubyte site_num;
+    U1 head_num;
+    U1 site_num;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.PIR, reclen);
-        head_num = cpu.getU1(s);
-        site_num = cpu.getU1(s);
+        super(Record_t.PIR, reclen);
+        head_num = get!U1(s);
+        site_num = get!U1(s);
     }
 
-    this(Cpu_t cpu, const ubyte head_num, const ubyte site_num)
+    this(U1 head_num, U1 site_num)
     {
-        super(cpu, Record_t.PIR, 0);
+        super(Record_t.PIR, 0);
         this.head_num = head_num;
         this.site_num = site_num;
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         return 2;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
@@ -1753,6 +2112,7 @@ class PartInformationRecord : StdfRecord
         bs ~= site_num;
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -1767,81 +2127,67 @@ class PartInformationRecord : StdfRecord
 
 class PinListRecord : StdfRecord
 {
-    const ushort grp_cnt;
-    const ushort[] grp_indx;
-    const ushort[] grp_mode;
-    const ubyte[] grp_radx;
-    const string[] pgm_char;
-    const string[] rtn_char;
-    const string[] pgm_chal;
-    const string[] rtn_chal;
+    U2 grp_cnt;
+    U2[] grp_indx;
+    U2[] grp_mode;
+    U1[] grp_radx;
+    CN[] pgm_char;
+    CN[] rtn_char;
+    CN[] pgm_chal;
+    CN[] rtn_chal;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.PLR, reclen);
-        grp_cnt = cpu.getU2(s);
-        auto indx = new ushort[grp_cnt];
-        for (int i=0; i<grp_cnt; i++) indx[i] = cpu.getU2(s);
-        grp_indx = indx;
-        auto mode = new ushort[grp_cnt];
-        for (int i=0; i<grp_cnt; i++) mode[i] = cpu.getU2(s);
-        grp_mode = mode;
-        auto radx = new ubyte[grp_cnt];
-        for (int i=0; i<grp_cnt; i++) radx[i] = cpu.getU1(s);
-        grp_radx = radx;
-        auto pchar = new string[grp_cnt];
-        for (int i=0; i<grp_cnt; i++) pchar[i] = cpu.getCN(s);
-        pgm_char = pchar;
-        auto rchar = new string[grp_cnt];
-        for (int i=0; i<grp_cnt; i++) rchar[i] = cpu.getCN(s);
-        rtn_char = rchar;
-        auto pchal = new string[grp_cnt];
-        for (int i=0; i<grp_cnt; i++) pchal[i] = cpu.getCN(s);
-        pgm_chal = pchal;
-        auto rchal = new string[grp_cnt];
-        for (int i=0; i<grp_cnt; i++) rchal[i] = cpu.getCN(s);
-        rtn_chal = rchal;
+        super(Record_t.PLR, reclen);
+        grp_cnt = get!U2(s);
+        grp_indx = new U2[grp_cnt];
+        for (int i=0; i<grp_cnt; i++) grp_indx[i] = get!U2(s);
+        grp_mode = new U2[grp_cnt];
+        for (int i=0; i<grp_cnt; i++) grp_mode[i] = get!U2(s);
+        grp_radx = new U1[grp_cnt];
+        for (int i=0; i<grp_cnt; i++) grp_radx[i] = get!U1(s);
+        pgm_char = new CN[grp_cnt];
+        for (int i=0; i<grp_cnt; i++) pgm_char[i] = get!CN(s);
+        rtn_char = new CN[grp_cnt];
+        for (int i=0; i<grp_cnt; i++) rtn_char[i] = get!CN(s);
+        pgm_chal = new CN[grp_cnt];
+        for (int i=0; i<grp_cnt; i++) pgm_chal[i] = get!CN(s);
+        rtn_chal = new CN[grp_cnt];
+        for (int i=0; i<grp_cnt; i++) rtn_chal[i] = get!CN(s);
     }
 
-    this(Cpu_t cpu,
-         const ushort grp_cnt,
-         const ushort[] grp_indx,
-         const ushort[] grp_mode,
-         const ubyte[] grp_radx,
-         const string[] pgm_char,
-         const string[] rtn_char,
-         const string[] pgm_chal,
-         const string[] rtn_chal)
+    this(
+         U2 grp_cnt,
+         U2[] grp_indx,
+         U2[] grp_mode,
+         U1[] grp_radx,
+         CN[] pgm_char,
+         CN[] rtn_char,
+         CN[] pgm_chal,
+         CN[] rtn_chal)
     {
-        super(cpu, Record_t.PLR, 0);
+        super(Record_t.PLR, 0);
         this.grp_cnt = grp_cnt;
-        auto indx = new ushort[grp_cnt];
-        foreach(i, d; grp_indx) indx[i] = d;
-        this.grp_indx = indx;
-        auto mode = new ushort[grp_cnt];
-        foreach(i, d; grp_mode) mode[i] = d;
-        this.grp_mode = mode;
-        auto radx = new ubyte[grp_cnt];
-        foreach(i, d; grp_radx) radx[i] = d;
-        this.grp_radx = radx;
-        auto pchar = new string[grp_cnt];
-        foreach(i, d; pgm_char) pchar[i] = d;
-        this.pgm_char = pchar;
-        auto rchar = new string[grp_cnt];
-        foreach(i, d; rtn_char) rchar[i] = d;
-        this.rtn_char = rchar;
-        auto pchal = new string[grp_cnt];
-        foreach(i, d; pgm_chal) pchal[i] = d;
-        this.pgm_chal = pchal;
-        auto rchal = new string[grp_cnt];
-        foreach(i, d; rtn_chal) rchal[i] = d;
-        this.rtn_chal = rchal;
+        this.grp_indx = new U2[grp_cnt];
+        foreach(i, d; grp_indx) this.grp_indx[i] = d;
+        this.grp_mode = new U2[grp_cnt];
+        foreach(i, d; grp_mode) this.grp_mode[i] = d;
+        this.grp_radx = new U1[grp_cnt];
+        foreach(i, d; grp_radx) this.grp_radx[i] = d;
+        this.pgm_char = new CN[grp_cnt];
+        foreach(i, d; pgm_char) this.pgm_char[i] = d;
+        this.rtn_char = new CN[grp_cnt];
+        foreach(i, d; rtn_char) this.rtn_char[i] = d;
+        this.pgm_chal = new CN[grp_cnt];
+        foreach(i, d; pgm_chal) this.pgm_chal[i] = d;
+        this.rtn_chal = new CN[grp_cnt];
+        foreach(i, d; rtn_chal) this.rtn_chal[i] = d;
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
-        ushort l = 2;
+        size_t l = 2;
         l += (5 * grp_cnt);
         l += (grp_cnt * (1 + pgm_char.length));
         l += (grp_cnt * (1 + rtn_char.length));
@@ -1850,19 +2196,21 @@ class PinListRecord : StdfRecord
         return l;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
-        bs ~= cpu.getU2Bytes(grp_cnt);
-        foreach(d; grp_indx) bs ~= cpu.getU2Bytes(d);
-        foreach(d; grp_mode) bs ~= cpu.getU2Bytes(d);
+        bs ~= getU2Bytes(grp_cnt);
+        foreach(d; grp_indx) bs ~= getU2Bytes(d);
+        foreach(d; grp_mode) bs ~= getU2Bytes(d);
         foreach(d; grp_radx) bs ~= d;
-        foreach(s; pgm_char) bs ~= cpu.getCNBytes(s);
-        foreach(s; rtn_char) bs ~= cpu.getCNBytes(s);
-        foreach(s; pgm_chal) bs ~= cpu.getCNBytes(s);
-        foreach(s; rtn_chal) bs ~= cpu.getCNBytes(s);
+        foreach(s; pgm_char) bs ~= getCNBytes(s);
+        foreach(s; rtn_char) bs ~= getCNBytes(s);
+        foreach(s; pgm_chal) bs ~= getCNBytes(s);
+        foreach(s; rtn_chal) bs ~= getCNBytes(s);
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -1883,36 +2231,36 @@ class PinListRecord : StdfRecord
 
 class PinMapRecord : StdfRecord
 {
-    const ushort pmr_indx;
-    const ushort chan_typ;
-    const string chan_nam;
-    const string phy_nam;
-    const string log_nam;
-    const ubyte head_num;
-    const ubyte site_num;
+    U2 pmr_indx;
+    U2 chan_typ;
+    CN chan_nam;
+    CN phy_nam;
+    CN log_nam;
+    U1 head_num;
+    U1 site_num;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.PMR, reclen);
-        pmr_indx = cpu.getU2(s);
-        chan_typ = cpu.getU2(s);
-        chan_nam = cpu.getCN(s);
-        phy_nam = cpu.getCN(s);
-        log_nam = cpu.getCN(s);
-        head_num = cpu.getU1(s);
-        site_num = cpu.getU1(s);
+        super(Record_t.PMR, reclen);
+        pmr_indx = get!U2(s);
+        chan_typ = get!U2(s);
+        chan_nam = get!CN(s);
+        phy_nam = get!CN(s);
+        log_nam = get!CN(s);
+        head_num = get!U1(s);
+        site_num = get!U1(s);
     }
 
-    this(Cpu_t cpu,
-         const ushort pmr_indx,
-         const ushort chan_typ,
-         const string chan_nam,
-         const string phy_nam,
-         const string log_nam,
-         const ubyte head_num,
-         const ubyte site_num)
+    this(
+         U2 pmr_indx,
+         U2 chan_typ,
+         CN chan_nam,
+         CN phy_nam,
+         CN log_nam,
+         U1 head_num,
+         U1 site_num)
     {
-        super(cpu, Record_t.PMR, 0);
+        super(Record_t.PMR, 0);
         this.pmr_indx = pmr_indx;
         this.chan_typ = chan_typ;
         this.chan_nam = chan_nam;
@@ -1923,7 +2271,7 @@ class PinMapRecord : StdfRecord
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         ushort l = 6;
         l += (1 + chan_nam.length);
@@ -1932,18 +2280,20 @@ class PinMapRecord : StdfRecord
         return l;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
-        bs ~= cpu.getU2Bytes(pmr_indx);
-        bs ~= cpu.getU2Bytes(chan_typ);
-        bs ~= cpu.getCNBytes(chan_nam);
-        bs ~= cpu.getCNBytes(phy_nam);
-        bs ~= cpu.getCNBytes(log_nam);
+        bs ~= getU2Bytes(pmr_indx);
+        bs ~= getU2Bytes(chan_typ);
+        bs ~= getCNBytes(chan_nam);
+        bs ~= getCNBytes(phy_nam);
+        bs ~= getCNBytes(log_nam);
         bs ~= head_num;
         bs ~= site_num;
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -1963,51 +2313,51 @@ class PinMapRecord : StdfRecord
 
 class PartResultsRecord : StdfRecord
 {
-    const ubyte head_num;
-    const ubyte site_num;
-    const ubyte part_flg;
-    const ushort num_test;
-    const ushort hard_bin;
-    const ushort soft_bin;
-    const short x_coord;
-    const short y_coord;
-    const uint test_t;
-    const string part_id;
-    const string part_txt;
-    const ubyte[] part_fix;
+    U1 head_num;
+    U1 site_num;
+    U1 part_flg;
+    U2 num_test;
+    U2 hard_bin;
+    U2 soft_bin;
+    I2 x_coord;
+    I2 y_coord;
+    I4 test_t;
+    CN part_id;
+    CN part_txt;
+    BN part_fix;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this( size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.PRR, reclen);
-        head_num = cpu.getU1(s);
-        site_num = cpu.getU1(s);
-        part_flg = cpu.getU1(s);
-        num_test = cpu.getU2(s);
-        hard_bin = cpu.getU2(s);
-        soft_bin = cpu.getU2(s);
-        x_coord = cpu.getI2(s);
-        y_coord = cpu.getI2(s);
-        test_t = cpu.getU4(s);
-        part_id = cpu.getCN(s);
-        part_txt = cpu.getCN(s);
-        part_fix = cpu.getBN(s);
+        super(Record_t.PRR, reclen);
+        head_num = get!U1(s);
+        site_num = get!U1(s);
+        part_flg = get!U1(s);
+        num_test = get!U2(s);
+        hard_bin = get!U2(s);
+        soft_bin = get!U2(s);
+        x_coord = get!I2(s);
+        y_coord = get!I2(s);
+        test_t = get!U4(s);
+        part_id = get!CN(s);
+        part_txt = get!CN(s);
+        part_fix = get!BN(s);
     }
 
-    this(Cpu_t cpu,
-         const ubyte head_num,
-         const ubyte site_num,
-         const ubyte part_flg,
-         const ushort num_test,
-         const ushort hard_bin,
-         const ushort soft_bin,
-         const short x_coord,
-         const short y_coord,
-         const uint test_t,
-         const string part_id,
-         const string part_txt,
-         const ubyte[] part_fix)
+    this(
+         U1 head_num,
+         U1 site_num,
+         U1 part_flg,
+         U2 num_test,
+         U2 hard_bin,
+         U2 soft_bin,
+         I2 x_coord,
+         I2 y_coord,
+         I4 test_t,
+         CN part_id,
+         CN part_txt,
+         BN part_fix)
     {
-        super(cpu, Record_t.PRR, 0);
+        super(Record_t.PRR, 0);
         this.head_num = head_num;
         this.site_num = site_num;
         this.part_flg = part_flg;
@@ -2019,13 +2369,12 @@ class PartResultsRecord : StdfRecord
         this.test_t = test_t;
         this.part_id = part_id;
         this.part_txt = part_txt;
-        auto fix = new ubyte[part_fix.length];
-        foreach(i, d; part_fix) fix[i] = d;
-        this.part_fix = fix;
+        this.part_fix.length = part_fix.length;
+        foreach(i, d; part_fix) this.part_fix[i] = d;
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         ushort l = 17;
         l += (1 + part_id.length);
@@ -2034,23 +2383,25 @@ class PartResultsRecord : StdfRecord
         return l;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
         bs ~= head_num;
         bs ~= site_num;
         bs ~= part_flg;
-        bs ~= cpu.getU2Bytes(num_test);
-        bs ~= cpu.getU2Bytes(hard_bin);
-        bs ~= cpu.getU2Bytes(soft_bin);
-        bs ~= cpu.getI2Bytes(x_coord);
-        bs ~= cpu.getI2Bytes(y_coord);
-        bs ~= cpu.getU4Bytes(test_t);
-        bs ~= cpu.getCNBytes(part_id);
-        bs ~= cpu.getCNBytes(part_txt);
-        bs ~= cpu.getBNBytes(part_fix);
+        bs ~= getU2Bytes(num_test);
+        bs ~= getU2Bytes(hard_bin);
+        bs ~= getU2Bytes(soft_bin);
+        bs ~= getI2Bytes(x_coord);
+        bs ~= getI2Bytes(y_coord);
+        bs ~= getU4Bytes(test_t);
+        bs ~= getCNBytes(part_id);
+        bs ~= getCNBytes(part_txt);
+        bs ~= getBNBytes(part_fix);
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -2075,67 +2426,65 @@ class PartResultsRecord : StdfRecord
 
 class ParametricTestRecord : ParametricRecord
 {
-    const float result;
-    const string test_txt;
-    const string alarm_id;
-    const optional!ubyte opt_flag;
-    const optional!byte res_scal;
-    const optional!byte llm_scal;
-    const optional!byte hlm_scal;
-    const optional!float lo_limit;
-    const optional!float hi_limit;
-    const string units;
-    const string c_resfmt;
-    const string c_llmfmt;
-    const string c_hlmfmt;
-    const optional!float lo_spec;
-    const optional!float hi_spec;
+    R4 result;
+    CN test_txt;
+    CN alarm_id;
+    OptionalField!U1 opt_flag;
+    OptionalField!I1 res_scal;
+    OptionalField!I1 llm_scal;
+    OptionalField!I1 hlm_scal;
+    OptionalField!R4 lo_limit;
+    OptionalField!R4 hi_limit;
+    OptionalField!CN units;
+    OptionalField!CN c_resfmt;
+    OptionalField!CN c_llmfmt;
+    OptionalField!CN c_hlmfmt;
+    OptionalField!R4 lo_spec;
+    OptionalField!R4 hi_spec;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, reclen, Record_t.PTR, cpu.getU4(s), cpu.getU1(s), cpu.getU1(s), cpu.getU1(s), cpu.getU1(s));
-        int l = cast(int) reclen;
-        l -= 12;
-        result = cpu.getU4(s);
-        test_txt = cpu.getCN(s); l -= (1 + test_txt.length);
-        alarm_id = cpu.getCN(s); l -= (1 + alarm_id.length);
-        if (l > 0) opt_flag = cpu.getU1(s); l--;
-        if (l > 0) res_scal = cpu.getI1(s); l--;
-        if (l > 0) llm_scal = cpu.getI1(s); l--;
-        if (l > 0) hlm_scal = cpu.getI1(s); l--;
-        if (l >= 4) lo_limit = cpu.getR4(s); l -= 4;
-        if (l >= 4) hi_limit = cpu.getR4(s); l -= 4;
-        if (l > 0) units = cpu.getCN(s); l -= (1 + units.length);
-        if (l > 0) c_resfmt = cpu.getCN(s); l -= (1 + c_resfmt.length);
-        if (l > 0) c_llmfmt = cpu.getCN(s); l -= (1 + c_llmfmt.length);
-        if (l > 0) c_hlmfmt = cpu.getCN(s); l -= (1 + c_hlmfmt.length);
-        if (l > 3) lo_spec = cpu.getR4(s); l -= 4;
-        if (l > 3) hi_spec = cpu.getR4(s);
+        super(reclen, Record_t.PTR, get!U4(s), get!U1(s), get!U1(s), get!U1(s), get!U1(s));
+        reclen -= 12;
+        result = get!U4(s);
+        test_txt = get!CN(s); reclen -= (1 + test_txt.length);
+        alarm_id = get!CN(s); reclen -= (1 + alarm_id.length);
+        opt_flag = OptionalField!U1(reclen, s, 0xFF);
+        res_scal = OptionalField!I1(reclen, s, 0);
+        llm_scal = OptionalField!I1(reclen, s, 0);
+        hlm_scal = OptionalField!I1(reclen, s, 0);
+        lo_limit = OptionalField!R4(reclen, s, 0.0f);
+        hi_limit = OptionalField!R4(reclen, s, 0.0f);
+        units = OptionalField!CN(reclen, s, new char[0]);
+        c_resfmt = OptionalField!CN(reclen, s, new char[0]);
+        c_llmfmt = OptionalField!CN(reclen, s, new char[0]);
+        c_hlmfmt = OptionalField!CN(reclen, s, new char[0]);
+        lo_spec = OptionalField!R4(reclen, s, 0.0f);
+        hi_spec = OptionalField!R4(reclen, s, 0.0f);
     }
 
-    this(Cpu_t cpu,
-         const uint test_num,
-         const ubyte head_num,
-         const ubyte site_num,
-         const ubyte test_flg,
-         const ubyte parm_flg,
-         const float result,
-         const string test_txt,
-         const string alarm_id,
-         const optional!ubyte opt_flag,
-         const optional!byte res_scal,
-         const optional!byte llm_scal,
-         const optional!byte hlm_scal,
-         const optional!float lo_limit,
-         const optional!float hi_limit,
-         const string units,
-         const string c_resfmt,
-         const string c_llmfmt,
-         const string c_hlmfmt,
-         const optional!float lo_spec,
-         const optional!float hi_spec)
+    this(U4 test_num,
+         U1 head_num,
+         U1 site_num,
+         U1 test_flg,
+         U1 parm_flg,
+         R4 result,
+         CN test_txt,
+         CN alarm_id,
+         OptionalField!U1 opt_flag,
+         OptionalField!I1 res_scal,
+         OptionalField!I1 llm_scal,
+         OptionalField!I1 hlm_scal,
+         OptionalField!R4 lo_limit,
+         OptionalField!R4 hi_limit,
+         OptionalField!CN units,
+         OptionalField!CN c_resfmt,
+         OptionalField!CN c_llmfmt,
+         OptionalField!CN c_hlmfmt,
+         OptionalField!R4 lo_spec,
+         OptionalField!R4 hi_spec)
      {
-        super(cpu, 0, Record_t.PTR, test_num, head_num, site_num, test_flg, parm_flg);
+        super(0, Record_t.PTR, test_num, head_num, site_num, test_flg, parm_flg);
         this.result = result;
         this.test_txt = test_txt;
         this.alarm_id = alarm_id;
@@ -2154,43 +2503,53 @@ class ParametricTestRecord : ParametricRecord
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
-        ushort l = 32;
+        size_t l = 12;
         l += (1 + test_txt.length);
         l += (1 + alarm_id.length);
-        if (units !is null) l += (1 + units.length);
-        if (c_resfmt !is null) l += (1 + c_resfmt.length);
-        if (c_llmfmt !is null) l += (1 + c_llmfmt.length);
-        if (c_hlmfmt !is null) l += (1 + c_hlmfmt.length);
+        l += opt_flag.getSize();
+        l += res_scal.getSize();
+        l += llm_scal.getSize();
+        l += hlm_scal.getSize();
+        l += lo_limit.getSize();
+        l += hi_limit.getSize();
+        l += units.getSize();
+        l += c_resfmt.getSize();
+        l += c_llmfmt.getSize();
+        l += c_hlmfmt.getSize();
+        l += lo_spec.getSize();
+        l += hi_spec.getSize();
         return l;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
-        bs ~= cpu.getU4Bytes(test_num);
-        bs ~= cpu.getU1Bytes(head_num);
-        bs ~= cpu.getU1Bytes(site_num);
-        bs ~= cpu.getU1Bytes(test_flg);
-        bs ~= cpu.getU1Bytes(parm_flg);
-        bs ~= cpu.getR4Bytes(result);
-        bs ~= cpu.getCNBytes(test_txt);
-        bs ~= cpu.getCNBytes(alarm_id);
-        if (opt_flag.valid) bs ~= cpu.getU1Bytes(opt_flag);
-        if (res_scal.valid) bs ~= cpu.getI1Bytes(res_scal);
-        if (llm_scal.valid) bs ~= cpu.getI1Bytes(llm_scal);
-        if (hlm_scal.valid) bs ~= cpu.getI1Bytes(hlm_scal);
-        if (lo_limit.valid) bs ~= cpu.getR4Bytes(lo_limit);
-        if (hi_limit.valid) bs ~= cpu.getR4Bytes(hi_limit);
-        if (units !is null) bs ~= cpu.getCNBytes(units);
-        if (c_resfmt !is null) bs ~= cpu.getCNBytes(c_resfmt);
-        if (c_llmfmt !is null) bs ~= cpu.getCNBytes(c_llmfmt);
-        if (c_hlmfmt !is null) bs ~= cpu.getCNBytes(c_hlmfmt);
-        if (lo_spec.valid) bs ~= cpu.getR4Bytes(lo_spec);
-        if (hi_spec.valid) bs ~= cpu.getR4Bytes(hi_spec);
+        bs ~= getU4Bytes(test_num);
+        bs ~= getU1Bytes(head_num);
+        bs ~= getU1Bytes(site_num);
+        bs ~= getU1Bytes(test_flg);
+        bs ~= getU1Bytes(parm_flg);
+        bs ~= getR4Bytes(result);
+        bs ~= getCNBytes(test_txt);
+        bs ~= getCNBytes(alarm_id);
+        if (opt_flag.valid) bs ~= getU1Bytes(opt_flag);
+        if (res_scal.valid) bs ~= getI1Bytes(res_scal);
+        if (llm_scal.valid) bs ~= getI1Bytes(llm_scal);
+        if (hlm_scal.valid) bs ~= getI1Bytes(hlm_scal);
+        if (lo_limit.valid) bs ~= getR4Bytes(lo_limit);
+        if (hi_limit.valid) bs ~= getR4Bytes(hi_limit);
+        if (units !is null) bs ~= getCNBytes(units);
+        if (c_resfmt !is null) bs ~= getCNBytes(c_resfmt);
+        if (c_llmfmt !is null) bs ~= getCNBytes(c_llmfmt);
+        if (c_hlmfmt !is null) bs ~= getCNBytes(c_hlmfmt);
+        if (lo_spec.valid) bs ~= getR4Bytes(lo_spec);
+        if (hi_spec.valid) bs ~= getR4Bytes(hi_spec);
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -2200,18 +2559,18 @@ class ParametricTestRecord : ParametricRecord
         app.put("\n    result = "); app.put(to!string(result));
         app.put("\n    test_txt = "); app.put(test_txt);
         app.put("\n    alarm_id = "); app.put(alarm_id);
-        if (opt_flag.valid) { app.put("\n    opt_flag = "); app.put(to!string(opt_flag)); }
-        if (res_scal.valid) { app.put("\n    res_scal = "); app.put(to!string(res_scal)); }
-        if (llm_scal.valid) { app.put("\n    llm_scal = "); app.put(to!string(llm_scal)); }
-        if (hlm_scal.valid) { app.put("\n    hlm_scal = "); app.put(to!string(hlm_scal)); }
-        if (lo_limit.valid) { app.put("\n    lo_limit = "); app.put(to!string(lo_limit)); }
-        if (hi_limit.valid) { app.put("\n    hi_limit = "); app.put(to!string(hi_limit)); }
-        if (units !is null) { app.put("\n    units = "); app.put(units); }
-        if (c_resfmt !is null) { app.put("\n    c_resfmt = "); app.put(c_resfmt); }
-        if (c_llmfmt !is null) { app.put("\n    c_llmfmt = "); app.put(c_llmfmt); }
-        if (c_hlmfmt !is null) { app.put("\n    c_hlmfmt = "); app.put(c_hlmfmt); }
-        if (lo_spec.valid) { app.put("\n    lo_spec = "); app.put(to!string(lo_spec)); }
-        if (hi_spec.valid) { app.put("\n    hi_spec = "); app.put(to!string(hi_spec)); }
+        if (!opt_flag.empty) { app.put("\n    opt_flag = "); app.put((opt_flag.toString())); }
+        if (!res_scal.empty) { app.put("\n    res_scal = "); app.put(to!string(res_scal)); }
+        if (!llm_scal.empty) { app.put("\n    llm_scal = "); app.put(to!string(llm_scal)); }
+        if (!hlm_scal.empty) { app.put("\n    hlm_scal = "); app.put(to!string(hlm_scal)); }
+        if (!lo_limit.empty) { app.put("\n    lo_limit = "); app.put(to!string(lo_limit)); }
+        if (!hi_limit.empty) { app.put("\n    hi_limit = "); app.put(to!string(hi_limit)); }
+        if (!units.empty) { app.put("\n    units = "); app.put(units.toString()); }
+        if (!c_resfmt.empty) { app.put("\n    c_resfmt = "); app.put(c_resfmt.toString()); }
+        if (!c_llmfmt.empty) { app.put("\n    c_llmfmt = "); app.put(c_llmfmt.toString()); }
+        if (!c_hlmfmt.empty) { app.put("\n    c_hlmfmt = "); app.put(c_hlmfmt.toString()); }
+        if (!lo_spec.empty) { app.put("\n    lo_spec = "); app.put(to!string(lo_spec)); }
+        if (!hi_spec.empty) { app.put("\n    hi_spec = "); app.put(to!string(hi_spec)); }
         app.put("\n");
         return app.data;
     }
@@ -2219,42 +2578,40 @@ class ParametricTestRecord : ParametricRecord
 
 class RetestDataRecord : StdfRecord
 {
-    const ushort num_bins;
-    const ushort[] rtst_bin;
+    U2 num_bins;
+    OptionalArray!U2 rtst_bin;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.RDR, reclen);
-        num_bins = cpu.getU2(s);
-        auto bin = new ushort[num_bins];
-        for (int i=0; i<num_bins; i++) bin[i] = cpu.getU2(s);
-        rtst_bin = bin;
+        super(Record_t.RDR, reclen);
+        num_bins = get!U2(s);
+        rtst_bin = OptionalArray!U2(reclen, num_bins, s);
     }
 
-    this(Cpu_t cpu, const ushort num_bins, const ushort[] rtst_bin)
+    this(U2 num_bins, OptionalArray!U2 rtst_bin)
     {
-        super(cpu, Record_t.RDR, 0);
+        super(Record_t.RDR, 0);
         this.num_bins = num_bins;
-        auto bin = new ushort[num_bins];
-        foreach(i, d; rtst_bin) bin[i] = d;
         this.rtst_bin = rtst_bin;
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         ushort l = 2;
-        l += (num_bins * 2);
+        l += rtst_bin.getSize();
         return l;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
-        bs ~= cpu.getU2Bytes(num_bins);
-        foreach(d; rtst_bin) bs ~= cpu.getU2Bytes(d);
+        bs ~= getU2Bytes(num_bins);
+        foreach(d; rtst_bin) bs ~= getU2Bytes(d);
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -2269,33 +2626,32 @@ class RetestDataRecord : StdfRecord
 
 class SoftwareBinRecord : StdfRecord
 {
-    const ubyte head_num;
-    const ubyte site_num;
-    const ushort sbin_num;
-    const uint sbin_cnt;
-    const char sbin_pf;
-    const string sbin_nam;
+    U1 head_num;
+    U1 site_num;
+    U2 sbin_num;
+    U4 sbin_cnt;
+    C1 sbin_pf;
+    CN sbin_nam;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.SBR, reclen);
-        head_num = cpu.getU1(s);
-        site_num = cpu.getU1(s);
-        sbin_num = cpu.getU2(s);
-        sbin_cnt = cpu.getU4(s);
-        sbin_pf = cast(char) cpu.getU1(s);
-        sbin_nam = cpu.getCN(s);
+        super(Record_t.SBR, reclen);
+        head_num = get!U1(s);
+        site_num = get!U1(s);
+        sbin_num = get!U2(s);
+        sbin_cnt = get!U4(s);
+        sbin_pf = cast(char) get!U1(s);
+        sbin_nam = get!CN(s);
     }
 
-    this(Cpu_t cpu,
-         const ubyte head_num,
-         const ubyte site_num,
-         const ushort sbin_num,
-         const uint sbin_cnt,
-         const char sbin_pf,
-         const string sbin_nam)
+    this(U1 head_num,
+         U1 site_num,
+         U2 sbin_num,
+         U4 sbin_cnt,
+         C1 sbin_pf,
+         CN sbin_nam)
     {
-        super(cpu, Record_t.SBR, 0);
+        super(Record_t.SBR, 0);
         this.head_num = head_num;
         this.site_num = site_num;
         this.sbin_num = sbin_num;
@@ -2306,24 +2662,26 @@ class SoftwareBinRecord : StdfRecord
     }
          
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         ushort l = 9;
         l += (1 + sbin_nam.length);
         return l;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
-        bs ~= cpu.getU1Bytes(head_num);
-        bs ~= cpu.getU1Bytes(site_num);
-        bs ~= cpu.getU2Bytes(sbin_num);
-        bs ~= cpu.getU4Bytes(sbin_cnt);
+        bs ~= getU1Bytes(head_num);
+        bs ~= getU1Bytes(site_num);
+        bs ~= getU2Bytes(sbin_num);
+        bs ~= getU4Bytes(sbin_cnt);
         bs ~= cast(ubyte) sbin_pf;
-        bs ~= cpu.getCNBytes(sbin_nam);
+        bs ~= getCNBytes(sbin_nam);
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -2342,83 +2700,80 @@ class SoftwareBinRecord : StdfRecord
 
 class SiteDescriptionRecord : StdfRecord
 {
-    const ubyte head_num;
-    const ubyte site_grp;
-    const ubyte site_cnt;
-    const ubyte[] site_num;
-    const string hand_typ;
-    const string hand_id;
-    const string card_typ;
-    const string card_id;
-    const string load_typ;
-    const string load_id;
-    const string dib_typ;
-    const string dib_id;
-    const string cabl_typ;
-    const string cabl_id;
-    const string cont_typ;
-    const string cont_id;
-    const string lasr_typ;
-    const string lasr_id;
-    const string extr_typ;
-    const string extr_id;
+    U1 head_num;
+    U1 site_grp;
+    U1 site_cnt;
+    U1[] site_num;
+    CN hand_typ;
+    CN hand_id;
+    CN card_typ;
+    CN card_id;
+    CN load_typ;
+    CN load_id;
+    CN dib_typ;
+    CN dib_id;
+    CN cabl_typ;
+    CN cabl_id;
+    CN cont_typ;
+    CN cont_id;
+    CN lasr_typ;
+    CN lasr_id;
+    CN extr_typ;
+    CN extr_id;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this( size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.SDR, reclen);
-        head_num = cpu.getU1(s);
-        site_grp = cpu.getU1(s);
-        site_cnt = cpu.getU1(s);
-        auto num = new ubyte[site_cnt];
-        for (int i=0; i<site_cnt; i++) num[i] = cpu.getU1(s);
-        site_num = num;
-        hand_typ = cpu.getCN(s);
-        hand_id = cpu.getCN(s);
-        card_typ = cpu.getCN(s);
-        card_id = cpu.getCN(s);
-        load_typ = cpu.getCN(s);
-        load_id = cpu.getCN(s);
-        dib_typ = cpu.getCN(s);
-        dib_id = cpu.getCN(s);
-        cabl_typ = cpu.getCN(s);
-        cabl_id = cpu.getCN(s);
-        cont_typ = cpu.getCN(s);
-        cont_id = cpu.getCN(s);
-        lasr_typ = cpu.getCN(s);
-        lasr_id = cpu.getCN(s);
-        extr_typ = cpu.getCN(s);
-        extr_id = cpu.getCN(s);
+        super(Record_t.SDR, reclen);
+        head_num = get!U1(s);
+        site_grp = get!U1(s);
+        site_cnt = get!U1(s);
+        site_num = new U1[site_cnt];
+        for (int i=0; i<site_cnt; i++) site_num[i] = get!U1(s);
+        hand_typ = get!CN(s);
+        hand_id = get!CN(s);
+        card_typ = get!CN(s);
+        card_id = get!CN(s);
+        load_typ = get!CN(s);
+        load_id = get!CN(s);
+        dib_typ = get!CN(s);
+        dib_id = get!CN(s);
+        cabl_typ = get!CN(s);
+        cabl_id = get!CN(s);
+        cont_typ = get!CN(s);
+        cont_id = get!CN(s);
+        lasr_typ = get!CN(s);
+        lasr_id = get!CN(s);
+        extr_typ = get!CN(s);
+        extr_id = get!CN(s);
     }
 
-    this(Cpu_t cpu,
-         const ubyte head_num,
-         const ubyte site_grp,
-         const ubyte site_cnt,
-         const ubyte[] site_num,
-         const string hand_typ,
-         const string hand_id,
-         const string card_typ,
-         const string card_id,
-         const string load_typ,
-         const string load_id,
-         const string dib_typ,
-         const string dib_id,
-         const string cabl_typ,
-         const string cabl_id,
-         const string cont_typ,
-         const string cont_id,
-         const string lasr_typ,
-         const string lasr_id,
-         const string extr_typ,
-         const string extr_id)
+    this(U1 head_num,
+         U1 site_grp,
+         U1 site_cnt,
+         U1[] site_num,
+         CN hand_typ,
+         CN hand_id,
+         CN card_typ,
+         CN card_id,
+         CN load_typ,
+         CN load_id,
+         CN dib_typ,
+         CN dib_id,
+         CN cabl_typ,
+         CN cabl_id,
+         CN cont_typ,
+         CN cont_id,
+         CN lasr_typ,
+         CN lasr_id,
+         CN extr_typ,
+         CN extr_id)
     {
-        super(cpu, Record_t.SDR, 0);
+        super(Record_t.SDR, 0);
         this.head_num = head_num;
         this.site_grp = site_grp;
         this.site_cnt = site_cnt;
-        auto num = new ubyte[site_cnt];
-        foreach(i, d; site_num) num[i] = d;
-        this.site_num = num;
+        this.site_num = new U1[site_cnt];
+        foreach(i, d; site_num) this.site_num[i] = d;
         this.hand_typ = hand_typ;
         this.hand_id = hand_id;
         this.card_typ = card_typ;
@@ -2439,7 +2794,7 @@ class SiteDescriptionRecord : StdfRecord
    }
          
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         ushort l = 3;
         l += site_cnt;
@@ -2462,6 +2817,7 @@ class SiteDescriptionRecord : StdfRecord
         return l;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
@@ -2469,24 +2825,25 @@ class SiteDescriptionRecord : StdfRecord
         bs ~= site_grp;
         bs ~= site_cnt;
         bs ~= site_num;
-        bs ~= cpu.getCNBytes(hand_typ);
-        bs ~= cpu.getCNBytes(hand_id);
-        bs ~= cpu.getCNBytes(card_typ);
-        bs ~= cpu.getCNBytes(card_id);
-        bs ~= cpu.getCNBytes(load_typ);
-        bs ~= cpu.getCNBytes(load_id);
-        bs ~= cpu.getCNBytes(dib_typ);
-        bs ~= cpu.getCNBytes(dib_id);
-        bs ~= cpu.getCNBytes(cabl_typ);
-        bs ~= cpu.getCNBytes(cabl_id);
-        bs ~= cpu.getCNBytes(cont_typ);
-        bs ~= cpu.getCNBytes(cont_id);
-        bs ~= cpu.getCNBytes(lasr_typ);
-        bs ~= cpu.getCNBytes(lasr_id);
-        bs ~= cpu.getCNBytes(extr_typ);
-        bs ~= cpu.getCNBytes(extr_id);
+        bs ~= getCNBytes(hand_typ);
+        bs ~= getCNBytes(hand_id);
+        bs ~= getCNBytes(card_typ);
+        bs ~= getCNBytes(card_id);
+        bs ~= getCNBytes(load_typ);
+        bs ~= getCNBytes(load_id);
+        bs ~= getCNBytes(dib_typ);
+        bs ~= getCNBytes(dib_id);
+        bs ~= getCNBytes(cabl_typ);
+        bs ~= getCNBytes(cabl_id);
+        bs ~= getCNBytes(cont_typ);
+        bs ~= getCNBytes(cont_id);
+        bs ~= getCNBytes(lasr_typ);
+        bs ~= getCNBytes(lasr_id);
+        bs ~= getCNBytes(extr_typ);
+        bs ~= getCNBytes(extr_id);
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -2519,64 +2876,63 @@ class SiteDescriptionRecord : StdfRecord
 
 class TestSynopsisRecord : StdfRecord
 {
-    const ubyte head_num;
-    const ubyte site_num;
-    const char test_typ;
-    const uint test_num;
-    const uint exec_cnt;
-    const uint fail_cnt;
-    const uint alrm_cnt;
-    const string test_nam;
-    const string seq_name;
-    const string test_lbl;
-    const optional!ubyte opt_flag;
-    const optional!float test_tim;
-    const optional!float test_min;
-    const optional!float test_max;
-    const optional!float tst_sums;
-    const optional!float tst_sqrs;
+    U1 head_num;
+    U1 site_num;
+    C1 test_typ;
+    U4 test_num;
+    OptionalField!U4 exec_cnt;
+    OptionalField!U4 fail_cnt;
+    OptionalField!U4 alrm_cnt;
+    OptionalField!CN test_nam;
+    OptionalField!CN seq_name;
+    OptionalField!CN test_lbl;
+    OptionalField!U1 opt_flag;
+    OptionalField!R4 test_tim;
+    OptionalField!R4 test_min;
+    OptionalField!R4 test_max;
+    OptionalField!R4 tst_sums;
+    OptionalField!R4 tst_sqrs;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.TSR, reclen);
-        int l = cast(int) reclen;
-        head_num = cpu.getU1(s);
-        site_num = cpu.getU1(s);
-        test_typ = cast(char) cpu.getU1(s);
-        test_num = cpu.getU4(s);
-        exec_cnt = cpu.getU4(s);
-        fail_cnt = cpu.getU4(s);
-        alrm_cnt = cpu.getU4(s); l -= 19;
-        test_nam = cpu.getCN(s); l -= (1 + test_nam.length);
-        seq_name = cpu.getCN(s); l -= (1 + seq_name.length);
-        test_lbl = cpu.getCN(s); l -= (1 + test_lbl.length);
-        if (l > 0) { opt_flag = cpu.getU1(s); l--; }
-        if (l > 3) { test_tim = cpu.getR4(s); l -= 4; }
-        if (l > 3) { test_min = cpu.getR4(s); l -= 4; }
-        if (l > 3) { test_max = cpu.getR4(s); l -= 4; }
-        if (l > 3) { tst_sums = cpu.getR4(s); l -= 4; }
-        if (l > 3) { tst_sqrs = cpu.getR4(s); l -= 4; }
+        super(Record_t.TSR, reclen);
+        reclen -= 7;
+        head_num = get!U1(s);
+        site_num = get!U1(s);
+        test_typ = cast(char) get!U1(s);
+        test_num = get!U4(s);
+        exec_cnt = OptionalField!U4(reclen, s, 0);
+        fail_cnt = OptionalField!U4(reclen, s, 0);
+        alrm_cnt = OptionalField!U4(reclen, s, 0);
+        test_nam = OptionalField!CN(reclen, s, new char[0]);
+        seq_name = OptionalField!CN(reclen, s, new char[0]);
+        test_lbl = OptionalField!CN(reclen, s, new char[0]);
+        opt_flag = OptionalField!U1(reclen, s, 0);
+        test_tim = OptionalField!R4(reclen, s, 0.0f);
+        test_min = OptionalField!R4(reclen, s, 0.0f);
+        test_max = OptionalField!R4(reclen, s, 0.0f);
+        tst_sums = OptionalField!R4(reclen, s, 0.0f);
+        tst_sqrs = OptionalField!R4(reclen, s, 0.0f);
     }
 
-    this(Cpu_t cpu,
-         const ubyte head_num,
-         const ubyte site_num,
-         const char test_typ,
-         const uint test_num,
-         const uint exec_cnt,
-         const uint fail_cnt,
-         const uint alrm_cnt,
-         const string test_nam,
-         const string seq_name,
-         const string test_lbl,
-         const optional!ubyte opt_flag,
-         const optional!float test_tim,
-         const optional!float test_min,
-         const optional!float test_max,
-         const optional!float tst_sums,
-         const optional!float tst_sqrs)
+    this(U1 head_num,
+         U1 site_num,
+         C1 test_typ,
+         U4 test_num,
+         OptionalField!U4 exec_cnt,
+         OptionalField!U4 fail_cnt,
+         OptionalField!U4 alrm_cnt,
+         OptionalField!CN test_nam,
+         OptionalField!CN seq_name,
+         OptionalField!CN test_lbl,
+         OptionalField!U1 opt_flag,
+         OptionalField!R4 test_tim,
+         OptionalField!R4 test_min,
+         OptionalField!R4 test_max,
+         OptionalField!R4 tst_sums,
+         OptionalField!R4 tst_sqrs)
     {
-        super(cpu, Record_t.TSR, 0);
+        super(Record_t.TSR, 0);
         this.head_num = head_num;
         this.site_num = site_num;
         this.test_typ = test_typ;
@@ -2596,42 +2952,47 @@ class TestSynopsisRecord : StdfRecord
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
-        ushort l = 15;
-        l += (1 + test_nam.length);
-        l += (1 + seq_name.length);
-        l += (1 + test_lbl.length);
-        if (opt_flag.valid) l++;
-        if (test_tim.valid) l += 4;
-        if (test_min.valid) l += 4;
-        if (test_max.valid) l += 4;
-        if (tst_sums.valid) l += 4;
-        if (tst_sqrs.valid) l += 4;
+        size_t l = 7;
+        l += exec_cnt.getSize();
+        l += fail_cnt.getSize();
+        l += alrm_cnt.getSize();
+        l += test_nam.getSize();
+        l += seq_name.getSize();
+        l += test_lbl.getSize();
+        l += opt_flag.getSize();
+        l += test_tim.getSize();
+        l += test_min.getSize();
+        l += test_max.getSize();
+        l += tst_sums.getSize();
+        l += tst_sqrs.getSize();
         return l;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
         bs ~= head_num;
         bs ~= site_num;
         bs ~= cast(ubyte) test_typ;
-        bs ~= cpu.getU4Bytes(test_num);
-        bs ~= cpu.getU4Bytes(exec_cnt);
-        bs ~= cpu.getU4Bytes(fail_cnt);
-        bs ~= cpu.getU4Bytes(alrm_cnt);
-        bs ~= cpu.getCNBytes(test_nam);
-        bs ~= cpu.getCNBytes(seq_name);
-        bs ~= cpu.getCNBytes(test_lbl);
+        bs ~= getU4Bytes(test_num);
+        bs ~= getU4Bytes(exec_cnt);
+        bs ~= getU4Bytes(fail_cnt);
+        bs ~= getU4Bytes(alrm_cnt);
+        bs ~= getCNBytes(test_nam);
+        bs ~= getCNBytes(seq_name);
+        bs ~= getCNBytes(test_lbl);
         if (opt_flag.valid) bs ~= opt_flag;
-        if (test_tim.valid) bs ~= cpu.getR4Bytes(test_tim);
-        if (test_min.valid) bs ~= cpu.getR4Bytes(test_min);
-        if (test_max.valid) bs ~= cpu.getR4Bytes(test_max);
-        if (tst_sums.valid) bs ~= cpu.getR4Bytes(tst_sums);
-        if (tst_sqrs.valid) bs ~= cpu.getR4Bytes(tst_sqrs);
+        if (test_tim.valid) bs ~= getR4Bytes(test_tim);
+        if (test_min.valid) bs ~= getR4Bytes(test_min);
+        if (test_max.valid) bs ~= getR4Bytes(test_max);
+        if (tst_sums.valid) bs ~= getR4Bytes(tst_sums);
+        if (tst_sqrs.valid) bs ~= getR4Bytes(tst_sqrs);
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -2641,18 +3002,18 @@ class TestSynopsisRecord : StdfRecord
         app.put("\n    site_num = "); app.put(to!string(site_num));
         app.put("\n    test_typ = "); app.put(to!string(test_typ));
         app.put("\n    test_num = "); app.put(to!string(test_num));
-        app.put("\n    exec_cnt = "); app.put(to!string(exec_cnt));
-        app.put("\n    fail_cnt = "); app.put(to!string(fail_cnt));
-        app.put("\n    alrm_cnt = "); app.put(to!string(alrm_cnt));
-        app.put("\n    test_nam = "); app.put(test_nam);
-        app.put("\n    seq_name = "); app.put(seq_name);
-        app.put("\n    test_lbl = "); app.put(test_lbl);
-        if (opt_flag.valid) { app.put("\n    opt_flag = "); app.put(to!string(opt_flag)); }
-        if (test_tim.valid) { app.put("\n    test_tim = "); app.put(to!string(test_tim)); }
-        if (test_min.valid) { app.put("\n    test_min = "); app.put(to!string(test_min)); }
-        if (test_max.valid) { app.put("\n    test_max = "); app.put(to!string(test_max)); }
-        if (tst_sums.valid) { app.put("\n    tst_sums = "); app.put(to!string(tst_sums)); }
-        if (tst_sqrs.valid) { app.put("\n    tst_sqrs = "); app.put(to!string(tst_sqrs)); }
+        if (!exec_cnt.empty) { app.put("\n    exec_cnt = "); app.put(to!string(exec_cnt)); }
+        if (!fail_cnt.empty) { app.put("\n    fail_cnt = "); app.put(to!string(fail_cnt)); }
+        if (!alrm_cnt.empty) { app.put("\n    alrm_cnt = "); app.put(to!string(alrm_cnt)); }
+        if (!test_nam.empty) { app.put("\n    test_nam = "); app.put(test_nam.toString()); }
+        if (!seq_name.empty) { app.put("\n    seq_name = "); app.put(seq_name.toString()); }
+        if (!test_lbl.empty) { app.put("\n    test_lbl = "); app.put(test_lbl.toString()); }
+        if (!opt_flag.empty) { app.put("\n    opt_flag = "); app.put(to!string(opt_flag)); }
+        if (!test_tim.empty) { app.put("\n    test_tim = "); app.put(to!string(test_tim)); }
+        if (!test_min.empty) { app.put("\n    test_min = "); app.put(to!string(test_min)); }
+        if (!test_max.empty) { app.put("\n    test_max = "); app.put(to!string(test_max)); }
+        if (!tst_sums.empty) { app.put("\n    tst_sums = "); app.put(to!string(tst_sums)); }
+        if (!tst_sqrs.empty) { app.put("\n    tst_sqrs = "); app.put(to!string(tst_sqrs)); }
         app.put("\n");
         return app.data;
     }
@@ -2660,42 +3021,41 @@ class TestSynopsisRecord : StdfRecord
 
 class WaferConfigurationRecord : StdfRecord
 {
-    const float wafr_siz;
-    const float die_ht;
-    const float die_wid;
-    const ubyte wf_units;
-    const char wf_flat;
-    const short center_x;
-    const short center_y;
-    const char pos_x;
-    const char pos_y;
+    R4 wafr_siz;
+    R4 die_ht;
+    R4 die_wid;
+    U1 wf_units;
+    C1 wf_flat;
+    I2 center_x;
+    I2 center_y;
+    C1 pos_x;
+    C1 pos_y;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.WCR, reclen);
-        wafr_siz = cpu.getR4(s);
-        die_ht = cpu.getR4(s);
-        die_wid = cpu.getR4(s);
-        wf_units = cpu.getU1(s);
-        wf_flat = cast(char) cpu.getU1(s);
-        center_x = cpu.getI2(s);
-        center_y = cpu.getI2(s);
-        pos_x = cast(char) cpu.getU1(s);
-        pos_y = cast(char) cpu.getU1(s);
+        super(Record_t.WCR, reclen);
+        wafr_siz = get!R4(s);
+        die_ht = get!R4(s);
+        die_wid = get!R4(s);
+        wf_units = get!U1(s);
+        wf_flat = cast(char) get!U1(s);
+        center_x = get!I2(s);
+        center_y = get!I2(s);
+        pos_x = cast(char) get!U1(s);
+        pos_y = cast(char) get!U1(s);
     }
 
-    this(Cpu_t cpu,
-         const float wafr_siz,
-         const float die_ht,
-         const float die_wid,
-         const ubyte wf_units,
-         const char wf_flat,
-         const short center_x,
-         const short center_y,
-         const char pos_x,
-         const char pos_y)
+    this(R4 wafr_siz,
+         R4 die_ht,
+         R4 die_wid,
+         U1 wf_units,
+         C1 wf_flat,
+         I2 center_x,
+         I2 center_y,
+         C1 pos_x,
+         C1 pos_y)
     {
-        super(cpu, Record_t.WCR, 0);
+        super(Record_t.WCR, 0);
         this.wafr_siz = wafr_siz;
         this.die_ht = die_ht;
         this.die_wid = die_wid;
@@ -2708,25 +3068,27 @@ class WaferConfigurationRecord : StdfRecord
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         return 20;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
-        bs ~= cpu.getR4Bytes(wafr_siz);
-        bs ~= cpu.getR4Bytes(die_ht);
-        bs ~= cpu.getR4Bytes(die_wid);
+        bs ~= getR4Bytes(wafr_siz);
+        bs ~= getR4Bytes(die_ht);
+        bs ~= getR4Bytes(die_wid);
         bs ~= wf_units;
         bs ~= cast(ubyte) wf_flat;
-        bs ~= cpu.getI2Bytes(center_x);
-        bs ~= cpu.getI2Bytes(center_y);
+        bs ~= getI2Bytes(center_x);
+        bs ~= getI2Bytes(center_y);
         bs ~= cast(ubyte) pos_x;
         bs ~= cast(ubyte) pos_y;
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -2746,30 +3108,29 @@ class WaferConfigurationRecord : StdfRecord
     }
 }
 
+//        start_t = DateTime(1970, 1, 1, 0, 0, 0) + dur!"seconds"(d);
 class WaferInformationRecord : StdfRecord
 {
-    const ubyte head_num;
-    const ubyte site_grp;
-    const DateTime start_t;
-    const string wafer_id;
+    U1 head_num;
+    U1 site_grp;
+    U4 start_t;
+    CN wafer_id;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this( size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.WIR, reclen);
-        head_num = cpu.getU1(s);
-        site_grp = cpu.getU1(s);
-        uint d = cpu.getU4(s);
-        start_t = DateTime(1970, 1, 1, 0, 0, 0) + dur!"seconds"(d);
-        wafer_id = cpu.getCN(s);
+        super(Record_t.WIR, reclen);
+        head_num = get!U1(s);
+        site_grp = get!U1(s);
+        start_t = get!U4(s);
+        wafer_id = get!CN(s);
     }
 
-    this(Cpu_t cpu,
-         const ubyte head_num,
-         const ubyte site_grp,
-         const DateTime start_t,
-         const string wafer_id)
+    this(U1 head_num,
+         U1 site_grp,
+         U4 start_t,
+         CN wafer_id)
     {
-        super(cpu, Record_t.WIR, 0);
+        super(Record_t.WIR, 0);
         this.head_num = head_num;
         this.site_grp = site_grp;
         this.start_t = start_t;
@@ -2777,13 +3138,14 @@ class WaferInformationRecord : StdfRecord
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
         ushort l = 6;
         l += (1 + wafer_id.length);
         return l;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
@@ -2791,10 +3153,11 @@ class WaferInformationRecord : StdfRecord
         bs ~= site_grp;
         auto d = start_t - DateTime(1970, 1, 1, 0, 0, 0); 
         auto dt = cast(uint) d.total!"seconds";
-        bs ~= cpu.getU4Bytes(dt);
-        bs ~= cpu.getCNBytes(wafer_id);
+        bs ~= getU4Bytes(dt);
+        bs ~= getCNBytes(wafer_id);
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -2802,8 +3165,8 @@ class WaferInformationRecord : StdfRecord
         app.put("WaferInformationRecord:");
         app.put("\n    head_num = "); app.put(to!string(head_num));
         app.put("\n    site_grp = "); app.put(to!string(site_grp));
-        app.put("\n    start_t = "); app.put(start_t.toString());
-        app.put("\n    wafer_id = "); app.put(wafer_id);
+        app.put("\n    start_t = "); app.put(to!string(start_t));
+        app.put("\n    wafer_id = "); app.put(to!string(wafer_id));
         app.put("\n");
         return app.data;
     }
@@ -2811,58 +3174,56 @@ class WaferInformationRecord : StdfRecord
 
 class WaferResultsRecord : StdfRecord
 {
-    const ubyte head_num;
-    const ubyte site_grp;
-    const DateTime finish_t;
-    const uint part_cnt;
-    const uint rtst_cnt;
-    const uint abrt_cnt;
-    const uint good_cnt;
-    const uint func_cnt;
-    const string wafer_id;
-    const string fabwf_id;
-    const string frame_id;
-    const string mask_id;
-    const string usr_desc;
-    const string exc_desc;
+    U1 head_num;
+    U1 site_grp;
+    U4 finish_t;
+    U4 part_cnt;
+    U4 rtst_cnt;
+    U4 abrt_cnt;
+    U4 good_cnt;
+    U4 func_cnt;
+    CN wafer_id;
+    CN fabwf_id;
+    CN frame_id;
+    CN mask_id;
+    CN usr_desc;
+    CN exc_desc;
 
-    this(Cpu_t cpu, ushort reclen, InputStreamRange s)
+    this(size_t reclen, ByteReader s)
     {
-        super(cpu, Record_t.WRR, reclen);
-        head_num = cpu.getU1(s);
-        site_grp = cpu.getU1(s);
-        uint d = cpu.getU4(s);
-        finish_t = DateTime(1970, 1, 1, 0, 0, 0) + dur!"seconds"(d);
-        part_cnt = cpu.getU4(s);
-        rtst_cnt = cpu.getU4(s);
-        abrt_cnt = cpu.getU4(s);
-        good_cnt = cpu.getU4(s);
-        func_cnt = cpu.getU4(s);
-        wafer_id = cpu.getCN(s);
-        fabwf_id = cpu.getCN(s);
-        frame_id = cpu.getCN(s);
-        mask_id = cpu.getCN(s);
-        usr_desc = cpu.getCN(s);
-        exc_desc = cpu.getCN(s);
+        super(Record_t.WRR, reclen);
+        head_num = get!U1(s);
+        site_grp = get!U1(s);
+        finish_t = get!U4(s);
+        part_cnt = get!U4(s);
+        rtst_cnt = get!U4(s);
+        abrt_cnt = get!U4(s);
+        good_cnt = get!U4(s);
+        func_cnt = get!U4(s);
+        wafer_id = get!CN(s);
+        fabwf_id = get!CN(s);
+        frame_id = get!CN(s);
+        mask_id = get!CN(s);
+        usr_desc = get!CN(s);
+        exc_desc = get!CN(s);
     }
 
-    this(Cpu_t cpu,
-         const ubyte head_num,
-         const ubyte site_grp,
-         const DateTime finish_t,
-         const uint part_cnt,
-         const uint rtst_cnt,
-         const uint abrt_cnt,
-         const uint good_cnt,
-         const uint func_cnt,
-         const string wafer_id,
-         const string fabwf_id,
-         const string frame_id,
-         const string mask_id,
-         const string usr_desc,
-         const string exc_desc)
+    this(U1 head_num,
+         U1 site_grp,
+         U4 finish_t,
+         U4 part_cnt,
+         U4 rtst_cnt,
+         U4 abrt_cnt,
+         U4 good_cnt,
+         U4 func_cnt,
+         CN wafer_id,
+         CN fabwf_id,
+         CN frame_id,
+         CN mask_id,
+         CN usr_desc,
+         CN exc_desc)
     {
-        super(cpu, Record_t.WRR, 0);
+        super(Record_t.WRR, 0);
         this.head_num = head_num;
         this.site_grp = site_grp;
         this.finish_t = finish_t;
@@ -2880,9 +3241,9 @@ class WaferResultsRecord : StdfRecord
         reclen = getReclen();
     }
 
-    override protected ushort getReclen()
+    override protected size_t getReclen()
     {
-        ushort l = 26;
+        size_t l = 26;
         l += (1 + wafer_id.length);
         l += (1 + fabwf_id.length);
         l += (1 + frame_id.length);
@@ -2892,6 +3253,7 @@ class WaferResultsRecord : StdfRecord
         return l;
     }
 
+    /*
     override ubyte[] getBytes()
     {
         auto bs = getHeaderBytes();
@@ -2899,20 +3261,21 @@ class WaferResultsRecord : StdfRecord
         bs ~= site_grp;
         auto d = finish_t - DateTime(1970, 1, 1, 0, 0, 0); 
         auto dt = cast(uint) d.total!"seconds";
-        bs ~= cpu.getU4Bytes(dt);
-        bs ~= cpu.getU4Bytes(part_cnt);
-        bs ~= cpu.getU4Bytes(rtst_cnt);
-        bs ~= cpu.getU4Bytes(abrt_cnt);
-        bs ~= cpu.getU4Bytes(good_cnt);
-        bs ~= cpu.getU4Bytes(func_cnt);
-        bs ~= cpu.getCNBytes(wafer_id);
-        bs ~= cpu.getCNBytes(fabwf_id);
-        bs ~= cpu.getCNBytes(frame_id);
-        bs ~= cpu.getCNBytes(mask_id);
-        bs ~= cpu.getCNBytes(usr_desc);
-        bs ~= cpu.getCNBytes(exc_desc);
+        bs ~= getU4Bytes(dt);
+        bs ~= getU4Bytes(part_cnt);
+        bs ~= getU4Bytes(rtst_cnt);
+        bs ~= getU4Bytes(abrt_cnt);
+        bs ~= getU4Bytes(good_cnt);
+        bs ~= getU4Bytes(func_cnt);
+        bs ~= getCNBytes(wafer_id);
+        bs ~= getCNBytes(fabwf_id);
+        bs ~= getCNBytes(frame_id);
+        bs ~= getCNBytes(mask_id);
+        bs ~= getCNBytes(usr_desc);
+        bs ~= getCNBytes(exc_desc);
         return bs;
     }
+    */
 
     override string toString()
     {
@@ -2920,7 +3283,7 @@ class WaferResultsRecord : StdfRecord
         app.put("WaferResultsRecord:");
         app.put("\n    head_num = "); app.put(to!string(head_num));
         app.put("\n    site_grp = "); app.put(to!string(site_grp));
-        app.put("\n    finish_t = "); app.put(finish_t.toString());
+        app.put("\n    finish_t = "); app.put(to!string(finish_t));
         app.put("\n    part_cnt = "); app.put(to!string(part_cnt));
         app.put("\n    rtst_cnt = "); app.put(to!string(rtst_cnt));
         app.put("\n    abrt_Cnt = "); app.put(to!string(abrt_cnt));

@@ -12,8 +12,8 @@
 	"TargetType" : "executable",
 	"mainSourceFile" : "src/main.d",
     "dependencies" : {
-        "d_util" : {
-            "path" : "../d_util"
+        "util_mc" : {
+            "path" : "../util_mc"
         }
     }
 }
