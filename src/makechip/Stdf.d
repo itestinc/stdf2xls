@@ -112,17 +112,18 @@ GenericData_t getDataType(ubyte a)
 
 union GenericDataHolder
 {
-    ubyte a;
-    ushort b;
-    uint c;
-    byte d;
-    short e;
-    int f;
-    float g;
-    double h;
-    char[] i;
-    DN j;
-    BN k;
+    U1 a;
+    U2 b;
+    U4 c;
+    I1 d;
+    I2 e;
+    I4 f;
+    R4 g;
+    R8 h;
+    CN i;
+    BN j;
+    DN k;
+    N1 l;
 }
 
 struct GenericData
@@ -133,57 +134,32 @@ struct GenericData
 
     this(GenericData_t type, ByteReader s)
     {
-        if (type == GenericData_t.U1) h.a = get!U1(s);
-        else if (type == GenericData_t.U2) h.b = get!U2(s);
-        else if (type == GenericData_t.U4) h.c = get!U4(s);
-        else if (type == GenericData_t.I1) h.d = get!I1(s);
-        else if (type == GenericData_t.I2) h.e = get!I2(s);
-        else if (type == GenericData_t.I4) h.f = get!I4(s);
-        else if (type == GenericData_t.R4) h.g = get!R4(s);
-        else if (type == GenericData_t.R8) h.h = get!R8(s);
-        else if (type == GenericData_t.CN) h.i = get!CN(s);
-        else if (type == GenericData_t.BN) h.k = get!BN(s);
-        else if (type == GenericData_t.DN)
-        {
-            s.mark();
-            numBits = get!U2(s);
-            s.resetToMark();
-            h.j = get!DN(s);
-        }
-        else 
-        {
-            ubyte b = s.getByte();
-            h.j.length = 2;
-            h.j[0] = cast(ubyte) (b & 0x0F);
-            h.j[1] = cast(ubyte) ((b & 0xF0) >> 4);
-        }
+        if      (type == GenericData_t.U1) { U1 x = U1(s); h.a = x; }
+        else if (type == GenericData_t.U2) { U2 x = U2(s); h.b = x; }
+        else if (type == GenericData_t.U4) { U4 x = U4(s); h.c = x; }
+        else if (type == GenericData_t.I1) { I1 x = I1(s); h.d = x; }
+        else if (type == GenericData_t.I2) { I2 x = I2(s); h.e = x; }
+        else if (type == GenericData_t.I4) { I4 x = I4(s); h.f = x; }
+        else if (type == GenericData_t.R4) { R4 x = R4(s); h.g = x; }
+        else if (type == GenericData_t.R8) { R8 x = R8(s); h.h = x; }
+        else if (type == GenericData_t.CN) { CN x = CN(s); h.i = x; }
+        else if (type == GenericData_t.BN) { BN x = BN(s); h.j = x; }
+        else if (type == GenericData_t.DN) { DN x = DN(s); h.k = x; }
+        else if (type == GenericData_t.N1) { N1 x = N1(s); h.l = x; }
     }
 
-    this(ubyte v)   { h.a = v; type = GenericData_t.U1; } 
-    this(ushort v)  { h.b = v; type = GenericData_t.U2; }
-    this(uint v)    { h.c = v; type = GenericData_t.U4; }
-    this(byte v)    { h.d = v; type = GenericData_t.I1; }
-    this(short v)   { h.e = v; type = GenericData_t.I2; }
-    this(int v)     { h.f = v; type = GenericData_t.I4; }
-    this(float v)   { h.g = v; type = GenericData_t.R4; }
-    this(double v)  { h.h = v; type = GenericData_t.R8; }
-    this(char[] v)  { h.i = v; type = GenericData_t.CN; }
-    this(DN      v) { h.j = v; type = GenericData_t.DN; }
-    this(BN      v) { h.k = v; type = GenericData_t.BN; }
-    this(ushort numBits, ubyte[] v) 
-    { 
-        this.numBits = numBits; 
-        h.j.length = v.length;
-        for (int i=0; i<v.length; i++) h.j[i] = v[i];
-        type = GenericData_t.DN; 
-    }
-    this(ubyte b0, ubyte b1) 
-    { 
-        h.k.length = 2;
-        h.k[0] = b0;
-        h.k[1] = b1; 
-        type = GenericData_t.N1; 
-    }
+    this(ubyte v)   { h.a.setValue(v); type = GenericData_t.U1; } 
+    this(ushort v)  { h.b.setValue(v); type = GenericData_t.U2; }
+    this(uint v)    { h.c.setValue(v); type = GenericData_t.U4; }
+    this(byte v)    { h.d.setValue(v); type = GenericData_t.I1; }
+    this(short v)   { h.e.setValue(v); type = GenericData_t.I2; }
+    this(int v)     { h.f.setValue(v); type = GenericData_t.I4; }
+    this(float v)   { h.g.setValue(v); type = GenericData_t.R4; }
+    this(double v)  { h.h.setValue(v); type = GenericData_t.R8; }
+    this(string v)  { h.i.setValue(v); type = GenericData_t.CN; }
+    this(ubyte[] v) { h.j.setValue(v); type = GenericData_t.BN; }
+    this(size_t nbits, ubyte[] v) { h.k.setValue(nbits, v); type = GenericData_t.DN; }
+    this(ubyte b0, ubyte b1) { h.l.setValue([b0, b1]); type = GenericData_t.N1; }
 
     string toString()
     {
@@ -242,9 +218,9 @@ struct GenericData
         case I4: return 4;
         case R4: return 4;
         case R8: return 8;
-        case CN: return cast(ushort) (1 + h.i.length); 
-        case BN: return cast(ushort) (1 + h.j.length);
-        case DN: return cast(ushort) (2 + h.j.length);
+        case CN: return cast(ushort) h.i.size;
+        case BN: return cast(ushort) h.j.size;
+        case DN: return cast(ushort) h.k.size;
         default: 
         }
         return 1;
@@ -284,11 +260,15 @@ struct CN
 
 struct C1
 {
-    ubyte myVal;
+    ubyte[] myVal;
 
-    public this(ByteReader s) { myVal = s.getByte(); }
-    public char getValue() { return cast(char) myVal; }
-    public void setValue(char c) { myVal = cast(char) c; } 
+    public this(ByteReader s) { myVal = s.getBytes(1).dup; }
+    public char getValue() { return cast(char) myVal[0]; }
+    public void setValue(char c) 
+    { 
+        myVal.length = 1;
+        myVal[0] = cast(ubyte) c; 
+    } 
     public @property size_t size() { return 1; }
     public string toString()
     { 
@@ -299,11 +279,20 @@ struct C1
 
 struct U1
 {
-    ubyte myVal;
+    ubyte[] myVal;
 
-    this(ByteReader s) { myVal = s.getByte(); } 
-    public ubyte getValue() { return myVal; }
-    public void setValue(ubyte b) { myVal = b; }
+    this(ByteReader s) { myVal = s.getBytes(1).dup; } 
+    this(ubyte val)
+    {
+        myVal = new ubyte[1];
+        myVal[0] = val;
+    }
+    public ubyte getValue() { return myVal[0]; }
+    public void setValue(ubyte b) 
+    { 
+        myVal.length = 1;
+        myVal[0] = b; 
+    }
     public @property size_t size() { return 1; }
     public string toString()
     {
@@ -312,174 +301,289 @@ struct U1
         b[0] = myVal;
         return toHexString(b);
     }
+}
         
 struct U2  
 {
     ubyte[] myVal;
 
-    this(ByteReader s) { myVal = s.getBytes(2); }
+    this(ByteReader s) { myVal = s.getBytes(2).dup; }
     public ushort getValue() { return cast(ushort) (myVal[0] + (myVal[1] << 8)); }
     public void setValue(ushort b) 
     { 
+        myVal.length = 2;
         myVal[0] = cast(ubyte) (b & 0xFF);
         myVal[1] = cast(ubyte) ((b & 0xFF00) >> 8);
     }
     public @property size_t size() { return 2; }
-    public string toString()
-    {
-        return to!string(getValue()); }
-    }
+    public string toString() { return to!string(getValue()); }
 }
 
 struct U4
 {   
     ubyte[] myVal;
-
+    this(ByteReader s) { myVal = s.getBytes(4).dup; }
+    public uint getValue() { return cast(uint) (myVal[0] + (myVal[1] << 8) + (myVal[2] << 16) + (myVal[3] << 24)); }
+    public void setValue(uint b)
+    {
+        myVal.length = 4;
+        myVal[0] = cast(ubyte) (b & 0xFF);
+        myVal[1] = cast(ubyte) ((b & 0xFF00) >> 8);
+        myVal[2] = cast(ubyte) ((b & 0xFF0000) >> 16);
+        myVal[3] = cast(ubyte) ((b & 0xFF000000) >> 24);
+    }
+    public @property size_t size() { return 4; }
+    public string toString() { return to!string(getValue()); }
 }
 
 struct I1
 {
-    byte;
-
+    ubyte[] myVal;
+    this(ByteReader s) { myVal = s.getBytes(1).dup; }
+    public byte getValue() { return cast(byte) myVal[0]; }
+    public void setValue(byte b) 
+    { 
+        myVal.length = 1;
+        myVal[0] = cast(ubyte) b; 
+    }
+    public @property size_t size() { return 1; }
+    public string toString() { return to!string(cast(byte) myVal); }
 }
 
 struct I2
 {
-    short;
-
+    ubyte[] myVal;
+    this(ByteReader s) { myVal = s.getBytes(2).dup; }
+    public short getValue() { return cast(short) (myVal[0] + (myVal[1] << 8)); }
+    public void setValue(short b)
+    {
+        myVal.length = 2;
+        myVal[0] = cast(ubyte) (b & 0xFF);
+        myVal[1] = cast(ubyte) ((b & 0xFF00) >> 8);
+    }
+    public @property size_t size() { return 2; }
+    public string toString() { return to!string(getValue()); }
 }
 
 struct I4
 {
-    int;
-
+    ubyte[] myVal;
+    this(ByteReader s) { myVal = s.getBytes(4).dup; }
+    public int getValue() { return cast(int) (myVal[0] + (myVal[1] << 8) + (myVal[2] << 16) + (myVal[3] << 24)); }
+    public void setValue(int b)
+    {
+        myVal.length = 4;
+        myVal[0] = cast(ubyte) (b & 0xFF);
+        myVal[1] = cast(ubyte) ((b & 0xFF00) >> 8);
+        myVal[2] = cast(ubyte) ((b & 0xFF0000) >> 16);
+        myVal[3] = cast(ubyte) ((b & 0xFF000000) >> 24);
+    }
+    public @property size_t size() { return 4; }
+    public string toString() { return to!string(getValue()); }
 }
 
 struct R4
 {
-    float;
-
+    ubyte[] myVal;
+    this(ByteReader s) { myVal = s.getBytes(4).dup; }
+    public float getValue()
+    {
+        uint x = cast(uint) (myVal[0] + (myVal[1] << 8) + (myVal[2] << 16) + (myVal[3] << 24));
+        FloatRep f;
+        f.sign = (x & 0x80000000) == 0x80000000;
+        f.exponent = cast(ubyte) ((x & 0x7F800000) >> 23);
+        f.fraction = x & 0x007FFFFF;
+        return f.value;
+    }
+    public void setValue(float v)
+    {
+        FloatRep f;
+        f.value = v;
+        uint x = 0;
+        x |= f.sign ? 0x80000000 : 0;
+        uint exp = (f.exponent << 23) & 0x7F800000;
+        x |= exp;
+        x |= f.fraction & 0x007FFFFF;
+        myVal.length = 4;
+        myVal[0] = cast(ubyte) (x & 0xFF);
+        myVal[1] = cast(ubyte) ((x & 0xFF00) >> 8);
+        myVal[2] = cast(ubyte) ((x & 0xFF0000) >> 16);
+        myVal[3] = cast(ubyte) ((x & 0xFF000000) >> 24);
+    }
+    public @property size_t size() { return 4; }
+    public string toString() { return to!string(getValue()); }
 }
 
 struct R8
 {
-    double;
-
+    ubyte[] myVal;
+    this(ByteReader s) { myVal = s.getBytes(8).dup; }
+    public double getValue()
+    {
+        ulong x = cast(uint) (myVal[0] + (myVal[1] << 8) + (myVal[2] << 16) + (myVal[3] << 24) +
+                             (myVal[4] << 32) + (myVal[5] << 40) + (myVal[6] << 48) + (myVal[7] << 56));
+        DoubleRep f;
+        f.sign = (x & 0x8000000000000000L) == 0x8000000000000000L;
+        f.exponent = cast(ushort) ((x & 0x7FF0000000000000L) >> 52);
+        f.fraction = x & 0xFFFFFFFFFFFFFL;
+        return f.value;
+    }
+    public void setValue(double d)
+    {
+        DoubleRep f;
+        f.value = d;
+        ulong x = 0L;
+        x |= f.sign ? 0x8000000000000000L : 0L;
+        ulong exp = (f.exponent << 52) & 0x7FF0000000000000L;
+        x |= exp;
+        x |= f.fraction & 0xFFFFFFFFFFFFFL;
+        myVal.length = 8;
+        myVal[0] = cast(ubyte) (x & 0xFFL);
+        myVal[1] = cast(ubyte) ((x & 0xFF00L) >> 8);
+        myVal[2] = cast(ubyte) ((x & 0xFF0000L) >> 16);
+        myVal[3] = cast(ubyte) ((x & 0xFF000000L) >> 24);
+        myVal[4] = cast(ubyte) ((x & 0xFF00000000L) >> 32);
+        myVal[5] = cast(ubyte) ((x & 0xFF0000000000L) >> 40);
+        myVal[6] = cast(ubyte) ((x & 0xFF000000000000L) >> 48);
+        myVal[7] = cast(ubyte) ((x & 0xFF00000000000000L) >> 56);
+    }
+    public @property size_t size() { return 8; }
+    public string toString() { return to!string(getValue()); }
 }
 
 struct BN 
 {
     ubyte[] myVal;
-    alias myVal this;
+    this(ByteReader s)
+    {
+        size_t l = s.front();
+        myVal = s.getBytes(l+1).dup;
+    }
+    public ubyte[] getValue() { return myVal[1..$]; }
+    public void setValue(ubyte[] b)
+    {
+        myVal = new ubyte[1 + b.length];
+        myval[0] = cast(ubyte) b.length;
+        for (int i=0; i<b.length; i++) myVal[i+i] = b[i];
+    }
+    public @property size_t size() { return myVal.length; }
+    public string toString() { return to!string(myVal); }
 }
 
 struct DN 
 {
     ubyte[] myVal;
-    alias myVal this;
+    ushort numBits;
+    this(ByteReader s)
+    {
+        ubyte b0 = s.getByte();
+        ubyte b1 = s.getByte();
+        numBits = cast(ushort) (b0 + (b1 << 8));
+        size_t l = (numBits % 8 == 0) ? numBits/8 : numBits/8 + 1;
+        myVal = new ubyte[2 + l];
+        myVal[0] = b0;
+        myVal[1] = b1;
+        for (int i=0; i<l; i++) myVal[i+2] = s.getByte();
+    }
+    public ubyte[] getValue() { return myVal[2..$]; }
+    public void setValue(size_t numBits, ubyte[] bits)
+    {
+        this.numBits = cast(ushort) numBits;
+        size_t l = (numBits % 8 == 0) ? numBits/8 : numBits/8 + 1;
+        myVal.length = 2 + l;
+        ubyte b0 = cast(ubyte) (numBits & 0xFF);
+        ubyte b1 = cast(ubyte) ((numBits & 0xFF00) >> 8);
+        myVal[0] = b0;
+        myVal[1] = b1;
+        for (int i=0; i<l; i++) myVal[2+i] = bits[i];
+    }
+    public @property size_t size() { return myVal.length; }
+    public string toString()
+    {
+        return to!string(numBits) ~ ", " ~ to!string(myVal[2..$]);
+    }
 }
 
 struct N1 
 {
-    ubyte myVal;
-    alias myVal this;
+    ubyte[] myVal;
+    this(ByteReader s) { myVal = s.getBytes(1); }
+    public ubyte[] getValue()
+    {
+        ubyte[] val = new ubyte[2];
+        val[0] = myVal[0] & 0x0F;
+        val[1] = (myVal[1] & 0xF0) >> 4;
+        return val;
+    }
+    public void setValue(ubyte[] val)
+    {
+        myVal[0] = val[0];
+        myVal[0] |= (val[1] << 4) & 0xF0;
+    }
+    public @property size_t size() { return 1; }
+    public string toString() { return to!string(getValue()); }
 }
 
-private T get(T)(ByteReader s)
+struct OptionalField(T) 
+    if (is(T == DN) || is(T == U1) || is(T == U2) || 
+        is(T == U4) || is(T == I1) || is(T == I2) ||
+        is(T == I4) || is(T == R4) || is(T == CN))
 {
-    import std.bitmanip;
-    static if (is (T == R8))
+    static if (is(T == DN)) 
     {
-        long x = cast(ulong) s.getByte() + (cast(ulong) s.getByte() << 8) + (cast(ulong) s.getByte() << 16) +
-                 (cast(ulong) s.getByte() << 24) + (cast(ulong) s.getByte() << 32) + (cast(ulong) s.getByte() << 40) +
-                 (cast(ulong) s.getByte() << 48) + (cast(ulong) s.getByte() << 56);
-        DoubleRep d;
-        d.sign = (x & 0x8000000000000000L) == 0x8000000000000000L;
-        d.exponent = cast(ushort) ((x & 0x7FF0000000000000) >> 52);
-        d.fraction = x & 0xFFFFFFFFFFFFFL;
-        return d.value;
+        alias ACT_TYPE = ubyte[];
     }
     else
     {
-        static if (is (T == U4))
+        static if (is(T == U1))
         {
-            return cast(uint) (s.getByte() + (s.getByte() << 8) + (s.getByte() << 16) + (s.getByte() << 24));
+            alias ACT_TYPE = ubyte;
         }
         else
         {
-            static if (is (T == R4))
+            static if (is(T == U2))
             {
-                int x = cast(uint) (s.getByte() + (s.getByte() << 8) + (s.getByte() << 16) + (s.getByte() << 24));
-                FloatRep f;
-                f.sign = (x & 0x80000000) == 0x80000000;
-                f.exponent = cast(ubyte) ((x & 0x7F800000) >> 23);
-                f.fraction = x & 0x007FFFFF;
-                return f.value;
+                alias ACT_TYPE = ushort;
             }
             else
             {
-                static if (is (T == I4))
+                static if (is(T == U4))
                 {
-                    return cast(int) (s.getByte() + (s.getByte() << 8) + (s.getByte() << 16) + (s.getByte() << 24));
+                    alias ACT_TYPE = uint;
                 }
                 else
                 {
-                    static if (is (T == CN))
+                    static if (is(T == I1))
                     {
-                        size_t len = s.getByte();
-                        char[] c = new char[len];
-                        for (int i=0; i<len; i++) c[i] = cast(char) s.getByte();
-                        return c;
+                        alias ACT_TYPE = byte;
                     }
                     else
                     {
-                        static if (is (T == U1))
+                        static if (is(T == I2))
                         {
-                            return s.getByte();
+                            alias ACT_TYPE = short;
                         }
                         else
                         {
-                            static if (is (T == U2))
+                            static if (is(T == I4))
                             {
-                                return cast(ushort) (s.getByte() + (s.getByte() << 8));
+                                alias ACT_TYPE = int;
                             }
                             else
                             {
-                                static if (is (T == I1))
+                                static if (is(T == R4))
                                 {
-                                    return cast(byte) s.getByte();
+                                    alias ACT_TYPE = float;
                                 }
                                 else
                                 {
-                                    static if (is (T == I2))
+                                    static if (is(T == CN))
                                     {
-                                        return cast(short) (s.getByte() + (s.getByte() << 8));
+                                        alias ACT_TYPE = string;
                                     }
                                     else
                                     {
-                                        static if (is (T == BN))
-                                        {
-                                            size_t l = s.getByte();
-                                            ubyte[] b = new ubyte[l];
-                                            for (int i=0; i<l; i++) b[i] = s.getByte();
-                                            return cast(BN) b;
-                                        }
-                                        else
-                                        {
-                                            static if (is (T == DN))
-                                            { 
-                                                size_t nbits = get!(U2)(s);
-                                                size_t l = (nbits % 8 == 0) ? nbits/8 : nbits/8 + 1;
-                                                ubyte[] b = new ubyte[l];
-                                                for (int i=0; i<l; i++) b[i] = s.getByte();
-                                                DN dn = { myVal: b };
-                                                return dn;
-                                            }
-                                            else
-                                            {
-                                                static assert(false, "Unsupported type for get()" ~ T.toString());
-                                            }
-                                        }
+                                        static assert(false, "ERROR: Invalid type for OptionalField: " ~ T.stringof);
                                     }
                                 }
                             }
@@ -489,24 +593,22 @@ private T get(T)(ByteReader s)
             }
         }
     }
-}
 
-struct OptionalField(T)
-{
+
     private bool empty;
-    private T val;
-    public const T defaultValue;
-    private size_t size;
+    T myVal;
+    public const ACT_TYPE defaultValue;
 
-    @property T value()
+    public ACT_TYPE getValue()
     {
-        return val;
+        if (empty) return defaultValue;
+        return myVal.getValue();
     }
 
-    @property void value(T newVal)
+    public void setValue(ACT_TYPE newVal)
     {
-        this.empty = false;
-        this.val = newVal;
+        empty = false;
+        myVal.setValue(newVal);
     }
 
     @property bool isEmpty()
@@ -516,103 +618,103 @@ struct OptionalField(T)
 
     public string toString()
     {
-        return to!string(val);
+        if (empty) return to!string(defaultValue);
+        return myVal.toString();
     }
 
-    this(T defaultValue)
+    this(ACT_TYPE defaultValue)
     {
         this.defaultValue = defaultValue;
         empty = true;
     }
 
-    this(T val, T defaultValue)
+    this(ACT_TYPE val, ACT_TYPE defaultValue)
     {
         this.defaultValue = defaultValue;
-        this.val = val;
+        myVal.setValue(val);
         empty = false;
     }
 
-    @property size_t getSize()
+    @property size_t size()
     {
-        return size;
+        if (empty) return 0;
+        return myVal.size;
     }
 
     this(ref size_t reclen, ByteReader s, T defaultValue)
     {
         empty = true;
         this.defaultValue = defaultValue;
-        this.val = defaultValue;
         size = 0;
-        static if (is (T == BN))
+        static if (is (T : CN))
         {
             size_t l = s.front();
             if (reclen > l)
             {
-                val = get!(BN)(s);
+                myVal(s);
                 reclen -= l + 1;
                 empty = false;
-                size = 1 + val.length;
             }
         }
         else
         {
-            static if (is (T : CN))
+            static if (is (T == DN))
             {
-                size_t l = s.front();
-                if (reclen > l)
+                size_t l = 0;
+                if (reclen > 1)
                 {
-                    val = get!(CN)(s);
-                    reclen -= l + 1;
+                    s.mark();
+                    size_t nbits = s.getByte() + (s.getByte() << 8);
+                    s.resetToMark();
+                    l = (nbits % 8 == 0) ? nbits / 8 : (nbits / 8) + 1;
+                }
+                if (reclen > l + 1)
+                {
+                    myVal(s);
+                    reclen -= l + 2;
                     empty = false;
-                    size = 1 + val.length;
                 }
             }
             else
             {
-                static if (is (T == DN))
+                if (reclen >= myVal.size)
                 {
-                    size_t l = 0;
-                    if (reclen > 1)
-                    {
-                        s.mark();
-                        size_t nbits = cast(size_t) get!(U2)(s);
-                        s.resetToMark();
-                        l = (nbits % 8 == 0) ? nbits / 8 : (nbits / 8) + 1;
-                    }
-                    if (reclen > l + 1)
-                    {
-                        val = get!(DN)(s);
-                        reclen -= l + 2;
-                        empty = false;
-                        size = 2 + val.length;
-                    }
-                }
-                else
-                {
-                    size_t siz = T.sizeof;
-                    if (reclen >= siz)
-                    {
-                        val = get!(T)(s);
-                        reclen -= size;
-                        empty = false;
-                        size = siz;
-                    }
+                    myVal(s);
+                    reclen -= val.size;
+                    empty = false;
                 }
             }
         }
     }
 }
 
-// U1, U2, N1, R4, CN
-struct OptionalArray(T)
+// U2, N1, R4
+struct OptionalArray(T) if (is(T == U2) || is(T == N1) || is(T == R4))
 {
+    static if (is(T == U2))
+    {
+        alias ACT_TYPE = ushort;
+    }
+    else
+    {
+        static if (is(T == N1))
+        {
+            alias ACT_TYPE = ubyte;
+        }
+        else
+        {
+            static if (is(T == R4))
+            {
+                alias ACT_TYPE = float;
+            }
+        }
+    }
     private bool empty;
     private T[] val;
-    private size_t size;
 
-    public T value(int index)
+    public ACT_TYPE value(int index)
     {
-        return val[index];
+        return val[index].getValue();
     }
 
     public size_t length()
@@ -625,20 +727,28 @@ struct OptionalArray(T)
         return empty;
     }
 
-    @property size_t getSize()
+    @property size_t size()
     {
-        return size;
+        if (empty) return 0;
+        return val[0].size * val.length();
     }
 
-    public void value(T[] newVal)
+    public void setValue(size_t index, ACT_TYPE newVal)
     {
-        val = newVal;
-        empty = false;
+        assert(index < val.length);
+        val[index].setValue(newVal);
     }
 
     public string toString()
     {
         return to!string(val);
+    }
+
+    this(ACT_TYPE[] vals)
+    {
+        if (vals.length == 0) empty = true; else empty = false;
+        val = new T[vals.length];
+        for (int i=0; i<vals.length; i++) val[i].setValue(vals[i]);
     }
 
     this(ref size_t reclen, size_t cnt, ByteReader s)
@@ -648,19 +758,16 @@ struct OptionalArray(T)
         size = 0;
         static if (is (T == N1))
         {
-            size_t siz = 1;
-            if (reclen >= siz * (cnt+1)/2)
+            if (reclen >= (cnt+1)/2)
             {
-                val.length = cnt;
+                val.length = (cnt + 1) /2;
                 for (int i=0; i<(cnt+1)/2; i++) 
                 {
-                    ubyte b = s.getByte();
-                    val[2*i] = cast(ubyte) (b & 0x0F);
-                    if ((2*i < val.length - 1) || (val.length % 2 == 0)) val[2*i+1] = cast(ubyte) ((b & 0xF0) >> 4);
+                    val[i](s);
+                    reclen--; 
                 }
                 empty = false;
-                reclen -= siz * (cnt+1)/2;
-                size = siz;
+                reclen -= (cnt+1)/2;
             }
         }
         else
@@ -671,27 +778,22 @@ struct OptionalArray(T)
                 for (int i=0; i<cnt; i++)
                 {
                     size_t len = s.front();
-                    if (reclen > len)
-                    {
-                        val[i] = getCN(s);
-                    }
+                    if (reclen > len) val[i](s);
                     reclen -= len + 1;
                     empty = false;
-                    size = len + 1;
                 }
             }
             else
             {
-                static if (is (T == U1) || is (T == U2) || is (T == R4))
+                static if (is (T == U2) || is (T == R4))
                 {
                     size_t siz = T.sizeof;
                     if (reclen >= siz * cnt)
                     {
                         val.length = cnt;
-                        for (int i=0; i<cnt; i++) val[i] = get!(T)(s);
+                        for (int i=0; i<cnt; i++) val[i](s);
                         empty = false;
                         reclen -= siz * cnt;
-                        size = siz;
                     }
                 }
                 else
@@ -701,11 +803,6 @@ struct OptionalArray(T)
             }
         }
     }
-}
-
-struct FieldArray(T)
-{
-
 }
 
 class StdfReader
@@ -801,12 +898,10 @@ class StdfReader
 class StdfRecord
 {
     const Record_t recordType;
-    protected size_t reclen;
 
-    this(const Record_t recordType, size_t reclen)
+    this(const Record_t recordType)
     {
         this.recordType = recordType;
-        this.reclen = reclen;
     }
 
     abstract override string toString();
@@ -841,24 +936,23 @@ class AuditTrailRecord : StdfRecord
     U4 date;
     CN cmdLine;
 
-    this(size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.ATR, reclen);
-        date = get!U4(s);
-        cmdLine = get!CN(s); 
+        super(Record_t.ATR);
+        date(s);
+        cmdLine(s); 
     }
 
     this(U4 date, CN cmdLine)
     {
         super(Record_t.ATR, 0);
-        this.date = date;
-        this.cmdLine = cmdLine;
-        reclen = getReclen();
+        this.date.setValue(date);
+        this.cmdLine.setValue(cmdLine);
     }
 
     override protected size_t getReclen()
     {
-        return cast(ushort) (4 + cmdLine.length + 1);
+        return cast(ushort) (4 + cmdLine.size);
     }
 
     /*
@@ -880,9 +974,9 @@ class AuditTrailRecord : StdfRecord
         auto app = appender!string();
         app.put(recordType.description);
         app.put(":\n    date = ");
-        app.put(to!string(date));
+        app.put(date.toString());
         app.put("\n    cmdLine = ");
-        app.put(cmdLine);
+        app.put(cmdLine.toString());
         app.put("\n");
         return app.data;
     }
@@ -890,24 +984,23 @@ class AuditTrailRecord : StdfRecord
 
 class BeginProgramSelectionRecord : StdfRecord
 {
-    private const CN seqName;
+    CN seqName;
 
-    this(size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.BPS, reclen);
-        seqName = get!(CN)(s);
+        super(Record_t.BPS);
+        seqName(s);
     }
 
     this(string seqName)
     {
-        super(Record_t.BPS, 0);
-        this.seqName = seqName;
-        reclen = getReclen();
+        super(Record_t.BPS);
+        this.seqName.setValue(seqName);
     }
 
     override protected size_t getReclen()
     {
-        return cast(ushort) (1 + seqName.length);
+        return cast(ushort) (seqName.size);
     }
 
     /*
@@ -922,30 +1015,29 @@ class BeginProgramSelectionRecord : StdfRecord
 
     override string toString()
     {
-        return recordType.description ~ ":\n    seqName = " ~ to!string(seqName) ~ "\n";
+        return recordType.description ~ ":\n    seqName = " ~ seqName.toString() ~ "\n";
     }
 }
 
 class DatalogTextRecord : StdfRecord
 {
-    const CN text;
+    CN text;
 
-    this(size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.DTR, reclen);
-        text = get!(CN)(s);
+        super(Record_t.DTR);
+        text(s);
     }
 
     this(string text)
     {
-        super(Record_t.DTR, 0);
-        this.text = text;
-        reclen = getReclen();
+        super(Record_t.DTR);
+        this.text.setValue(text);
     }
 
     override protected size_t getReclen()
     {
-        return cast(ushort) (1 + text.length);
+        return text.length.size;
     }
 
     /*
@@ -963,7 +1055,7 @@ class DatalogTextRecord : StdfRecord
         auto app = appender!string();
         app.put(recordType.description);
         app.put(":\n    text = ");
-        app.put(text);
+        app.put(text.toString());
         app.put("\n");
         return app.data;
     }
@@ -972,14 +1064,9 @@ class DatalogTextRecord : StdfRecord
 class EndProgramSelectionRecord : StdfRecord
 {
 
-    this(size_t reclen, ByteReader s)
+    this()
     {
-        super(Record_t.EPS, reclen);
-    }
-
-    this(Cpu_t cpu)
-    {
-        super(Record_t.EPS, cast(ushort) 0);
+        super(Record_t.EPS);
     }
 
     override protected size_t getReclen()
@@ -1003,25 +1090,27 @@ class EndProgramSelectionRecord : StdfRecord
 
 class FileAttributesRecord : StdfRecord
 {
+    private U1 cpu_type;
     private U1 stdfVersion;
 
-    this(size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.FAR, reclen);
-        auto cpu_type = get!(U1)(s);
-        if (cpu_type != 2) assert(false, "INVALID CPU TYPE: " ~ to!string(cpu_type));
-        stdfVersion = get!(U1)(s);
+        super(Record_t.FAR);
+        cpu_type(s);
+        if (cpu_type.getValue() != 2) assert(false, "INVALID CPU TYPE: " ~ cpu_type.toString());
+        stdfVersion(s);
     }
 
     this(uint stdfVersion)
     {
-        super(Record_t.FAR, cast(ushort) 2);
-        this.stdfVersion = cast(ubyte) stdfVersion;
+        super(Record_t.FAR);
+        cpu_type.setValue(2);
+        this.stdfVersion.setValue(stdfVersion);
     }
 
     override protected size_t getReclen()
     {
-        return cast(ushort) 2;
+        return 2;
     }
 
     /*
@@ -1040,7 +1129,7 @@ class FileAttributesRecord : StdfRecord
         app.put(recordType.description);
         app.put(":\n    cpu = PC");
         app.put("    stdfVersion = ");
-        app.put(to!string(stdfVersion));
+        app.put(stdfVersion.toString());
         app.put("\n");
         return app.data;
     }
@@ -1053,15 +1142,18 @@ abstract class TestRecord : StdfRecord
     const U1 site_num;
     const U1 test_flg;
 
-    this( 
-         size_t reclen, 
-         Record_t type, 
-         const U4 test_num, 
-         const U1 head_num, 
-         const U1 site_num, 
-         const U1 test_flg)
+    this(Record_t type, ByteReader s)
     {
-        super(type, reclen);
+        super(type);
+        test_num(s);
+        head_num(s);
+        site_num(s);
+        test_flg(s);
+    }
+
+    this(Record_t type, uint test_num, ubyte head_num, ubyte site_num, ubyte test_flg)
+    {
+        super(type);
         this.test_num = test_num;
         this.head_num = head_num;
         this.site_num = site_num;
@@ -1072,13 +1164,13 @@ abstract class TestRecord : StdfRecord
     {
         auto app = appender!string();
         app.put("    test_num = "); 
-        app.put(to!string(test_num));
+        app.put(test_num.toString());
         app.put("\n    head_num = ");
-        app.put(to!string(head_num));
+        app.put(head_num.toString());
         app.put("\n    site_num = ");
-        app.put(to!string(site_num));
+        app.put(site_num.toString());
         app.put("\n    test_flg = ");
-        app.put(to!string(test_flg));
+        app.put(test_flg.toString());
         return app.data;
     }
 
@@ -1090,105 +1182,89 @@ abstract class TestRecord : StdfRecord
 
 class FunctionalTestRecord : TestRecord
 {
-    OptionalField!U1 opt_flag;
-    OptionalField!U4 cycl_cnt;
-    OptionalField!U4 rel_vadr;
-    OptionalField!U4 rept_cnt;
-    OptionalField!U4 num_fail;
-    OptionalField!I4 xfail_ad;
-    OptionalField!I4 yfail_ad;
-    OptionalField!I2 vect_off;
-    OptionalField!U2 rtn_icnt;
-    OptionalField!U2 pgm_icnt;
-    OptionalArray!U2 rtn_indx;
-    OptionalArray!N1 rtn_stat;
-    OptionalArray!U2 pgm_indx;
-    OptionalArray!N1 pgm_stat;
-    OptionalField!DN fail_pin;
-    OptionalField!CN vect_nam;
-    OptionalField!CN time_set;
-    OptionalField!CN op_code;
-    OptionalField!CN test_txt;
-    OptionalField!CN alarm_id;
-    OptionalField!CN prog_txt;
-    OptionalField!CN rslt_txt;
-    OptionalField!U1 patg_num;
-    OptionalField!DN spin_map;
-    private ushort failPinBits;
-    private ushort spinMapBits;
+    OptionalField!(U1) opt_flag;
+    OptionalField!(U4) cycl_cnt;
+    OptionalField!(U4) rel_vadr;
+    OptionalField!(U4) rept_cnt;
+    OptionalField!(U4) num_fail;
+    OptionalField!(I4) xfail_ad;
+    OptionalField!(I4) yfail_ad;
+    OptionalField!(I2) vect_off;
+    OptionalField!(U2) rtn_icnt;
+    OptionalField!(U2) pgm_icnt;
+    OptionalArray!(U2) rtn_indx;
+    OptionalArray!(N1) rtn_stat;
+    OptionalArray!(U2) pgm_indx;
+    OptionalArray!(N1) pgm_stat;
+    OptionalField!(DN) fail_pin;
+    OptionalField!(CN) vect_nam;
+    OptionalField!(CN) time_set;
+    OptionalField!(CN) op_code;
+    OptionalField!(CN) test_txt;
+    OptionalField!(CN) alarm_id;
+    OptionalField!(CN) prog_txt;
+    OptionalField!(CN) rslt_txt;
+    OptionalField!(U1) patg_num;
+    OptionalField!(DN) spin_map;
 
     this(size_t reclen, ByteReader s)
     {
-        super(reclen, Record_t.FTR, get!U4(s), get!U1(s), get!U1(s), get!U1(s));
+        super(Record_t.FTR, s);
         reclen -= 7;
-        opt_flag = OptionalField!U1(reclen, s, 0xFF);
-        cycl_cnt = OptionalField!U4(reclen, s, 0);
-        rel_vadr = OptionalField!U4(reclen, s, 0);
-        rept_cnt = OptionalField!U4(reclen, s, 0);
-        num_fail = OptionalField!U4(reclen, s, 0);
-        xfail_ad = OptionalField!I4(reclen, s, 0);
-        yfail_ad = OptionalField!I4(reclen, s, 0);
-        vect_off = OptionalField!I2(reclen, s, 0);
-        rtn_icnt = OptionalField!U2(reclen, s, 0);
-        pgm_icnt = OptionalField!U2(reclen, s, 0);
-        rtn_indx = OptionalArray!U2(reclen, rtn_icnt.value, s);
-        rtn_stat = OptionalArray!N1(reclen, rtn_icnt.value, s);
-        pgm_indx = OptionalArray!U2(reclen, pgm_icnt.value, s);
-        pgm_stat = OptionalArray!N1(reclen, pgm_icnt.value, s);
-        if (reclen > 1)
-        {
-            s.mark();
-            failPinBits = get!U2(s);
-            s.resetToMark();
-        }
-        fail_pin = OptionalField!DN(reclen, s, cast(DN) new ubyte[0]);
-        vect_nam = OptionalField!CN(reclen, s, new char[0]);
-        time_set = OptionalField!CN(reclen, s, new char[0]);
-        op_code  = OptionalField!CN(reclen, s, new char[0]);
-        test_txt = OptionalField!CN(reclen, s, new char[0]);
-        alarm_id = OptionalField!CN(reclen, s, new char[0]);
-        prog_txt = OptionalField!CN(reclen, s, new char[0]);
-        rslt_txt = OptionalField!CN(reclen, s, new char[0]);
-        patg_num = OptionalField!U1(reclen, s, 0);
-        if (reclen > 1)
-        {
-            s.mark();
-            spinMapBits = get!U2(s);
-            s.resetToMark();
-        }
-        spin_map = OptionalField!DN(reclen, s, cast(DN) new ubyte[0]);
+        opt_flag = OptionalField!(U1)(reclen, s, 0xFF);
+        cycl_cnt = OptionalField!(U4)(reclen, s, 0);
+        rel_vadr = OptionalField!(U4)(reclen, s, 0);
+        rept_cnt = OptionalField!(U4)(reclen, s, 0);
+        num_fail = OptionalField!(U4)(reclen, s, 0);
+        xfail_ad = OptionalField!(I4)(reclen, s, 0);
+        yfail_ad = OptionalField!(I4)(reclen, s, 0);
+        vect_off = OptionalField!(I2)(reclen, s, 0);
+        rtn_icnt = OptionalField!(U2)(reclen, s, 0);
+        pgm_icnt = OptionalField!(U2)(reclen, s, 0);
+        rtn_indx = OptionalArray!(U2)(reclen, rtn_icnt.value, s);
+        rtn_stat = OptionalArray!(N1)(reclen, rtn_icnt.value, s);
+        pgm_indx = OptionalArray!(U2)(reclen, pgm_icnt.value, s);
+        pgm_stat = OptionalArray!(N1)(reclen, pgm_icnt.value, s);
+        fail_pin = OptionalField!(DN)(reclen, s, cast(DN) new ubyte[0]);
+        vect_nam = OptionalField!(CN)(reclen, s, new char[0]);
+        time_set = OptionalField!(CN)(reclen, s, new char[0]);
+        op_code  = OptionalField!(CN)(reclen, s, new char[0]);
+        test_txt = OptionalField!(CN)(reclen, s, new char[0]);
+        alarm_id = OptionalField!(CN)(reclen, s, new char[0]);
+        prog_txt = OptionalField!(CN)(reclen, s, new char[0]);
+        rslt_txt = OptionalField!(CN)(reclen, s, new char[0]);
+        patg_num = OptionalField!(U1)(reclen, s, 0);
+        spin_map = OptionalField!(DN)(reclen, s, cast(DN) new ubyte[0]);
     }
 
     this(U4 test_num,
          U1 head_num,
          U1 site_num,
          U1 test_flg,
-         OptionalField!U1 opt_flag,
-         OptionalField!U4 cycl_cnt,
-         OptionalField!U4 rel_vadr,
-         OptionalField!U4 rept_cnt,
-         OptionalField!U4 num_fail,
-         OptionalField!I4 xfail_ad,
-         OptionalField!I4 yfail_ad,
-         OptionalField!I2 vect_off,
-         OptionalField!U2 rtn_icnt,
-         OptionalField!U2 pgm_icnt,
-         OptionalArray!U2 rtn_indx,
-         OptionalArray!N1 rtn_stat,
-         OptionalArray!U2 pgm_indx,
-         OptionalArray!N1 pgm_stat,
-         uint failPinBits,
-         OptionalField!DN fail_pin,
-         OptionalField!CN vect_nam,
-         OptionalField!CN time_set,
-         OptionalField!CN op_code,
-         OptionalField!CN test_txt,
-         OptionalField!CN alarm_id,
-         OptionalField!CN prog_txt,
-         OptionalField!CN rslt_txt,
-         OptionalField!U1 patg_num,
-         uint spinMapBits,
-         OptionalField!DN spin_map)
+         OptionalField!(U1) opt_flag,
+         OptionalField!(U4) cycl_cnt,
+         OptionalField!(U4) rel_vadr,
+         OptionalField!(U4) rept_cnt,
+         OptionalField!(U4) num_fail,
+         OptionalField!(I4) xfail_ad,
+         OptionalField!(I4) yfail_ad,
+         OptionalField!(I2) vect_off,
+         OptionalField!(U2) rtn_icnt,
+         OptionalField!(U2) pgm_icnt,
+         OptionalArray!(U2) rtn_indx,
+         OptionalArray!(N1) rtn_stat,
+         OptionalArray!(U2) pgm_indx,
+         OptionalArray!(N1) pgm_stat,
+         OptionalField!(DN) fail_pin,
+         OptionalField!(CN) vect_nam,
+         OptionalField!(CN) time_set,
+         OptionalField!(CN) op_code,
+         OptionalField!(CN) test_txt,
+         OptionalField!(CN) alarm_id,
+         OptionalField!(CN) prog_txt,
+         OptionalField!(CN) rslt_txt,
+         OptionalField!(U1) patg_num,
+         OptionalField!(DN) spin_map)
     {
         super(0, Record_t.FTR, test_num, head_num, site_num, test_flg);
         this.opt_flag = opt_flag;
@@ -1205,7 +1281,6 @@ class FunctionalTestRecord : TestRecord
         this.rtn_stat = rtn_stat;
         this.pgm_indx = pgm_indx;
         this.pgm_stat = pgm_stat;
-        this.failPinBits = cast(ushort) failPinBits;
         this.fail_pin = fail_pin;
         this.vect_nam = vect_nam;
         this.time_set = time_set;
@@ -1215,7 +1290,6 @@ class FunctionalTestRecord : TestRecord
         this.prog_txt = prog_txt;
         this.rslt_txt = rslt_txt;
         this.patg_num = patg_num;
-        this.spinMapBits = cast(ushort) spinMapBits;
         this.spin_map = spin_map;
         reclen = getReclen();
     }
