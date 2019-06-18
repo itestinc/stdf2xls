@@ -14,7 +14,7 @@ void main(string[] args)
     //writeln("num recs = ", recs.length);
     foreach(r; recs) 
     {
-        writeln(r.toString());
+        //writeln(r.toString());
     }
 
 }

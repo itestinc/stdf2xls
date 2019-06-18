@@ -252,16 +252,121 @@ struct GenericData
 }
 import std.typecons;
 // Field type holders
-alias CN = char[];
-alias C1 = char;
-alias U1 = ubyte;
-alias U2 = ushort;
-alias U4 = uint;
-alias I1 = byte;
-alias I2 = short;
-alias I4 = int;
-alias R4 = float;
-alias R8 = double;
+struct CN
+{
+    ubyte[] myVal;
+
+    this(ByteReader s)
+    {
+        size_t len = s.front;
+        myVal = s.getBytes(len+1).dup;
+    }
+
+    public string getValue() { return new string(myVal[1..$]); }
+
+    public void setValue(string s)
+    {
+        size_t l = s.length;
+        myVal = new ubyte[l + 1];
+        myVal[0] = cast(ubyte) l;
+        for (int i=0; i<l; i++) myVal[i+1] = s[i];
+    }
+
+    public @property size_t size() { return myVal.length; }
+
+    public string toString()
+    {
+        string s = myVal[1..$];
+        return s;
+    }
+
+}
+
+struct C1
+{
+    ubyte myVal;
+
+    public this(ByteReader s) { myVal = s.getByte(); }
+    public char getValue() { return cast(char) myVal; }
+    public void setValue(char c) { myVal = cast(char) c; } 
+    public @property size_t size() { return 1; }
+    public string toString()
+    { 
+        string s = "" ~ myVal; 
+        return s; 
+    }
+}
+
+struct U1
+{
+    ubyte myVal;
+
+    this(ByteReader s) { myVal = s.getByte(); } 
+    public ubyte getValue() { return myVal; }
+    public void setValue(ubyte b) { myVal = b; }
+    public @property size_t size() { return 1; }
+    public string toString()
+    {
+        ubyte[] b;
+        b.length = 1;
+        b[0] = myVal;
+        return toHexString(b);
+    }
+        
+struct U2  
+{
+    ubyte[] myVal;
+
+    this(ByteReader s) { myVal = s.getBytes(2); }
+    public ushort getValue() { return cast(ushort) (myVal[0] + (myVal[1] << 8)); }
+    public void setValue(ushort b) 
+    { 
+        myVal[0] = cast(ubyte) (b & 0xFF);
+        myVal[1] = cast(ubyte) ((b & 0xFF00) >> 8);
+    }
+    public @property size_t size() { return 2; }
+    public string toString()
+    {
+        return to!string(getValue()); }
+    }
+}
+
+struct U4
+{   
+    ubyte[] myVal;
+
+}
+
+struct I1
+{
+    byte;
+
+}
+
+struct I2
+{
+    short;
+
+}
+
+struct I4
+{
+    int;
+
+}
+
+struct R4
+{
+    float;
+
+}
+
+struct R8
+{
+    double;
+
+}
+
 struct BN 
 {
     ubyte[] myVal;
@@ -613,7 +718,8 @@ class StdfReader
     {
         this.filename = filename;
         auto f = new File(filename, "rb");
-        src = new BinaryBufferedSource(filename, 10000000L);
+        //src = new BinaryBufferedSource(filename, 2000000);
+        src = new BinarySource(filename);
     }
 
     StdfRecord[] getRecords() { return(records); }
