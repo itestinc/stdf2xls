@@ -238,7 +238,7 @@ struct CN
         myVal = s.getBytes(len+1).dup;
     }
 
-    public string getValue() { return new string(myVal[1..$]); }
+    public string getValue() { return cast(immutable(char)[]) myVal; }
 
     public void setValue(string s)
     {
@@ -252,7 +252,7 @@ struct CN
 
     public string toString()
     {
-        string s = myVal[1..$];
+        string s = cast(immutable(char)[]) myVal[1..$];
         return s;
     }
 
@@ -272,7 +272,7 @@ struct C1
     public @property size_t size() { return 1; }
     public string toString()
     { 
-        string s = "" ~ myVal; 
+        string s = to!string(cast(char) myVal[0]);
         return s; 
     }
 }
@@ -294,13 +294,8 @@ struct U1
         myVal[0] = b; 
     }
     public @property size_t size() { return 1; }
-    public string toString()
-    {
-        ubyte[] b;
-        b.length = 1;
-        b[0] = myVal;
-        return toHexString(b);
-    }
+    import std.digest;
+    public string toString() { return toHexString(myVal); }
 }
         
 struct U2  
@@ -347,7 +342,7 @@ struct I1
         myVal[0] = cast(ubyte) b; 
     }
     public @property size_t size() { return 1; }
-    public string toString() { return to!string(cast(byte) myVal); }
+    public string toString() { return to!string(cast(byte) myVal[0]); }
 }
 
 struct I2
@@ -384,6 +379,7 @@ struct I4
 
 struct R4
 {
+    import std.bitmanip;
     ubyte[] myVal;
     this(ByteReader s) { myVal = s.getBytes(4).dup; }
     public float getValue()
@@ -416,12 +412,13 @@ struct R4
 
 struct R8
 {
+    import std.bitmanip;
     ubyte[] myVal;
     this(ByteReader s) { myVal = s.getBytes(8).dup; }
     public double getValue()
     {
-        ulong x = cast(uint) (myVal[0] + (myVal[1] << 8) + (myVal[2] << 16) + (myVal[3] << 24) +
-                             (myVal[4] << 32) + (myVal[5] << 40) + (myVal[6] << 48) + (myVal[7] << 56));
+        ulong x = (cast(ulong) myVal[0] + (cast(ulong) myVal[1] << 8) + (cast(ulong) myVal[2] << 16) + (cast(ulong) myVal[3] << 24) +
+                  (cast(ulong) myVal[4] << 32) + (cast(ulong) myVal[5] << 40) + (cast(ulong) myVal[6] << 48) + (cast(ulong) myVal[7] << 56));
         DoubleRep f;
         f.sign = (x & 0x8000000000000000L) == 0x8000000000000000L;
         f.exponent = cast(ushort) ((x & 0x7FF0000000000000L) >> 52);
@@ -434,7 +431,7 @@ struct R8
         f.value = d;
         ulong x = 0L;
         x |= f.sign ? 0x8000000000000000L : 0L;
-        ulong exp = (f.exponent << 52) & 0x7FF0000000000000L;
+        ulong exp = (cast(ulong) f.exponent << 52) & 0x7FF0000000000000L;
         x |= exp;
         x |= f.fraction & 0xFFFFFFFFFFFFFL;
         myVal.length = 8;
@@ -463,7 +460,7 @@ struct BN
     public void setValue(ubyte[] b)
     {
         myVal = new ubyte[1 + b.length];
-        myval[0] = cast(ubyte) b.length;
+        myVal[0] = cast(ubyte) b.length;
         for (int i=0; i<b.length; i++) myVal[i+i] = b[i];
     }
     public @property size_t size() { return myVal.length; }
@@ -815,7 +812,6 @@ class StdfReader
     {
         this.filename = filename;
         auto f = new File(filename, "rb");
-        //src = new BinaryBufferedSource(filename, 2000000);
         src = new BinarySource(filename);
     }
 
@@ -826,70 +822,49 @@ class StdfReader
         records.length = 0;
         while (src.remaining() > 1)
         {
-            //writeln("ptr = ", src.getPtr());
-            //src.mark();
-            size_t reclen = get!(U2)(src);
+            ubyte b0 = src.getByte();
+            ubyte b1 = src.getByte();
+            size_t reclen = b0 + ((b1 << 8) * 0xFF00);
             if (reclen < 2) break;
-            ubyte rtype = get!(U1)(src);
-            ubyte stype = get!(U1)(src);
-            //src.resetToMark();
-            //writeln("rtype = ", rtype, " stype = ", stype, " reclen = ", reclen);
+            ubyte rtype = src.getByte();
+            ubyte stype = src.getByte();
             Record_t type = RecordType.getRecordType(rtype, stype);
-            //writeln("type = ", type.toString());
             if (type is null)
             {
                 writeln("Corrupt file: ", filename, " invalid record type:");
                 writeln("type = ", rtype, " subtype = ", stype);
                 throw new Exception(filename);
             }
-            //ubyte[] buf = new ubyte[reclen+4];
-            //for (int i=0; i<reclen+4; i++) buf[i] = src.getByte();
-            //src.resetToMark();
-            //for (int i=0; i<4; i++) src.getByte();
-            //int j = 0;
-            //for (int i=0; i<(reclen+4); i++)
-           // {
-           //     writef("%2X ", buf[i]);
-           //     j += 3;
-           //     if (j >= 81) 
-           //     {
-           //         writeln("");
-           //         j = 0;
-           //     }
-           // }
-           //writeln("");
             StdfRecord r;
             switch (type.ordinal) with (Record_t)
             {
-                case ATR.ordinal: r = new AuditTrailRecord(reclen, src); break;
-                case BPS.ordinal: r = new BeginProgramSelectionRecord(reclen, src); break;
-                case DTR.ordinal: r = new DatalogTextRecord(reclen, src); break;
-                case EPS.ordinal: r = new EndProgramSelectionRecord(reclen, src); break;
-                case FAR.ordinal: r = new FileAttributesRecord(reclen, src); break;
+                case ATR.ordinal: r = new AuditTrailRecord(src); break;
+                case BPS.ordinal: r = new BeginProgramSelectionRecord(src); break;
+                case DTR.ordinal: r = new DatalogTextRecord(src); break;
+                case EPS.ordinal: r = new EndProgramSelectionRecord(); break;
+                case FAR.ordinal: r = new FileAttributesRecord(src); break;
                 case FTR.ordinal: r = new FunctionalTestRecord(reclen, src); break;
                 case GDR.ordinal: r = new GenericDataRecord(reclen, src); break;
-                case HBR.ordinal: r = new HardwareBinRecord(reclen, src); break;
-                case MIR.ordinal: r = new MasterInformationRecord(reclen, src); break;
+                case HBR.ordinal: r = new HardwareBinRecord(src); break;
+                case MIR.ordinal: r = new MasterInformationRecord(src); break;
                 case MPR.ordinal: r = new MultipleResultParametricRecord(reclen, src); break;
-                case MRR.ordinal: r = new MasterResultsRecord(reclen, src); break;
-                case PCR.ordinal: r = new PartCountRecord(reclen, src); break;
-                case PGR.ordinal: r = new PinGroupRecord(reclen, src); break;
-                case PIR.ordinal: r = new PartInformationRecord(reclen, src); break;
-                case PLR.ordinal: r = new PinListRecord(reclen, src); break;
-                case PMR.ordinal: r = new PinMapRecord(reclen, src); break;
-                case PRR.ordinal: r = new PartResultsRecord(reclen, src); break;
+                case MRR.ordinal: r = new MasterResultsRecord(src); break;
+                case PCR.ordinal: r = new PartCountRecord(src); break;
+                case PGR.ordinal: r = new PinGroupRecord(src); break;
+                case PIR.ordinal: r = new PartInformationRecord(src); break;
+                case PLR.ordinal: r = new PinListRecord(src); break;
+                case PMR.ordinal: r = new PinMapRecord(src); break;
+                case PRR.ordinal: r = new PartResultsRecord(src); break;
                 case PTR.ordinal: r = new ParametricTestRecord(reclen, src); break;
                 case RDR.ordinal: r = new RetestDataRecord(reclen, src); break;
-                case SBR.ordinal: r = new SoftwareBinRecord(reclen, src); break;
-                case SDR.ordinal: r = new SiteDescriptionRecord(reclen, src); break;
+                case SBR.ordinal: r = new SoftwareBinRecord(src); break;
+                case SDR.ordinal: r = new SiteDescriptionRecord(src); break;
                 case TSR.ordinal: r = new TestSynopsisRecord(reclen, src); break;
-                case WCR.ordinal: r = new WaferConfigurationRecord(reclen, src); break;
-                case WIR.ordinal: r = new WaferInformationRecord(reclen, src); break;
-                case WRR.ordinal: r = new WaferResultsRecord(reclen, src); break;
+                case WCR.ordinal: r = new WaferConfigurationRecord(src); break;
+                case WIR.ordinal: r = new WaferInformationRecord(src); break;
+                case WRR.ordinal: r = new WaferResultsRecord(src); break;
                 default: throw new Exception("Unknown record type: " ~ type.stringof);
             }
-            //writeln(r.toString());
-            //stdout.flush();
             records ~= r;
         }
     }
@@ -939,13 +914,13 @@ class AuditTrailRecord : StdfRecord
     this(ByteReader s)
     {
         super(Record_t.ATR);
-        date(s);
-        cmdLine(s); 
+        date = U4(s);
+        cmdLine = CN(s); 
     }
 
-    this(U4 date, CN cmdLine)
+    this(uint date, string cmdLine)
     {
-        super(Record_t.ATR, 0);
+        super(Record_t.ATR);
         this.date.setValue(date);
         this.cmdLine.setValue(cmdLine);
     }
@@ -1266,7 +1241,7 @@ class FunctionalTestRecord : TestRecord
          OptionalField!(U1) patg_num,
          OptionalField!(DN) spin_map)
     {
-        super(0, Record_t.FTR, test_num, head_num, site_num, test_flg);
+        super(Record_t.FTR, test_num, head_num, site_num, test_flg);
         this.opt_flag = opt_flag;
         this.cycl_cnt = cycl_cnt;
         this.rel_vadr = rel_vadr;
@@ -1383,7 +1358,7 @@ class FunctionalTestRecord : TestRecord
         if (!fail_pin.empty) { app.put("\n    fail_pin = "); app.put(to!string(fail_pin)); }
         if (!vect_nam.empty) { app.put("\n    vect_nam = "); app.put(to!string(vect_nam)); }
         if (!time_set.empty) { app.put("\n    time_set = "); app.put(to!string(time_set)); }
-        if (!op_code.empty) { app.put("\n    op_code = "); app.put(to!string(op_code)); }
+        if (!op_code.empty)  { app.put("\n    op_code = "); app.put(to!string(op_code)); }
         if (!test_txt.empty) { app.put("\n    test_txt = "); app.put(to!string(test_txt)); }
         if (!alarm_id.empty) { app.put("\n    alarm_id = "); app.put(to!string(alarm_id)); }
         if (!prog_txt.empty) { app.put("\n    prog_txt = "); app.put(to!string(prog_txt)); }
@@ -1400,11 +1375,13 @@ class GenericDataRecord : StdfRecord
 
     this(size_t reclen, ByteReader s)
     {
-        super(Record_t.GDR, reclen);
-        ushort fld_cnt = get!U2(s);
+        super(Record_t.GDR);
+        ubyte b0 = s.getByte();
+        ubyte b1 = s.getByte();
+        ushort fld_cnt = cast(ushort) (b0 + ((b1 << 8) & 0xFF00));
         for (ushort i=0; i<fld_cnt; i++)
         {
-            GenericData_t type = getDataType(get!U1(s));
+            GenericData_t type = getDataType(s.getByte());
             if (type == GenericData_t.B0)
             {
                 i--;
@@ -1471,20 +1448,20 @@ class HardwareBinRecord : StdfRecord
     const char hbin_pf;
     const CN hbin_nam;
 
-    this( size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.HBR, reclen);
-        head_num = get!U1(s);
-        site_num = get!U1(s);
-        hbin_num = get!U2(s);
-        hbin_cnt = get!U4(s);
-        hbin_pf = cast(char) get!U1(s);
-        hbin_nam = get!CN(s);
+        super(Record_t.HBR);
+        head_num(s);
+        site_num(s);
+        hbin_num(s);
+        hbin_cnt(s);
+        hbin_pf(s);
+        hbin_nam(s);
     }
 
     override protected size_t getReclen()
     {
-        return cast(ushort) (10 + hbin_nam.length);
+        return cast(ushort) (9 + hbin_nam.size);
     }
 
     /*
@@ -1558,51 +1535,50 @@ class MasterInformationRecord : StdfRecord
     CN supr_nam;
 
     //    start_t = DateTime(1970, 1, 1, 0, 0, 0) + dur!"seconds"(d);
-    this(size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.MIR, reclen);
-        setup_t  = get!U4(s);
-        start_t  = get!U4(s);
-        stat_num = get!U1(s);
-        mode_cod = cast(char) get!U1(s);
-        rtst_cod = cast(char) get!U1(s);
-        prot_cod = cast(char) get!U1(s);
-        burn_tim = get!U2(s);
-        cmod_cod = cast(char) get!U1(s);
-        lot_id   = get!CN(s);
-        part_typ = get!CN(s);
-        node_nam = get!CN(s);
-        tstr_typ = get!CN(s);
-        job_nam  = get!CN(s);
-        job_rev  = get!CN(s);
-        sblot_id = get!CN(s);
-        oper_nam = get!CN(s);
-        exec_typ = get!CN(s);
-        exec_ver = get!CN(s);
-        test_cod = get!CN(s);
-        tst_temp = get!CN(s);
-        user_txt = get!CN(s);
-        aux_file = get!CN(s);
-        pkg_typ  = get!CN(s);
-        famly_id = get!CN(s);
-        date_cod = get!CN(s);
-        facil_id = get!CN(s);
-        floor_id = get!CN(s);
-        proc_id  = get!CN(s);
-        oper_frq = get!CN(s);
-        spec_nam = get!CN(s);
-        spec_ver = get!CN(s);
-        flow_id  = get!CN(s);
-        setup_id = get!CN(s);
-        dsgn_rev = get!CN(s);
-        eng_id   = get!CN(s);
-        rom_cod  = get!CN(s);
-        serl_num = get!CN(s);
-        supr_nam = get!CN(s);
+        super(Record_t.MIR);
+        setup_t(s);
+        start_t(s);
+        stat_num(s);
+        mode_cod(s);
+        rtst_cod(s);
+        prot_cod(s);
+        burn_tim(s);
+        cmod_cod(s);
+        lot_id(s);
+        part_typ(s);
+        node_nam(s);
+        tstr_typ(s);
+        job_nam(s);
+        job_revN(s);
+        sblot_id(s);
+        oper_nam(s);
+        exec_typ(s);
+        exec_ver(s);
+        test_cod(s);
+        tst_temp(s);
+        user_txt(s);
+        aux_file(s);
+        pkg_typ(s);
+        famly_id(s);
+        date_cod(s);
+        facil_id(s);
+        floor_id(s);
+        proc_id(s);
+        oper_frq(s);
+        spec_nam(s);
+        spec_ver(s);
+        flow_id(s);
+        setup_id(s);
+        dsgn_rev(s);
+        eng_id(s);
+        rom_cod(s);
+        serl_num(s);
+        supr_nam(s);
     }
 
-    this(
-         U4 setup_t,
+    this(U4 setup_t,
          U4 start_t,
          U1 stat_num,
          C1 mode_cod,
@@ -1821,17 +1797,10 @@ class ParametricRecord : TestRecord
 {
     U1 parm_flg;
     
-    this( 
-         size_t reclen, 
-         Record_t type, 
-         U4 test_num, 
-         U1 head_num, 
-         U1 site_num, 
-         U1 test_flg,
-         U1 parm_flg)
+    this(Record_t type, ByteReader s)
     {
-        super(reclen, type, test_num, head_num, site_num, test_flg);
-        this.parm_flg = parm_flg;
+        super(type, s);
+        this.parm_flg(s);
     }
  
     override protected string getString()
@@ -1880,8 +1849,8 @@ class MultipleResultParametricRecord : ParametricRecord
         reclen -= 8;
         rtn_icnt = OptionalField!U2(reclen, s, 0);
         rslt_cnt = OptionalField!U2(reclen, s, 0);
-        rtn_stat = OptionalArray!N1(reclen, rtn_icnt.value, s);
-        rtn_rslt = OptionalArray!R4(reclen, rslt_cnt.value, s);
+        rtn_stat = OptionalArray!N1(reclen, rtn_icnt.getValue(), s);
+        rtn_rslt = OptionalArray!R4(reclen, rslt_cnt.getValue(), s);
         test_txt = OptionalField!CN(reclen, s, new char[0]);
         alarm_id = OptionalField!CN(reclen, s, new char[0]);
         opt_flag = OptionalField!U1(reclen, s, 0);
@@ -1892,7 +1861,7 @@ class MultipleResultParametricRecord : ParametricRecord
         hi_limit = OptionalField!R4(reclen, s, 0.0f);
         start_in = OptionalField!R4(reclen, s, 0.0f);
         incr_in  = OptionalField!R4(reclen, s, 0.0f);
-        rtn_indx = OptionalArray!U2(reclen, rtn_icnt.value, s);
+        rtn_indx = OptionalArray!U2(reclen, rtn_icnt.getValue(), s);
         units    = OptionalField!CN(reclen, s, new char[0]);
         units_in = OptionalField!CN(reclen, s, new char[0]);
         c_resfmt = OptionalField!CN(reclen, s, new char[0]);
@@ -1959,26 +1928,26 @@ class MultipleResultParametricRecord : ParametricRecord
     override protected size_t getReclen()
     {
         size_t l = 12;
-        l += rtn_stat.getSize();
-        l += rtn_rslt.getSize();
-        l += test_txt.getSize();
-        l += alarm_id.getSize();
-        l += opt_flag.getSize();
-        l += res_scal.getSize();
-        l += llm_scal.getSize();
-        l += hlm_scal.getSize();
-        l += lo_limit.getSize();
-        l += hi_limit.getSize();
-        l += start_in.getSize();
-        l += incr_in.getSize();
-        l += rtn_indx.getSize();
-        l += units.getSize();
-        l += units_in.getSize();
-        l += c_resfmt.getSize();
-        l += c_llmfmt.getSize();
-        l += c_hlmfmt.getSize();
-        l += lo_spec.getSize();
-        l += hi_spec.getSize();
+        l += rtn_stat.size();
+        l += rtn_rslt.size();
+        l += test_txt.size();
+        l += alarm_id.size();
+        l += opt_flag.size();
+        l += res_scal.size();
+        l += llm_scal.size();
+        l += hlm_scal.size();
+        l += lo_limit.size();
+        l += hi_limit.size();
+        l += start_in.size();
+        l += incr_in.size();
+        l += rtn_indx.size();
+        l += units.size();
+        l += units_in.size();
+        l += c_resfmt.size();
+        l += c_llmfmt.size();
+        l += c_hlmfmt.size();
+        l += lo_spec.size();
+        l += hi_spec.size();
         return l;
     }
 
@@ -2058,34 +2027,32 @@ class MasterResultsRecord : StdfRecord
     CN usr_desc;
     CN exc_desc;
 
-    this(size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.MRR, reclen);
-        finish_t = get!U4(s);
-        disp_cod = cast(char) get!U1(s);
-        usr_desc = get!CN(s);
-        exc_desc = get!CN(s);
+        super(Record_t.MRR);
+        finish_t(s);
+        disp_cod(s);
+        usr_desc(s);
+        exc_desc(s);
     }
 
-    this( 
-         U4 finish_t, 
+    this(U4 finish_t, 
          C1 disp_cod, 
          CN usr_desc, 
          CN exc_desc)
     {
-        super(Record_t.MRR, 0);
+        super(Record_t.MRR);
         this.finish_t = finish_t;
         this.disp_cod = disp_cod;
         this.usr_desc = usr_desc;
         this.exc_desc = exc_desc;
-        reclen = getReclen();
     }
 
     override protected size_t getReclen()
     {
         ushort l = 5;
-        l += (1 + usr_desc.length);
-        l += (1 + exc_desc.length);
+        l += usr_desc.size;
+        l += exc_desc.size;
         return l;
     }
 
@@ -2126,20 +2093,19 @@ class PartCountRecord : StdfRecord
     U4 good_cnt;
     U4 func_cnt;
 
-    this( size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.PCR, reclen);
-        head_num = get!U1(s);
-        site_num = get!U1(s);
-        part_cnt = get!U4(s);
-        rtst_cnt = get!U4(s);
-        abrt_cnt = get!U4(s);
-        good_cnt = get!U4(s);
-        func_cnt = get!U4(s);
+        super(Record_t.PCR);
+        head_num(s);
+        site_num(s);
+        part_cnt(s);
+        rtst_cnt(s);
+        abrt_cnt(s);
+        good_cnt(s);
+        func_cnt(s);
     }
 
-    this(
-         U1 head_num,
+    this(U1 head_num,
          U1 site_num,
          U4 part_cnt,
          U4 rtst_cnt,
@@ -2147,7 +2113,7 @@ class PartCountRecord : StdfRecord
          U4 good_cnt,
          U4 func_cnt)
     {
-        super(Record_t.PCR, 0);
+        super(Record_t.PCR);
         this.head_num = head_num;
         this.site_num = site_num;
         this.part_cnt = part_cnt;
@@ -2155,7 +2121,6 @@ class PartCountRecord : StdfRecord
         this.abrt_cnt = abrt_cnt;
         this.good_cnt = good_cnt;
         this.func_cnt = func_cnt;
-        reclen = getReclen();
     }
 
     override protected size_t getReclen()
@@ -2201,36 +2166,34 @@ class PinGroupRecord : StdfRecord
     U2 indx_cnt;
     U2[] pmr_indx;
 
-    this(size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.PGR, reclen);
-        grp_indx = get!U2(s);
-        grp_nam = get!CN(s);
-        indx_cnt = get!U2(s);
-        pmr_indx = new U2[indx_cnt];
-        for (int i=0; i<indx_cnt; i++) pmr_indx[i] = get!U2(s);
+        super(Record_t.PGR);
+        grp_indx(s);
+        grp_nam(s);
+        indx_cnt(s);
+        pmr_indx = new U2[indx_cnt.getValue()];
+        for (int i=0; i<indx_cnt; i++) pmr_indx[i](s);
     }
 
-    this(
-         U2 grp_indx,
+    this(U2 grp_indx,
          CN grp_nam,
          U2 indx_cnt,
          U2[] pmr_indx)
     {
-         super(Record_t.PGR, 0);
+         super(Record_t.PGR);
          this.grp_indx = grp_indx;
          this.grp_nam = grp_nam;
          this.indx_cnt = indx_cnt;
          this.pmr_indx = new U2[indx_cnt];
-         foreach(i, d; pmr_indx) this.pmr_indx[i] = d;
-         reclen = getReclen();
+         foreach(i, d; pmr_indx) this.pmr_indx[i].setValue(d);
     }
 
     override protected size_t getReclen()
     {
         ushort l = 4;
-        l += (1 + grp_nam.length);
-        l += (2 * indx_cnt);
+        l += grp_nam.size;
+        l += (2 * indx_cnt.getValue());
         return l;
     }
 
@@ -2264,19 +2227,18 @@ class PartInformationRecord : StdfRecord
     U1 head_num;
     U1 site_num;
 
-    this(size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.PIR, reclen);
-        head_num = get!U1(s);
-        site_num = get!U1(s);
+        super(Record_t.PIR);
+        head_num(s);
+        site_num(s);
     }
 
     this(U1 head_num, U1 site_num)
     {
-        super(Record_t.PIR, 0);
+        super(Record_t.PIR);
         this.head_num = head_num;
         this.site_num = site_num;
-        reclen = getReclen();
     }
 
     override protected size_t getReclen()
@@ -2316,28 +2278,27 @@ class PinListRecord : StdfRecord
     CN[] pgm_chal;
     CN[] rtn_chal;
 
-    this(size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.PLR, reclen);
-        grp_cnt = get!U2(s);
-        grp_indx = new U2[grp_cnt];
-        for (int i=0; i<grp_cnt; i++) grp_indx[i] = get!U2(s);
-        grp_mode = new U2[grp_cnt];
-        for (int i=0; i<grp_cnt; i++) grp_mode[i] = get!U2(s);
-        grp_radx = new U1[grp_cnt];
-        for (int i=0; i<grp_cnt; i++) grp_radx[i] = get!U1(s);
-        pgm_char = new CN[grp_cnt];
-        for (int i=0; i<grp_cnt; i++) pgm_char[i] = get!CN(s);
-        rtn_char = new CN[grp_cnt];
-        for (int i=0; i<grp_cnt; i++) rtn_char[i] = get!CN(s);
-        pgm_chal = new CN[grp_cnt];
-        for (int i=0; i<grp_cnt; i++) pgm_chal[i] = get!CN(s);
-        rtn_chal = new CN[grp_cnt];
-        for (int i=0; i<grp_cnt; i++) rtn_chal[i] = get!CN(s);
+        super(Record_t.PLR);
+        grp_cnt(s);
+        grp_indx = new U2[grp_cnt.getValue()];
+        for (int i=0; i<grp_cnt; i++) grp_indx[i](s);
+        grp_mode = new U2[grp_cnt.getValue()];
+        for (int i=0; i<grp_cnt; i++) grp_mode[i](s);
+        grp_radx = new U1[grp_cnt.getValue()];
+        for (int i=0; i<grp_cnt; i++) grp_radx[i](s);
+        pgm_char = new CN[grp_cnt.getValue()];
+        for (int i=0; i<grp_cnt; i++) pgm_char[i](s);
+        rtn_char = new CN[grp_cnt.getValue()];
+        for (int i=0; i<grp_cnt; i++) rtn_char[i](s);
+        pgm_chal = new CN[grp_cnt.getValue()];
+        for (int i=0; i<grp_cnt; i++) pgm_chal[i](s);
+        rtn_chal = new CN[grp_cnt.getValue()];
+        for (int i=0; i<grp_cnt; i++) rtn_chal[i](s);
     }
 
-    this(
-         U2 grp_cnt,
+    this(U2 grp_cnt,
          U2[] grp_indx,
          U2[] grp_mode,
          U1[] grp_radx,
@@ -2346,33 +2307,35 @@ class PinListRecord : StdfRecord
          CN[] pgm_chal,
          CN[] rtn_chal)
     {
-        super(Record_t.PLR, 0);
+        super(Record_t.PLR);
         this.grp_cnt = grp_cnt;
-        this.grp_indx = new U2[grp_cnt];
-        foreach(i, d; grp_indx) this.grp_indx[i] = d;
-        this.grp_mode = new U2[grp_cnt];
-        foreach(i, d; grp_mode) this.grp_mode[i] = d;
-        this.grp_radx = new U1[grp_cnt];
-        foreach(i, d; grp_radx) this.grp_radx[i] = d;
-        this.pgm_char = new CN[grp_cnt];
-        foreach(i, d; pgm_char) this.pgm_char[i] = d;
-        this.rtn_char = new CN[grp_cnt];
-        foreach(i, d; rtn_char) this.rtn_char[i] = d;
-        this.pgm_chal = new CN[grp_cnt];
-        foreach(i, d; pgm_chal) this.pgm_chal[i] = d;
-        this.rtn_chal = new CN[grp_cnt];
-        foreach(i, d; rtn_chal) this.rtn_chal[i] = d;
-        reclen = getReclen();
+        this.grp_indx = new U2[grp_cnt.getValue()];
+        foreach(i, d; grp_indx) this.grp_indx[i].setValue(d);
+        this.grp_mode = new U2[grp_cnt.getValue()];
+        foreach(i, d; grp_mode) this.grp_mode[i].setValue(d);
+        this.grp_radx = new U1[grp_cnt.getValue()];
+        foreach(i, d; grp_radx) this.grp_radx[i].setValue(d);
+        this.pgm_char = new CN[grp_cnt.getValue()];
+        foreach(i, d; pgm_char) this.pgm_char[i].setValue(d);
+        this.rtn_char = new CN[grp_cnt.getValue()];
+        foreach(i, d; rtn_char) this.rtn_char[i].setValue(d);
+        this.pgm_chal = new CN[grp_cnt.getValue()];
+        foreach(i, d; pgm_chal) this.pgm_chal[i].setValue(d);
+        this.rtn_chal = new CN[grp_cnt.getValue()];
+        foreach(i, d; rtn_chal) this.rtn_chal[i].setValue(d);
     }
 
     override protected size_t getReclen()
     {
         size_t l = 2;
         l += (5 * grp_cnt);
-        l += (grp_cnt * (1 + pgm_char.length));
-        l += (grp_cnt * (1 + rtn_char.length));
-        l += (grp_cnt * (1 + pgm_chal.length));
-        l += (grp_cnt * (1 + rtn_chal.length));
+        for (int i=0; i<gpr_cnt.getValue(); i++)
+        {
+            l += pgm_char[i].size;
+            l += rtn_char[i].size;
+            l += pgm_chal[i].size;
+            l += rtn_chal[i].size;
+        }
         return l;
     }
 
@@ -2419,20 +2382,19 @@ class PinMapRecord : StdfRecord
     U1 head_num;
     U1 site_num;
 
-    this(size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.PMR, reclen);
-        pmr_indx = get!U2(s);
-        chan_typ = get!U2(s);
-        chan_nam = get!CN(s);
-        phy_nam = get!CN(s);
-        log_nam = get!CN(s);
-        head_num = get!U1(s);
-        site_num = get!U1(s);
+        super(Record_t.PMR);
+        pmr_indx(s);
+        chan_typ(s);
+        chan_nam(s);
+        phy_nam(s);
+        log_nam(s);
+        head_num(s);
+        site_num(s);
     }
 
-    this(
-         U2 pmr_indx,
+    this(U2 pmr_indx,
          U2 chan_typ,
          CN chan_nam,
          CN phy_nam,
@@ -2440,7 +2402,7 @@ class PinMapRecord : StdfRecord
          U1 head_num,
          U1 site_num)
     {
-        super(Record_t.PMR, 0);
+        super(Record_t.PMR);
         this.pmr_indx = pmr_indx;
         this.chan_typ = chan_typ;
         this.chan_nam = chan_nam;
@@ -2448,15 +2410,14 @@ class PinMapRecord : StdfRecord
         this.log_nam = log_nam;
         this.head_num = head_num;
         this.site_num = site_num;
-        reclen = getReclen();
     }
 
     override protected size_t getReclen()
     {
         ushort l = 6;
-        l += (1 + chan_nam.length);
-        l += (1 + phy_nam.length);
-        l += (1 + log_nam.length);
+        l += chan_nam.size;
+        l += phy_nam.size;
+        l += log_nam.size;
         return l;
     }
 
@@ -2506,25 +2467,24 @@ class PartResultsRecord : StdfRecord
     CN part_txt;
     BN part_fix;
 
-    this( size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.PRR, reclen);
-        head_num = get!U1(s);
-        site_num = get!U1(s);
-        part_flg = get!U1(s);
-        num_test = get!U2(s);
-        hard_bin = get!U2(s);
-        soft_bin = get!U2(s);
-        x_coord = get!I2(s);
-        y_coord = get!I2(s);
-        test_t = get!U4(s);
-        part_id = get!CN(s);
-        part_txt = get!CN(s);
-        part_fix = get!BN(s);
+        super(Record_t.PRR);
+        head_num(s);
+        site_num(s);
+        part_flg(s);
+        num_test(s);
+        hard_bin(s);
+        soft_bin(s);
+        x_coord(s);
+        y_coord(s);
+        test_t(s);
+        part_id(s);
+        part_txt(s);
+        part_fix(s);
     }
 
-    this(
-         U1 head_num,
+    this(U1 head_num,
          U1 site_num,
          U1 part_flg,
          U2 num_test,
@@ -2537,7 +2497,7 @@ class PartResultsRecord : StdfRecord
          CN part_txt,
          BN part_fix)
     {
-        super(Record_t.PRR, 0);
+        super(Record_t.PRR);
         this.head_num = head_num;
         this.site_num = site_num;
         this.part_flg = part_flg;
@@ -2549,17 +2509,15 @@ class PartResultsRecord : StdfRecord
         this.test_t = test_t;
         this.part_id = part_id;
         this.part_txt = part_txt;
-        this.part_fix.length = part_fix.length;
-        foreach(i, d; part_fix) this.part_fix[i] = d;
-        reclen = getReclen();
+        this.part_fix = part_fix;
     }
 
     override protected size_t getReclen()
     {
         ushort l = 17;
-        l += (1 + part_id.length);
-        l += (1 + part_txt.length);
-        l += (1 + part_fix.length);
+        l += part_id.size;
+        l += part_txt.size;
+        l += part_fix.size;
         return l;
     }
 
@@ -2622,25 +2580,25 @@ class ParametricTestRecord : ParametricRecord
     OptionalField!R4 lo_spec;
     OptionalField!R4 hi_spec;
 
-    this(size_t reclen, ByteReader s)
+    this(ref size_t reclen, ByteReader s)
     {
-        super(reclen, Record_t.PTR, get!U4(s), get!U1(s), get!U1(s), get!U1(s), get!U1(s));
+        super(Record_t.PTR, s);
+        result(s);
         reclen -= 12;
-        result = get!U4(s);
-        test_txt = get!CN(s); reclen -= (1 + test_txt.length);
-        alarm_id = get!CN(s); reclen -= (1 + alarm_id.length);
-        opt_flag = OptionalField!U1(reclen, s, 0xFF);
-        res_scal = OptionalField!I1(reclen, s, 0);
-        llm_scal = OptionalField!I1(reclen, s, 0);
-        hlm_scal = OptionalField!I1(reclen, s, 0);
-        lo_limit = OptionalField!R4(reclen, s, 0.0f);
-        hi_limit = OptionalField!R4(reclen, s, 0.0f);
-        units = OptionalField!CN(reclen, s, new char[0]);
-        c_resfmt = OptionalField!CN(reclen, s, new char[0]);
-        c_llmfmt = OptionalField!CN(reclen, s, new char[0]);
-        c_hlmfmt = OptionalField!CN(reclen, s, new char[0]);
-        lo_spec = OptionalField!R4(reclen, s, 0.0f);
-        hi_spec = OptionalField!R4(reclen, s, 0.0f);
+        test_txt(reclen, s, "");
+        alarm_id(reclen, s, "");
+        opt_flag(reclen, s, 0xFF);
+        res_scal(reclen, s, 0);
+        llm_scal(reclen, s, 0);
+        hlm_scal(reclen, s, 0);
+        lo_limit(reclen, s, 0.0f);
+        hi_limit(reclen, s, 0.0f);
+        units(reclen, s, "");
+        c_resfmt(reclen, s, "");
+        c_llmfmt(reclen, s, "");
+        c_hlmfmt(reclen, s, "");
+        lo_spec(reclen, s, 0.0f);
+        hi_spec(reclen, s, 0.0f);
     }
 
     this(U4 test_num,
@@ -2664,7 +2622,7 @@ class ParametricTestRecord : ParametricRecord
          OptionalField!R4 lo_spec,
          OptionalField!R4 hi_spec)
      {
-        super(0, Record_t.PTR, test_num, head_num, site_num, test_flg, parm_flg);
+        super(Record_t.PTR, test_num, head_num, site_num, test_flg, parm_flg);
         this.result = result;
         this.test_txt = test_txt;
         this.alarm_id = alarm_id;
@@ -2680,26 +2638,25 @@ class ParametricTestRecord : ParametricRecord
         this.c_hlmfmt = c_hlmfmt;
         this.lo_spec = lo_spec;
         this.hi_spec = hi_spec;
-        reclen = getReclen();
     }
 
     override protected size_t getReclen()
     {
         size_t l = 12;
-        l += (1 + test_txt.length);
-        l += (1 + alarm_id.length);
-        l += opt_flag.getSize();
-        l += res_scal.getSize();
-        l += llm_scal.getSize();
-        l += hlm_scal.getSize();
-        l += lo_limit.getSize();
-        l += hi_limit.getSize();
-        l += units.getSize();
-        l += c_resfmt.getSize();
-        l += c_llmfmt.getSize();
-        l += c_hlmfmt.getSize();
-        l += lo_spec.getSize();
-        l += hi_spec.getSize();
+        l += test_txt.size;
+        l += alarm_id.size;
+        l += opt_flag.size;
+        l += res_scal.size;
+        l += llm_scal.size;
+        l += hlm_scal.size;
+        l += lo_limit.size;
+        l += hi_limit.size;
+        l += units.size;
+        l += c_resfmt.size;
+        l += c_llmfmt.size;
+        l += c_hlmfmt.size;
+        l += lo_spec.size;
+        l += hi_spec.size;
         return l;
     }
 
@@ -2763,23 +2720,22 @@ class RetestDataRecord : StdfRecord
 
     this(size_t reclen, ByteReader s)
     {
-        super(Record_t.RDR, reclen);
-        num_bins = get!U2(s);
-        rtst_bin = OptionalArray!U2(reclen, num_bins, s);
+        super(Record_t.RDR);
+        num_bins(s);
+        rtst_bin(reclen, s);
     }
 
     this(U2 num_bins, OptionalArray!U2 rtst_bin)
     {
-        super(Record_t.RDR, 0);
+        super(Record_t.RDR);
         this.num_bins = num_bins;
         this.rtst_bin = rtst_bin;
-        reclen = getReclen();
     }
 
     override protected size_t getReclen()
     {
         ushort l = 2;
-        l += rtst_bin.getSize();
+        l += rtst_bin.size;
         return l;
     }
 
@@ -2813,15 +2769,15 @@ class SoftwareBinRecord : StdfRecord
     C1 sbin_pf;
     CN sbin_nam;
 
-    this(size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.SBR, reclen);
-        head_num = get!U1(s);
-        site_num = get!U1(s);
-        sbin_num = get!U2(s);
-        sbin_cnt = get!U4(s);
-        sbin_pf = cast(char) get!U1(s);
-        sbin_nam = get!CN(s);
+        super(Record_t.SBR);
+        head_num(s);
+        site_num(s);
+        sbin_num(s);
+        sbin_cnt(s);
+        sbin_pf(s);
+        sbin_nam(s);
     }
 
     this(U1 head_num,
@@ -2831,21 +2787,20 @@ class SoftwareBinRecord : StdfRecord
          C1 sbin_pf,
          CN sbin_nam)
     {
-        super(Record_t.SBR, 0);
+        super(Record_t.SBR);
         this.head_num = head_num;
         this.site_num = site_num;
         this.sbin_num = sbin_num;
         this.sbin_cnt = sbin_cnt;
         this.sbin_pf  = sbin_pf;
         this.sbin_nam = sbin_nam;
-        reclen = getReclen();
     }
          
 
     override protected size_t getReclen()
     {
         ushort l = 9;
-        l += (1 + sbin_nam.length);
+        l += sbin_nam.size;
         return l;
     }
 
@@ -2901,30 +2856,30 @@ class SiteDescriptionRecord : StdfRecord
     CN extr_typ;
     CN extr_id;
 
-    this( size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.SDR, reclen);
-        head_num = get!U1(s);
-        site_grp = get!U1(s);
-        site_cnt = get!U1(s);
-        site_num = new U1[site_cnt];
-        for (int i=0; i<site_cnt; i++) site_num[i] = get!U1(s);
-        hand_typ = get!CN(s);
-        hand_id = get!CN(s);
-        card_typ = get!CN(s);
-        card_id = get!CN(s);
-        load_typ = get!CN(s);
-        load_id = get!CN(s);
-        dib_typ = get!CN(s);
-        dib_id = get!CN(s);
-        cabl_typ = get!CN(s);
-        cabl_id = get!CN(s);
-        cont_typ = get!CN(s);
-        cont_id = get!CN(s);
-        lasr_typ = get!CN(s);
-        lasr_id = get!CN(s);
-        extr_typ = get!CN(s);
-        extr_id = get!CN(s);
+        super(Record_t.SDR);
+        head_num(s);
+        site_grp(s);
+        site_cnt(s);
+        site_num = new U1[site_cnt.getValue()];
+        for (int i=0; i<site_cnt; i++) site_num[i](s);
+        hand_typ(s);
+        hand_id(s);
+        card_typ(s);
+        card_id(s);
+        load_typ(s);
+        load_id(s);
+        dib_typ(s);
+        dib_id(s);
+        cabl_typ(s);
+        cabl_id(s);
+        cont_typ(s);
+        cont_id(s);
+        lasr_typ(s);
+        lasr_id(s);
+        extr_typ(s);
+        extr_id(s);
     }
 
     this(U1 head_num,
@@ -2948,11 +2903,11 @@ class SiteDescriptionRecord : StdfRecord
          CN extr_typ,
          CN extr_id)
     {
-        super(Record_t.SDR, 0);
+        super(Record_t.SDR);
         this.head_num = head_num;
         this.site_grp = site_grp;
         this.site_cnt = site_cnt;
-        this.site_num = new U1[site_cnt];
+        this.site_num = new U1[site_cnt.getValue()];
         foreach(i, d; site_num) this.site_num[i] = d;
         this.hand_typ = hand_typ;
         this.hand_id = hand_id;
@@ -2970,7 +2925,6 @@ class SiteDescriptionRecord : StdfRecord
         this.lasr_id = lasr_id;
         this.extr_typ = extr_typ;
         this.extr_id = extr_id;
-        reclen = getReclen(); 
    }
          
 
@@ -2978,22 +2932,22 @@ class SiteDescriptionRecord : StdfRecord
     {
         ushort l = 3;
         l += site_cnt;
-        l += (1 + hand_typ.length);
-        l += (1 + hand_id.length);
-        l += (1 + card_typ.length);
-        l += (1 + card_id.length);
-        l += (1 + load_typ.length);
-        l += (1 + load_id.length);
-        l += (1 + dib_typ.length);
-        l += (1 + dib_id.length);
-        l += (1 + cabl_typ.length);
-        l += (1 + cabl_id.length);
-        l += (1 + cont_typ.length);
-        l += (1 + cont_id.length);
-        l += (1 + lasr_typ.length);
-        l += (1 + lasr_id.length);
-        l += (1 + extr_typ.length);
-        l += (1 + extr_id.length);
+        l += hand_typ.size;
+        l += hand_id.size;
+        l += card_typ.size;
+        l += card_id.size;
+        l += load_typ.size;
+        l += load_id.size;
+        l += dib_typ.size;
+        l += dib_id.size;
+        l += cabl_typ.size;
+        l += cabl_id.size;
+        l += cont_typ.size;
+        l += cont_id.size;
+        l += lasr_typ.size;
+        l += lasr_id.size;
+        l += extr_typ.size;
+        l += extr_id.size;
         return l;
     }
 
@@ -3075,24 +3029,24 @@ class TestSynopsisRecord : StdfRecord
 
     this(size_t reclen, ByteReader s)
     {
-        super(Record_t.TSR, reclen);
+        super(Record_t.TSR);
         reclen -= 7;
         head_num = get!U1(s);
         site_num = get!U1(s);
         test_typ = cast(char) get!U1(s);
         test_num = get!U4(s);
-        exec_cnt = OptionalField!U4(reclen, s, 0);
-        fail_cnt = OptionalField!U4(reclen, s, 0);
-        alrm_cnt = OptionalField!U4(reclen, s, 0);
-        test_nam = OptionalField!CN(reclen, s, new char[0]);
-        seq_name = OptionalField!CN(reclen, s, new char[0]);
-        test_lbl = OptionalField!CN(reclen, s, new char[0]);
-        opt_flag = OptionalField!U1(reclen, s, 0);
-        test_tim = OptionalField!R4(reclen, s, 0.0f);
-        test_min = OptionalField!R4(reclen, s, 0.0f);
-        test_max = OptionalField!R4(reclen, s, 0.0f);
-        tst_sums = OptionalField!R4(reclen, s, 0.0f);
-        tst_sqrs = OptionalField!R4(reclen, s, 0.0f);
+        exec_cnt(reclen, s, 0);
+        fail_cnt(reclen, s, 0);
+        alrm_cnt(reclen, s, 0);
+        test_nam(reclen, s, "");
+        seq_name(reclen, s, "");
+        test_lbl(reclen, s, "");
+        opt_flag(reclen, s, 0);
+        test_tim(reclen, s, 0.0f);
+        test_min(reclen, s, 0.0f);
+        test_max(reclen, s, 0.0f);
+        tst_sums(reclen, s, 0.0f);
+        tst_sqrs(reclen, s, 0.0f);
     }
 
     this(U1 head_num,
@@ -3129,24 +3083,23 @@ class TestSynopsisRecord : StdfRecord
         this.test_max = test_max;
         this.tst_sums = tst_sums;
         this.tst_sqrs = tst_sqrs;
-        reclen = getReclen();
     }
 
     override protected size_t getReclen()
     {
         size_t l = 7;
-        l += exec_cnt.getSize();
-        l += fail_cnt.getSize();
-        l += alrm_cnt.getSize();
-        l += test_nam.getSize();
-        l += seq_name.getSize();
-        l += test_lbl.getSize();
-        l += opt_flag.getSize();
-        l += test_tim.getSize();
-        l += test_min.getSize();
-        l += test_max.getSize();
-        l += tst_sums.getSize();
-        l += tst_sqrs.getSize();
+        l += exec_cnt.size;
+        l += fail_cnt.size;
+        l += alrm_cnt.size;
+        l += test_nam.size;
+        l += seq_name.size;
+        l += test_lbl.size;
+        l += opt_flag.size;
+        l += test_tim.size;
+        l += test_min.size;
+        l += test_max.size;
+        l += tst_sums.size;
+        l += tst_sqrs.size;
         return l;
     }
 
@@ -3211,18 +3164,18 @@ class WaferConfigurationRecord : StdfRecord
     C1 pos_x;
     C1 pos_y;
 
-    this(size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.WCR, reclen);
-        wafr_siz = get!R4(s);
-        die_ht = get!R4(s);
-        die_wid = get!R4(s);
-        wf_units = get!U1(s);
-        wf_flat = cast(char) get!U1(s);
-        center_x = get!I2(s);
-        center_y = get!I2(s);
-        pos_x = cast(char) get!U1(s);
-        pos_y = cast(char) get!U1(s);
+        super(Record_t.WCR);
+        wafr_siz(s);
+        die_ht(s);
+        die_wid(s);
+        wf_units(s);
+        wf_flat(s);
+        center_x(s);
+        center_y(s);
+        pos_x(s);
+        pos_y(s);
     }
 
     this(R4 wafr_siz,
@@ -3235,7 +3188,7 @@ class WaferConfigurationRecord : StdfRecord
          C1 pos_x,
          C1 pos_y)
     {
-        super(Record_t.WCR, 0);
+        super(Record_t.WCR);
         this.wafr_siz = wafr_siz;
         this.die_ht = die_ht;
         this.die_wid = die_wid;
@@ -3245,7 +3198,6 @@ class WaferConfigurationRecord : StdfRecord
         this.center_y = center_y;
         this.pos_x = pos_x;
         this.pos_y = pos_y;
-        reclen = getReclen();
     }
 
     override protected size_t getReclen()
@@ -3296,13 +3248,13 @@ class WaferInformationRecord : StdfRecord
     U4 start_t;
     CN wafer_id;
 
-    this( size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.WIR, reclen);
-        head_num = get!U1(s);
-        site_grp = get!U1(s);
-        start_t = get!U4(s);
-        wafer_id = get!CN(s);
+        super(Record_t.WIR);
+        head_num(s);
+        site_grp(s);
+        start_t(s);
+        wafer_id(s);
     }
 
     this(U1 head_num,
@@ -3310,18 +3262,17 @@ class WaferInformationRecord : StdfRecord
          U4 start_t,
          CN wafer_id)
     {
-        super(Record_t.WIR, 0);
+        super(Record_t.WIR);
         this.head_num = head_num;
         this.site_grp = site_grp;
         this.start_t = start_t;
         this.wafer_id = wafer_id;
-        reclen = getReclen();
     }
 
     override protected size_t getReclen()
     {
         ushort l = 6;
-        l += (1 + wafer_id.length);
+        l += wafer_id.size;
         return l;
     }
 
@@ -3369,23 +3320,23 @@ class WaferResultsRecord : StdfRecord
     CN usr_desc;
     CN exc_desc;
 
-    this(size_t reclen, ByteReader s)
+    this(ByteReader s)
     {
-        super(Record_t.WRR, reclen);
-        head_num = get!U1(s);
-        site_grp = get!U1(s);
-        finish_t = get!U4(s);
-        part_cnt = get!U4(s);
-        rtst_cnt = get!U4(s);
-        abrt_cnt = get!U4(s);
-        good_cnt = get!U4(s);
-        func_cnt = get!U4(s);
-        wafer_id = get!CN(s);
-        fabwf_id = get!CN(s);
-        frame_id = get!CN(s);
-        mask_id = get!CN(s);
-        usr_desc = get!CN(s);
-        exc_desc = get!CN(s);
+        super(Record_t.WRR);
+        head_num(s);
+        site_grp(s);
+        finish_t(s);
+        part_cnt(s);
+        rtst_cnt(s);
+        abrt_cnt(s);
+        good_cnt(s);
+        func_cnt(s);
+        wafer_id(s);
+        fabwf_id(s);
+        frame_id(s);
+        mask_id(s);
+        usr_desc(s);
+        exc_desc(s);
     }
 
     this(U1 head_num,
@@ -3403,7 +3354,7 @@ class WaferResultsRecord : StdfRecord
          CN usr_desc,
          CN exc_desc)
     {
-        super(Record_t.WRR, 0);
+        super(Record_t.WRR);
         this.head_num = head_num;
         this.site_grp = site_grp;
         this.finish_t = finish_t;
@@ -3418,18 +3369,17 @@ class WaferResultsRecord : StdfRecord
         this.mask_id = mask_id;
         this.usr_desc = usr_desc;
         this.exc_desc = exc_desc;
-        reclen = getReclen();
     }
 
     override protected size_t getReclen()
     {
         size_t l = 26;
-        l += (1 + wafer_id.length);
-        l += (1 + fabwf_id.length);
-        l += (1 + frame_id.length);
-        l += (1 + mask_id.length);
-        l += (1 + usr_desc.length);
-        l += (1 + exc_desc.length);
+        l += wafer_id.length.size;
+        l += fabwf_id.length.size;
+        l += frame_id.length.size;
+        l += mask_id.length.size;
+        l += usr_desc.length.size;
+        l += exc_desc.length.size;
         return l;
     }
 
