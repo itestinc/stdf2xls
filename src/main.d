@@ -8,7 +8,7 @@ import std.traits;
 void main(string[] args)
 {
 
-    auto rdr = new StdfReader(args[1], 10000000L);
+    auto rdr = new StdfReader(args[1]);
     rdr.read();
     auto recs = rdr.getRecords();
     //writeln("num recs = ", recs.length);

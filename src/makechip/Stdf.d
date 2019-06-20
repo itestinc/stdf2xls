@@ -148,18 +148,18 @@ struct GenericData
         else if (type == GenericData_t.N1) { N1 x = N1(s); h.l = x; }
     }
 
-    this(ubyte v)   { h.a.setValue(v); type = GenericData_t.U1; } 
-    this(ushort v)  { h.b.setValue(v); type = GenericData_t.U2; }
-    this(uint v)    { h.c.setValue(v); type = GenericData_t.U4; }
-    this(byte v)    { h.d.setValue(v); type = GenericData_t.I1; }
-    this(short v)   { h.e.setValue(v); type = GenericData_t.I2; }
-    this(int v)     { h.f.setValue(v); type = GenericData_t.I4; }
-    this(float v)   { h.g.setValue(v); type = GenericData_t.R4; }
-    this(double v)  { h.h.setValue(v); type = GenericData_t.R8; }
-    this(string v)  { h.i.setValue(v); type = GenericData_t.CN; }
-    this(ubyte[] v) { h.j.setValue(v); type = GenericData_t.BN; }
-    this(size_t nbits, ubyte[] v) { h.k.setValue(nbits, v); type = GenericData_t.DN; }
-    this(ubyte b0, ubyte b1) { h.l.setValue([b0, b1]); type = GenericData_t.N1; }
+    this(ubyte v)   { U1 x = U1(v); h.a = x; type = GenericData_t.U1; } 
+    this(ushort v)  { U2 x = U2(v); h.b = x; type = GenericData_t.U2; }
+    this(uint v)    { U4 x = U4(v); h.c = x; type = GenericData_t.U4; }
+    this(byte v)    { I1 x = I1(v); h.d = x; type = GenericData_t.I1; }
+    this(short v)   { I2 x = I2(v); h.e = x; type = GenericData_t.I2; }
+    this(int v)     { I4 x = I4(v); h.f = x; type = GenericData_t.I4; }
+    this(float v)   { R4 x = R4(v); h.g = x; type = GenericData_t.R4; }
+    this(double v)  { R8 x = R8(v); h.h = x; type = GenericData_t.R8; }
+    this(string v)  { CN x = CN(v); h.i = x; type = GenericData_t.CN; }
+    this(ubyte[] v) { BN x = BN(v); h.j = x; type = GenericData_t.BN; }
+    this(size_t nbits, ubyte[] v) { DN x = DN(nbits, v); h.k = x; type = GenericData_t.DN; }
+    this(ubyte b) { N1 x = N1(b); h.l = x; type = GenericData_t.N1; }
 
     string toString()
     {
@@ -238,18 +238,17 @@ struct CN
         myVal = s.getBytes(len+1).dup;
     }
 
-    public string getValue() { return cast(immutable(char)[]) myVal; }
-
-    public void setValue(string s)
+    this(string v)
     {
-        size_t l = s.length;
-        myVal = new ubyte[l + 1];
-        myVal[0] = cast(ubyte) l;
-        for (int i=0; i<l; i++) myVal[i+1] = s[i];
+        assert(v.length < 256);
+        myVal = new ubyte[1 + v.length];
+        myVal[0] = cast(ubyte) v.length;
+        for (int i=0; i<v.length; i++) myVal[i+1] = v[i];
     }
 
+    public string getValue() { return cast(immutable(char)[]) myVal; }
+    public ubyte[] getBytes() { return myVal.dup; }
     public @property size_t size() { return myVal.length; }
-
     public string toString()
     {
         string s = cast(immutable(char)[]) myVal[1..$];
@@ -263,12 +262,9 @@ struct C1
     ubyte[] myVal;
 
     public this(ByteReader s) { myVal = s.getBytes(1).dup; }
+    public this(char c) { myVal = new ubyte[1]; myVal[0] = cast(ubyte) c; }
     public char getValue() { return cast(char) myVal[0]; }
-    public void setValue(char c) 
-    { 
-        myVal.length = 1;
-        myVal[0] = cast(ubyte) c; 
-    } 
+    public ubyte[] getBytes() { return myVal.dup; }
     public @property size_t size() { return 1; }
     public string toString()
     { 
@@ -282,17 +278,9 @@ struct U1
     ubyte[] myVal;
 
     this(ByteReader s) { myVal = s.getBytes(1).dup; } 
-    this(ubyte val)
-    {
-        myVal = new ubyte[1];
-        myVal[0] = val;
-    }
+    this(ubyte b) { myVal = new ubyte[1]; myVal[0] = b; }
     public ubyte getValue() { return myVal[0]; }
-    public void setValue(ubyte b) 
-    { 
-        myVal.length = 1;
-        myVal[0] = b; 
-    }
+    public ubyte[] getBytes() { return myVal.dup; }
     public @property size_t size() { return 1; }
     import std.digest;
     public string toString() { return toHexString(myVal); }
@@ -303,13 +291,14 @@ struct U2
     ubyte[] myVal;
 
     this(ByteReader s) { myVal = s.getBytes(2).dup; }
-    public ushort getValue() { return cast(ushort) (myVal[0] + (myVal[1] << 8)); }
-    public void setValue(ushort b) 
-    { 
-        myVal.length = 2;
+    this(ushort b) 
+    {
+        myVal = new ubyte[2];
         myVal[0] = cast(ubyte) (b & 0xFF);
         myVal[1] = cast(ubyte) ((b & 0xFF00) >> 8);
     }
+    public ushort getValue() { return cast(ushort) (myVal[0] + (myVal[1] << 8)); }
+    public ubyte[] getBytes() { return myVal.dup; }
     public @property size_t size() { return 2; }
     public string toString() { return to!string(getValue()); }
 }
@@ -318,15 +307,17 @@ struct U4
 {   
     ubyte[] myVal;
     this(ByteReader s) { myVal = s.getBytes(4).dup; }
-    public uint getValue() { return cast(uint) (myVal[0] + (myVal[1] << 8) + (myVal[2] << 16) + (myVal[3] << 24)); }
-    public void setValue(uint b)
+    this(uint b)
     {
-        myVal.length = 4;
+        myVal = new ubyte[4];
         myVal[0] = cast(ubyte) (b & 0xFF);
         myVal[1] = cast(ubyte) ((b & 0xFF00) >> 8);
         myVal[2] = cast(ubyte) ((b & 0xFF0000) >> 16);
         myVal[3] = cast(ubyte) ((b & 0xFF000000) >> 24);
     }
+
+    public uint getValue() { return cast(uint) (myVal[0] + (myVal[1] << 8) + (myVal[2] << 16) + (myVal[3] << 24)); }
+    public ubyte[] getBytes() { return myVal.dup; }
     public @property size_t size() { return 4; }
     public string toString() { return to!string(getValue()); }
 }
@@ -335,12 +326,9 @@ struct I1
 {
     ubyte[] myVal;
     this(ByteReader s) { myVal = s.getBytes(1).dup; }
+    this(byte b) { myVal = new ubyte[1]; myVal[0] = cast(ubyte) b; }
     public byte getValue() { return cast(byte) myVal[0]; }
-    public void setValue(byte b) 
-    { 
-        myVal.length = 1;
-        myVal[0] = cast(ubyte) b; 
-    }
+    public ubyte[] getBytes() { return myVal.dup; }
     public @property size_t size() { return 1; }
     public string toString() { return to!string(cast(byte) myVal[0]); }
 }
@@ -349,13 +337,14 @@ struct I2
 {
     ubyte[] myVal;
     this(ByteReader s) { myVal = s.getBytes(2).dup; }
-    public short getValue() { return cast(short) (myVal[0] + (myVal[1] << 8)); }
-    public void setValue(short b)
+    this(short b)
     {
-        myVal.length = 2;
+        myVal = new ubyte[2];
         myVal[0] = cast(ubyte) (b & 0xFF);
         myVal[1] = cast(ubyte) ((b & 0xFF00) >> 8);
     }
+    public short getValue() { return cast(short) (myVal[0] + (myVal[1] << 8)); }
+    public ubyte[] getBytes() { return myVal.dup; }
     public @property size_t size() { return 2; }
     public string toString() { return to!string(getValue()); }
 }
@@ -364,15 +353,16 @@ struct I4
 {
     ubyte[] myVal;
     this(ByteReader s) { myVal = s.getBytes(4).dup; }
-    public int getValue() { return cast(int) (myVal[0] + (myVal[1] << 8) + (myVal[2] << 16) + (myVal[3] << 24)); }
-    public void setValue(int b)
+    this(int b)
     {
-        myVal.length = 4;
+        myVal = new ubyte[4];
         myVal[0] = cast(ubyte) (b & 0xFF);
         myVal[1] = cast(ubyte) ((b & 0xFF00) >> 8);
         myVal[2] = cast(ubyte) ((b & 0xFF0000) >> 16);
         myVal[3] = cast(ubyte) ((b & 0xFF000000) >> 24);
     }
+    public int getValue() { return cast(int) (myVal[0] + (myVal[1] << 8) + (myVal[2] << 16) + (myVal[3] << 24)); }
+    public ubyte[] getBytes() { return myVal.dup; }
     public @property size_t size() { return 4; }
     public string toString() { return to!string(getValue()); }
 }
@@ -382,6 +372,21 @@ struct R4
     import std.bitmanip;
     ubyte[] myVal;
     this(ByteReader s) { myVal = s.getBytes(4).dup; }
+    this(float v)
+    {
+        FloatRep f;
+        f.value = v;
+        uint x = 0;
+        x |= f.sign ? 0x80000000 : 0;
+        uint exp = (f.exponent << 23) & 0x7F800000;
+        x |= exp;
+        x |= f.fraction & 0x007FFFFF;
+        myVal = new ubyte[4];
+        myVal[0] = cast(ubyte) (x & 0xFF);
+        myVal[1] = cast(ubyte) ((x & 0xFF00) >> 8);
+        myVal[2] = cast(ubyte) ((x & 0xFF0000) >> 16);
+        myVal[3] = cast(ubyte) ((x & 0xFF000000) >> 24);
+    }
     public float getValue()
     {
         uint x = cast(uint) (myVal[0] + (myVal[1] << 8) + (myVal[2] << 16) + (myVal[3] << 24));
@@ -391,21 +396,7 @@ struct R4
         f.fraction = x & 0x007FFFFF;
         return f.value;
     }
-    public void setValue(float v)
-    {
-        FloatRep f;
-        f.value = v;
-        uint x = 0;
-        x |= f.sign ? 0x80000000 : 0;
-        uint exp = (f.exponent << 23) & 0x7F800000;
-        x |= exp;
-        x |= f.fraction & 0x007FFFFF;
-        myVal.length = 4;
-        myVal[0] = cast(ubyte) (x & 0xFF);
-        myVal[1] = cast(ubyte) ((x & 0xFF00) >> 8);
-        myVal[2] = cast(ubyte) ((x & 0xFF0000) >> 16);
-        myVal[3] = cast(ubyte) ((x & 0xFF000000) >> 24);
-    }
+    public ubyte[] getBytes() { return myVal.dup; }
     public @property size_t size() { return 4; }
     public string toString() { return to!string(getValue()); }
 }
@@ -415,6 +406,25 @@ struct R8
     import std.bitmanip;
     ubyte[] myVal;
     this(ByteReader s) { myVal = s.getBytes(8).dup; }
+    this(double d)
+    {
+        DoubleRep f;
+        f.value = d;
+        ulong x = 0L;
+        x |= f.sign ? 0x8000000000000000L : 0L;
+        ulong exp = (cast(ulong) f.exponent << 52) & 0x7FF0000000000000L;
+        x |= exp;
+        x |= f.fraction & 0xFFFFFFFFFFFFFL;
+        myVal = new ubyte[8];
+        myVal[0] = cast(ubyte) (x & 0xFFL);
+        myVal[1] = cast(ubyte) ((x & 0xFF00L) >> 8);
+        myVal[2] = cast(ubyte) ((x & 0xFF0000L) >> 16);
+        myVal[3] = cast(ubyte) ((x & 0xFF000000L) >> 24);
+        myVal[4] = cast(ubyte) ((x & 0xFF00000000L) >> 32);
+        myVal[5] = cast(ubyte) ((x & 0xFF0000000000L) >> 40);
+        myVal[6] = cast(ubyte) ((x & 0xFF000000000000L) >> 48);
+        myVal[7] = cast(ubyte) ((x & 0xFF00000000000000L) >> 56);
+    }
     public double getValue()
     {
         ulong x = (cast(ulong) myVal[0] + (cast(ulong) myVal[1] << 8) + (cast(ulong) myVal[2] << 16) + (cast(ulong) myVal[3] << 24) +
@@ -425,25 +435,7 @@ struct R8
         f.fraction = x & 0xFFFFFFFFFFFFFL;
         return f.value;
     }
-    public void setValue(double d)
-    {
-        DoubleRep f;
-        f.value = d;
-        ulong x = 0L;
-        x |= f.sign ? 0x8000000000000000L : 0L;
-        ulong exp = (cast(ulong) f.exponent << 52) & 0x7FF0000000000000L;
-        x |= exp;
-        x |= f.fraction & 0xFFFFFFFFFFFFFL;
-        myVal.length = 8;
-        myVal[0] = cast(ubyte) (x & 0xFFL);
-        myVal[1] = cast(ubyte) ((x & 0xFF00L) >> 8);
-        myVal[2] = cast(ubyte) ((x & 0xFF0000L) >> 16);
-        myVal[3] = cast(ubyte) ((x & 0xFF000000L) >> 24);
-        myVal[4] = cast(ubyte) ((x & 0xFF00000000L) >> 32);
-        myVal[5] = cast(ubyte) ((x & 0xFF0000000000L) >> 40);
-        myVal[6] = cast(ubyte) ((x & 0xFF000000000000L) >> 48);
-        myVal[7] = cast(ubyte) ((x & 0xFF00000000000000L) >> 56);
-    }
+    public ubyte[] getBytes() { return myVal.dup; }
     public @property size_t size() { return 8; }
     public string toString() { return to!string(getValue()); }
 }
@@ -456,13 +448,14 @@ struct BN
         size_t l = s.front();
         myVal = s.getBytes(l+1).dup;
     }
-    public ubyte[] getValue() { return myVal[1..$]; }
-    public void setValue(ubyte[] b)
+    this(ubyte[] b)
     {
         myVal = new ubyte[1 + b.length];
         myVal[0] = cast(ubyte) b.length;
         for (int i=0; i<b.length; i++) myVal[i+i] = b[i];
     }
+    public ubyte[] getValue() { return myVal[1..$]; }
+    public ubyte[] getBytes() { return myVal.dup; }
     public @property size_t size() { return myVal.length; }
     public string toString() { return to!string(myVal); }
 }
@@ -482,18 +475,19 @@ struct DN
         myVal[1] = b1;
         for (int i=0; i<l; i++) myVal[i+2] = s.getByte();
     }
-    public ubyte[] getValue() { return myVal[2..$]; }
-    public void setValue(size_t numBits, ubyte[] bits)
+    this(size_t numBits, ubyte[] bits)
     {
         this.numBits = cast(ushort) numBits;
         size_t l = (numBits % 8 == 0) ? numBits/8 : numBits/8 + 1;
-        myVal.length = 2 + l;
+        myVal = new ubyte[2 + l];
         ubyte b0 = cast(ubyte) (numBits & 0xFF);
         ubyte b1 = cast(ubyte) ((numBits & 0xFF00) >> 8);
         myVal[0] = b0;
         myVal[1] = b1;
         for (int i=0; i<l; i++) myVal[2+i] = bits[i];
     }
+    public ubyte[] getValue() { return myVal[2..$]; }
+    public ubyte[] getBytes() { return myVal.dup; }
     public @property size_t size() { return myVal.length; }
     public string toString()
     {
@@ -505,18 +499,22 @@ struct N1
 {
     ubyte[] myVal;
     this(ByteReader s) { myVal = s.getBytes(1); }
-    public ubyte[] getValue()
+    this(ubyte val)
     {
-        ubyte[] val = new ubyte[2];
-        val[0] = myVal[0] & 0x0F;
-        val[1] = (myVal[1] & 0xF0) >> 4;
-        return val;
+        myVal = new ubyte[1];
+        myVal[0] = val;
     }
-    public void setValue(ubyte[] val)
+    this(ubyte val1, ubyte val2)
     {
-        myVal[0] = val[0];
-        myVal[0] |= (val[1] << 4) & 0xF0;
+        myVal = new ubyte[1];
+        myVal[0] = val1;
+        myVal[0] |= (val2 << 4) & 0xF0;
     }
+    public ubyte getValue()
+    {
+        return myVal[0];
+    }
+    public ubyte[] getBytes() { return myVal.dup; }
     public @property size_t size() { return 1; }
     public string toString() { return to!string(getValue()); }
 }
@@ -596,59 +594,16 @@ struct OptionalField(T)
     T myVal;
     public const ACT_TYPE defaultValue;
 
-    public ACT_TYPE getValue()
-    {
-        if (empty) return defaultValue;
-        return myVal.getValue();
-    }
-
-    public void setValue(ACT_TYPE newVal)
-    {
-        empty = false;
-        myVal.setValue(newVal);
-    }
-
-    @property bool isEmpty()
-    {
-        return empty;
-    }
-
-    public string toString()
-    {
-        if (empty) return to!string(defaultValue);
-        return myVal.toString();
-    }
-
-    this(ACT_TYPE defaultValue)
-    {
-        this.defaultValue = defaultValue;
-        empty = true;
-    }
-
-    this(ACT_TYPE val, ACT_TYPE defaultValue)
-    {
-        this.defaultValue = defaultValue;
-        myVal.setValue(val);
-        empty = false;
-    }
-
-    @property size_t size()
-    {
-        if (empty) return 0;
-        return myVal.size;
-    }
-
-    this(ref size_t reclen, ByteReader s, T defaultValue)
+    this(ref size_t reclen, ByteReader s, ACT_TYPE defaultValue)
     {
         empty = true;
         this.defaultValue = defaultValue;
-        size = 0;
         static if (is (T : CN))
         {
             size_t l = s.front();
             if (reclen > l)
             {
-                myVal(s);
+                myVal = CN(s);
                 reclen -= l + 1;
                 empty = false;
             }
@@ -667,7 +622,7 @@ struct OptionalField(T)
                 }
                 if (reclen > l + 1)
                 {
-                    myVal(s);
+                    myVal = DN(s);
                     reclen -= l + 2;
                     empty = false;
                 }
@@ -676,13 +631,68 @@ struct OptionalField(T)
             {
                 if (reclen >= myVal.size)
                 {
-                    myVal(s);
-                    reclen -= val.size;
+                    myVal = T(s);
+                    reclen -= myVal.size;
                     empty = false;
                 }
             }
         }
     }
+
+    this(ACT_TYPE defaultValue)
+    {
+        this.defaultValue = defaultValue;
+        empty = true;
+    }
+
+    static if (is(T == DN))
+    {
+        this(size_t numBits, ACT_TYPE val)
+        {
+            this.defaultValue = defaultValue;
+            myVal = T(numBits, val);
+            empty = false;
+        }
+    }
+    else
+    {
+        this(ACT_TYPE val, ACT_TYPE defaultValue)
+        {
+            this.defaultValue = defaultValue;
+            myVal = T(val);
+            empty = false;
+        }
+    }
+
+    public ACT_TYPE getValue()
+    {
+        if (empty) return cast(ACT_TYPE) defaultValue;
+        return myVal.getValue();
+    }
+
+    @property bool isEmpty()
+    {
+        return empty;
+    }
+
+    public string toString()
+    {
+        if (empty) return to!string(defaultValue);
+        return myVal.toString();
+    }
+
+    @property size_t size()
+    {
+        if (empty) return 0;
+        return myVal.size;
+    }
+
+    public ubyte[] getBytes()
+    {
+        if (empty) return new ubyte[0];
+        return myVal.getBytes();
+    }
+
 }
 
 // U2, N1, R4
@@ -727,13 +737,13 @@ struct OptionalArray(T) if (is(T == U2) || is(T == N1) || is(T == R4))
     @property size_t size()
     {
         if (empty) return 0;
-        return val[0].size * val.length();
+        return val[0].size * val.length;
     }
 
     public void setValue(size_t index, ACT_TYPE newVal)
     {
         assert(index < val.length);
-        val[index].setValue(newVal);
+        val[index] = T(newVal);
     }
 
     public string toString()
@@ -745,14 +755,20 @@ struct OptionalArray(T) if (is(T == U2) || is(T == N1) || is(T == R4))
     {
         if (vals.length == 0) empty = true; else empty = false;
         val = new T[vals.length];
-        for (int i=0; i<vals.length; i++) val[i].setValue(vals[i]);
+        static if (is(T == N1))
+        {
+            for (int i=0; i<vals.length; i++) val[i] = T(vals[2*i], vals[2*i+1]);
+        }
+        else
+        {
+            for (int i=0; i<vals.length; i++) val[i] = T(vals[i]);
+        }
     }
 
     this(ref size_t reclen, size_t cnt, ByteReader s)
     {
         val = new T[0];
         empty = true;
-        size = 0;
         static if (is (T == N1))
         {
             if (reclen >= (cnt+1)/2)
@@ -760,8 +776,7 @@ struct OptionalArray(T) if (is(T == U2) || is(T == N1) || is(T == R4))
                 val.length = (cnt + 1) /2;
                 for (int i=0; i<(cnt+1)/2; i++) 
                 {
-                    val[i](s);
-                    reclen--; 
+                    val[i] = T(s);
                 }
                 empty = false;
                 reclen -= (cnt+1)/2;
@@ -775,7 +790,7 @@ struct OptionalArray(T) if (is(T == U2) || is(T == N1) || is(T == R4))
                 for (int i=0; i<cnt; i++)
                 {
                     size_t len = s.front();
-                    if (reclen > len) val[i](s);
+                    if (reclen > len) val[i] = T(s);
                     reclen -= len + 1;
                     empty = false;
                 }
@@ -784,13 +799,17 @@ struct OptionalArray(T) if (is(T == U2) || is(T == N1) || is(T == R4))
             {
                 static if (is (T == U2) || is (T == R4))
                 {
-                    size_t siz = T.sizeof;
+                    size_t siz = 0;
+                    static if (is(T == U2)) { siz = 2; } else { siz = 4; }
                     if (reclen >= siz * cnt)
                     {
                         val.length = cnt;
-                        for (int i=0; i<cnt; i++) val[i](s);
+                        for (int i=0; i<cnt; i++) 
+                        {
+                            val[i] = T(s);
+                            reclen -= val[i].size;
+                        }
                         empty = false;
-                        reclen -= siz * cnt;
                     }
                 }
                 else
@@ -802,13 +821,25 @@ struct OptionalArray(T) if (is(T == U2) || is(T == N1) || is(T == R4))
     }
 }
 
+unittest
+{
+    import std.file;
+    foreach(string name; dirEntries("stdf", SpanMode.depth))
+    {
+        writeln("file = ", name);
+        StdfReader stdf = new StdfReader(name);
+        stdf.read();
+    }
+
+}
+
 class StdfReader
 {
     private ByteReader src;
     public const string filename;
     private StdfRecord[] records = new StdfRecord[100000];
     
-    this(string filename, size_t bufferSize)
+    this(string filename)
     {
         this.filename = filename;
         auto f = new File(filename, "rb");
@@ -819,16 +850,17 @@ class StdfReader
 
     void read()
     {
-        records.length = 0;
+        records.length = 100000;
         while (src.remaining() > 1)
         {
             ubyte b0 = src.getByte();
             ubyte b1 = src.getByte();
-            size_t reclen = b0 + ((b1 << 8) * 0xFF00);
+            size_t reclen = ((cast(size_t) b0) + (((cast(size_t) b1) << 8L) & 0xFF00L)) & 0xFFFFL;
             if (reclen < 2) break;
             ubyte rtype = src.getByte();
             ubyte stype = src.getByte();
             Record_t type = RecordType.getRecordType(rtype, stype);
+            writeln("type = ", type, " reclen = ", reclen);
             if (type is null)
             {
                 writeln("Corrupt file: ", filename, " invalid record type:");
@@ -846,7 +878,7 @@ class StdfReader
                 case FTR.ordinal: r = new FunctionalTestRecord(reclen, src); break;
                 case GDR.ordinal: r = new GenericDataRecord(reclen, src); break;
                 case HBR.ordinal: r = new HardwareBinRecord(src); break;
-                case MIR.ordinal: r = new MasterInformationRecord(src); break;
+                case MIR.ordinal: r = new MasterInformationRecord(reclen, src); break;
                 case MPR.ordinal: r = new MultipleResultParametricRecord(reclen, src); break;
                 case MRR.ordinal: r = new MasterResultsRecord(src); break;
                 case PCR.ordinal: r = new PartCountRecord(src); break;
@@ -865,6 +897,8 @@ class StdfReader
                 case WRR.ordinal: r = new WaferResultsRecord(src); break;
                 default: throw new Exception("Unknown record type: " ~ type.stringof);
             }
+            writeln(r.toString());
+            stdout.flush();
             records ~= r;
         }
     }
@@ -921,8 +955,8 @@ class AuditTrailRecord : StdfRecord
     this(uint date, string cmdLine)
     {
         super(Record_t.ATR);
-        this.date.setValue(date);
-        this.cmdLine.setValue(cmdLine);
+        this.date = U4(date);
+        this.cmdLine = CN(cmdLine);
     }
 
     override protected size_t getReclen()
@@ -964,13 +998,13 @@ class BeginProgramSelectionRecord : StdfRecord
     this(ByteReader s)
     {
         super(Record_t.BPS);
-        seqName(s);
+        seqName = CN(s);
     }
 
     this(string seqName)
     {
         super(Record_t.BPS);
-        this.seqName.setValue(seqName);
+        this.seqName = CN(seqName);
     }
 
     override protected size_t getReclen()
@@ -1001,18 +1035,18 @@ class DatalogTextRecord : StdfRecord
     this(ByteReader s)
     {
         super(Record_t.DTR);
-        text(s);
+        text = CN(s);
     }
 
     this(string text)
     {
         super(Record_t.DTR);
-        this.text.setValue(text);
+        this.text = CN(text);
     }
 
     override protected size_t getReclen()
     {
-        return text.length.size;
+        return text.size;
     }
 
     /*
@@ -1071,16 +1105,16 @@ class FileAttributesRecord : StdfRecord
     this(ByteReader s)
     {
         super(Record_t.FAR);
-        cpu_type(s);
+        cpu_type = U1(s);
         if (cpu_type.getValue() != 2) assert(false, "INVALID CPU TYPE: " ~ cpu_type.toString());
-        stdfVersion(s);
+        stdfVersion = U1(s);
     }
 
     this(uint stdfVersion)
     {
         super(Record_t.FAR);
-        cpu_type.setValue(2);
-        this.stdfVersion.setValue(stdfVersion);
+        cpu_type = U1(2);
+        this.stdfVersion = U1(cast(ubyte) stdfVersion);
     }
 
     override protected size_t getReclen()
@@ -1112,27 +1146,27 @@ class FileAttributesRecord : StdfRecord
 
 abstract class TestRecord : StdfRecord
 {
-    const U4 test_num;
-    const U1 head_num;
-    const U1 site_num;
-    const U1 test_flg;
+    U4 test_num;
+    U1 head_num;
+    U1 site_num;
+    U1 test_flg;
 
     this(Record_t type, ByteReader s)
     {
         super(type);
-        test_num(s);
-        head_num(s);
-        site_num(s);
-        test_flg(s);
+        test_num = U4(s);
+        head_num = U1(s);
+        site_num = U1(s);
+        test_flg = U1(s);
     }
 
     this(Record_t type, uint test_num, ubyte head_num, ubyte site_num, ubyte test_flg)
     {
         super(type);
-        this.test_num = test_num;
-        this.head_num = head_num;
-        this.site_num = site_num;
-        this.test_flg = test_flg;
+        this.test_num = U4(test_num);
+        this.head_num = U1(head_num);
+        this.site_num = U1(site_num);
+        this.test_flg = U1(test_flg);
     }
  
     protected string getString()
@@ -1196,26 +1230,26 @@ class FunctionalTestRecord : TestRecord
         vect_off = OptionalField!(I2)(reclen, s, 0);
         rtn_icnt = OptionalField!(U2)(reclen, s, 0);
         pgm_icnt = OptionalField!(U2)(reclen, s, 0);
-        rtn_indx = OptionalArray!(U2)(reclen, rtn_icnt.value, s);
-        rtn_stat = OptionalArray!(N1)(reclen, rtn_icnt.value, s);
-        pgm_indx = OptionalArray!(U2)(reclen, pgm_icnt.value, s);
-        pgm_stat = OptionalArray!(N1)(reclen, pgm_icnt.value, s);
-        fail_pin = OptionalField!(DN)(reclen, s, cast(DN) new ubyte[0]);
-        vect_nam = OptionalField!(CN)(reclen, s, new char[0]);
-        time_set = OptionalField!(CN)(reclen, s, new char[0]);
-        op_code  = OptionalField!(CN)(reclen, s, new char[0]);
-        test_txt = OptionalField!(CN)(reclen, s, new char[0]);
-        alarm_id = OptionalField!(CN)(reclen, s, new char[0]);
-        prog_txt = OptionalField!(CN)(reclen, s, new char[0]);
-        rslt_txt = OptionalField!(CN)(reclen, s, new char[0]);
+        rtn_indx = OptionalArray!(U2)(reclen, rtn_icnt.getValue(), s);
+        rtn_stat = OptionalArray!(N1)(reclen, rtn_icnt.getValue(), s);
+        pgm_indx = OptionalArray!(U2)(reclen, pgm_icnt.getValue(), s);
+        pgm_stat = OptionalArray!(N1)(reclen, pgm_icnt.getValue(), s);
+        fail_pin = OptionalField!(DN)(reclen, s, new ubyte[0]);
+        vect_nam = OptionalField!(CN)(reclen, s, "");
+        time_set = OptionalField!(CN)(reclen, s, "");
+        op_code  = OptionalField!(CN)(reclen, s, "");
+        test_txt = OptionalField!(CN)(reclen, s, "");
+        alarm_id = OptionalField!(CN)(reclen, s, "");
+        prog_txt = OptionalField!(CN)(reclen, s, "");
+        rslt_txt = OptionalField!(CN)(reclen, s, "");
         patg_num = OptionalField!(U1)(reclen, s, 0);
-        spin_map = OptionalField!(DN)(reclen, s, cast(DN) new ubyte[0]);
+        spin_map = OptionalField!(DN)(reclen, s, new ubyte[0]);
     }
 
-    this(U4 test_num,
-         U1 head_num,
-         U1 site_num,
-         U1 test_flg,
+    this(uint test_num,
+         ubyte head_num,
+         ubyte site_num,
+         ubyte test_flg,
          OptionalField!(U1) opt_flag,
          OptionalField!(U4) cycl_cnt,
          OptionalField!(U4) rel_vadr,
@@ -1266,36 +1300,35 @@ class FunctionalTestRecord : TestRecord
         this.rslt_txt = rslt_txt;
         this.patg_num = patg_num;
         this.spin_map = spin_map;
-        reclen = getReclen();
     }
 
     override protected size_t getReclen()
     {
         size_t l = 7;
-        l += opt_flag.getSize();
-        l += cycl_cnt.getSize();
-        l += rel_vadr.getSize();
-        l += rept_cnt.getSize();
-        l += num_fail.getSize();
-        l += xfail_ad.getSize();
-        l += yfail_ad.getSize();
-        l += vect_off.getSize();
-        l += rtn_icnt.getSize();
-        l += pgm_icnt.getSize();
-        l += rtn_indx.getSize();
-        l += rtn_stat.getSize();
-        l += pgm_indx.getSize();
-        l += pgm_stat.getSize();
-        l += fail_pin.getSize();
-        l += vect_nam.getSize();
-        l += time_set.getSize();
-        l +=  op_code.getSize();
-        l += test_txt.getSize();
-        l += alarm_id.getSize();
-        l += prog_txt.getSize();
-        l += rslt_txt.getSize();
-        l += patg_num.getSize();
-        l += spin_map.getSize();
+        l += opt_flag.size;
+        l += cycl_cnt.size;
+        l += rel_vadr.size;
+        l += rept_cnt.size;
+        l += num_fail.size;
+        l += xfail_ad.size;
+        l += yfail_ad.size;
+        l += vect_off.size;
+        l += rtn_icnt.size;
+        l += pgm_icnt.size;
+        l += rtn_indx.size;
+        l += rtn_stat.size;
+        l += pgm_indx.size;
+        l += pgm_stat.size;
+        l += fail_pin.size;
+        l += vect_nam.size;
+        l += time_set.size;
+        l +=  op_code.size;
+        l += test_txt.size;
+        l += alarm_id.size;
+        l += prog_txt.size;
+        l += rslt_txt.size;
+        l += patg_num.size;
+        l += spin_map.size;
         return l;
     }
 
@@ -1394,9 +1427,8 @@ class GenericDataRecord : StdfRecord
 
     this(GenericData[] data)
     {
-        super(Record_t.GDR, 0);
+        super(Record_t.GDR);
         foreach(d; data) this.data ~= d;
-        reclen = getReclen();
     }
 
     override protected size_t getReclen()
@@ -1441,22 +1473,34 @@ class GenericDataRecord : StdfRecord
 
 class HardwareBinRecord : StdfRecord
 {
-    const U1 head_num;
-    const U1 site_num;
-    const U2 hbin_num;
-    const U4 hbin_cnt;
-    const char hbin_pf;
-    const CN hbin_nam;
+    U1 head_num;
+    U1 site_num;
+    U2 hbin_num;
+    U4 hbin_cnt;
+    OptionalField!C1 hbin_pf;
+    OptionalField!CN hbin_nam;
 
-    this(ByteReader s)
+    this(size_t reclen, ByteReader s)
     {
         super(Record_t.HBR);
-        head_num(s);
-        site_num(s);
-        hbin_num(s);
-        hbin_cnt(s);
-        hbin_pf(s);
-        hbin_nam(s);
+        head_num = U1(s);
+        site_num = U1(s);
+        hbin_num = U2(s);
+        hbin_cnt = U4(s);
+        reclen -= 8;
+        hbin_pf = OptionalField!C1(reclen, s, ' ');
+        hbin_nam = OptionalField!CN(reclen, s, "");
+    }
+
+    this(ubyte head_num, ubyte site_num, ushort hbin_num, uint hbin_cnt, OptionalField!C1 hbin_pf, OptionalField!CN hbin_nam)
+    {
+        super(Record_t.HBR);
+        this.head_num = U1!(head_num);
+        this.site_num = U1!(site_num);
+        this.hbin_num = U2!(hbin_num);
+        this.hbin_cnt = U4!(hbin_cnt);
+        this.hbin_pf = hbin_pf;
+        this.hbin_nam = hbin_nam;
     }
 
     override protected size_t getReclen()
@@ -1508,74 +1552,80 @@ class MasterInformationRecord : StdfRecord
     CN node_nam;
     CN tstr_typ;
     CN job_nam;
-    CN job_rev;
-    CN sblot_id;
-    CN oper_nam;
-    CN exec_typ;
-    CN exec_ver;
-    CN test_cod;
-    CN tst_temp;
-    CN user_txt;
-    CN aux_file;
-    CN pkg_typ;
-    CN famly_id;
-    CN date_cod;
-    CN facil_id;
-    CN floor_id;
-    CN proc_id;
-    CN oper_frq;
-    CN spec_nam;
-    CN spec_ver;
-    CN flow_id;
-    CN setup_id;
-    CN dsgn_rev;
-    CN eng_id;
-    CN rom_cod;
-    CN serl_num;
-    CN supr_nam;
+    OptionalField!CN job_rev;
+    OptionalField!CN sblot_id;
+    OptionalField!CN oper_nam;
+    OptionalField!CN exec_typ;
+    OptionalField!CN exec_ver;
+    OptionalField!CN test_cod;
+    OptionalField!CN tst_temp;
+    OptionalField!CN user_txt;
+    OptionalField!CN aux_file;
+    OptionalField!CN pkg_typ;
+    OptionalField!CN famly_id;
+    OptionalField!CN date_cod;
+    OptionalField!CN facil_id;
+    OptionalField!CN floor_id;
+    OptionalField!CN proc_id;
+    OptionalField!CN oper_frq;
+    OptionalField!CN spec_nam;
+    OptionalField!CN spec_ver;
+    OptionalField!CN flow_id;
+    OptionalField!CN setup_id;
+    OptionalField!CN dsgn_rev;
+    OptionalField!CN eng_id;
+    OptionalField!CN rom_cod;
+    OptionalField!CN serl_num;
+    OptionalField!CN supr_nam;
 
     //    start_t = DateTime(1970, 1, 1, 0, 0, 0) + dur!"seconds"(d);
-    this(ByteReader s)
+    this(size_t reclen, ByteReader s)
     {
         super(Record_t.MIR);
-        setup_t(s);
-        start_t(s);
-        stat_num(s);
-        mode_cod(s);
-        rtst_cod(s);
-        prot_cod(s);
-        burn_tim(s);
-        cmod_cod(s);
-        lot_id(s);
-        part_typ(s);
-        node_nam(s);
-        tstr_typ(s);
-        job_nam(s);
-        job_revN(s);
-        sblot_id(s);
-        oper_nam(s);
-        exec_typ(s);
-        exec_ver(s);
-        test_cod(s);
-        tst_temp(s);
-        user_txt(s);
-        aux_file(s);
-        pkg_typ(s);
-        famly_id(s);
-        date_cod(s);
-        facil_id(s);
-        floor_id(s);
-        proc_id(s);
-        oper_frq(s);
-        spec_nam(s);
-        spec_ver(s);
-        flow_id(s);
-        setup_id(s);
-        dsgn_rev(s);
-        eng_id(s);
-        rom_cod(s);
-        serl_num(s);
-        supr_nam(s);
+        setup_t = U4(s);
+        start_t = U4(s);
+        stat_num = U1(s);
+        mode_cod = C1(s);
+        rtst_cod = C1(s);
+        prot_cod = C1(s);
+        burn_tim = U2(s);
+        cmod_cod = C1(s);
+        reclen -= 15;
+        lot_id = CN(s);
+        reclen -= lot_id.size;
+        part_typ = CN(s);
+        reclen -= part_typ.size;
+        node_nam = CN(s);
+        reclen -= node_nam.size;
+        tstr_typ = CN(s);
+        reclen -= tstr_typ.size;
+        job_nam = CN(s);
+        reclen -= job_nam.size;
+        job_rev = OptionalField!CN(reclen, s, "");
+        sblot_id = OptionalField!CN(reclen, s, "");
+        oper_nam = OptionalField!CN(reclen, s, "");
+        exec_typ = OptionalField!CN(reclen, s, "");
+        exec_ver = OptionalField!CN(reclen, s, "");
+        test_cod = OptionalField!CN(reclen, s, "");
+        tst_temp = OptionalField!CN(reclen, s, "");
+        user_txt = OptionalField!CN(reclen, s, "");
+        aux_file = OptionalField!CN(reclen, s, "");
+        pkg_typ = OptionalField!CN(reclen, s, "");
+        famly_id = OptionalField!CN(reclen, s, "");
+        date_cod = OptionalField!CN(reclen, s, "");
+        facil_id = OptionalField!CN(reclen, s, "");
+        floor_id = OptionalField!CN(reclen, s, "");
+        proc_id = OptionalField!CN(reclen, s, "");
+        oper_frq = OptionalField!CN(reclen, s, "");
+        spec_nam = OptionalField!CN(reclen, s, "");
+        spec_ver = OptionalField!CN(reclen, s, "");
+        flow_id = OptionalField!CN(reclen, s, "");
+        setup_id = OptionalField!CN(reclen, s, "");
+        dsgn_rev = OptionalField!CN(reclen, s, "");
+        eng_id = OptionalField!CN(reclen, s, "");
+        rom_cod = OptionalField!CN(reclen, s, "");
+        serl_num = OptionalField!CN(reclen, s, "");
+        supr_nam = OptionalField!CN(reclen, s, "");
     }
 
     this(U4 setup_t,
@@ -1591,33 +1641,33 @@ class MasterInformationRecord : StdfRecord
          CN node_nam,
          CN tstr_typ,
          CN job_nam,
-         CN job_rev,
-         CN sblot_id,
-         CN oper_nam,
-         CN exec_typ,
-         CN exec_ver,
-         CN test_cod,
-         CN tst_temp,
-         CN user_txt,
-         CN aux_file,
-         CN pkg_typ,
-         CN famly_id,
-         CN date_cod,
-         CN facil_id,
-         CN floor_id,
-         CN proc_id,
-         CN oper_frq,
-         CN spec_nam,
-         CN spec_ver,
-         CN flow_id,
-         CN setup_id,
-         CN dsgn_rev,
-         CN eng_id,
-         CN rom_cod,
-         CN serl_num,
-         CN supr_nam)
+         OptionalField!CN job_rev,
+         OptionalField!CN sblot_id,
+         OptionalField!CN oper_nam,
+         OptionalField!CN exec_typ,
+         OptionalField!CN exec_ver,
+         OptionalField!CN test_cod,
+         OptionalField!CN tst_temp,
+         OptionalField!CN user_txt,
+         OptionalField!CN aux_file,
+         OptionalField!CN pkg_typ,
+         OptionalField!CN famly_id,
+         OptionalField!CN date_cod,
+         OptionalField!CN facil_id,
+         OptionalField!CN floor_id,
+         OptionalField!CN proc_id,
+         OptionalField!CN oper_frq,
+         OptionalField!CN spec_nam,
+         OptionalField!CN spec_ver,
+         OptionalField!CN flow_id,
+         OptionalField!CN setup_id,
+         OptionalField!CN dsgn_rev,
+         OptionalField!CN eng_id,
+         OptionalField!CN rom_cod,
+         OptionalField!CN serl_num,
+         OptionalField!CN supr_nam)
     {
-        super(Record_t.MIR, 0);
+        super(Record_t.MIR);
         this.setup_t = setup_t;
         this.start_t = start_t;
         this.stat_num = stat_num;
@@ -1656,43 +1706,42 @@ class MasterInformationRecord : StdfRecord
         this.rom_cod = rom_cod;
         this.serl_num = serl_num;
         this.supr_nam = supr_nam;
-        reclen = getReclen();
     }
 
 
     override protected size_t getReclen()
     {
         size_t l = 15;
-        l += 1 + lot_id.length;
-        l += 1 + part_typ.length;
-        l += 1 + node_nam.length;
-        l += 1 + tstr_typ.length;
-        l += 1 + job_nam.length;
-        l += 1 + job_rev.length;
-        l += 1 + sblot_id.length;
-        l += 1 + oper_nam.length;
-        l += 1 + exec_typ.length;
-        l += 1 + exec_ver.length;
-        l += 1 + test_cod.length;
-        l += 1 + tst_temp.length;
-        l += 1 + user_txt.length;
-        l += 1 + aux_file.length;
-        l += 1 + pkg_typ.length;
-        l += 1 + famly_id.length;
-        l += 1 + date_cod.length;
-        l += 1 + facil_id.length;
-        l += 1 + floor_id.length;
-        l += 1 + proc_id.length;
-        l += 1 + oper_frq.length;
-        l += 1 + spec_nam.length;
-        l += 1 + spec_ver.length;
-        l += 1 + flow_id.length;
-        l += 1 + setup_id.length;
-        l += 1 + dsgn_rev.length;
-        l += 1 + eng_id.length;
-        l += 1 + rom_cod.length;
-        l += 1 + serl_num.length;
-        l += 1 + supr_nam.length;
+        l += 1 + lot_id.size;
+        l += 1 + part_typ.size;
+        l += 1 + node_nam.size;
+        l += 1 + tstr_typ.size;
+        l += 1 + job_nam.size;
+        l += 1 + job_rev.size;
+        l += 1 + sblot_id.size;
+        l += 1 + oper_nam.size;
+        l += 1 + exec_typ.size;
+        l += 1 + exec_ver.size;
+        l += 1 + test_cod.size;
+        l += 1 + tst_temp.size;
+        l += 1 + user_txt.size;
+        l += 1 + aux_file.size;
+        l += 1 + pkg_typ.size;
+        l += 1 + famly_id.size;
+        l += 1 + date_cod.size;
+        l += 1 + facil_id.size;
+        l += 1 + floor_id.size;
+        l += 1 + proc_id.size;
+        l += 1 + oper_frq.size;
+        l += 1 + spec_nam.size;
+        l += 1 + spec_ver.size;
+        l += 1 + flow_id.size;
+        l += 1 + setup_id.size;
+        l += 1 + dsgn_rev.size;
+        l += 1 + eng_id.size;
+        l += 1 + rom_cod.size;
+        l += 1 + serl_num.size;
+        l += 1 + supr_nam.size;
         return 0;
     }
 
@@ -1758,36 +1807,36 @@ class MasterInformationRecord : StdfRecord
         app.put("\n    prot_cod = "); app.put(to!string(prot_cod));
         app.put("\n    burn_tim = "); app.put(to!string(burn_tim));
         app.put("\n    cmod_cod = "); app.put(to!string(cmod_cod));
-        app.put("\n    lot_id = ");   app.put(lot_id);
-        app.put("\n    part_typ = "); app.put(part_typ);
-        app.put("\n    node_nam = "); app.put(node_nam);
-        app.put("\n    tstr_typ = "); app.put(tstr_typ);
-        app.put("\n    job_nam = ");  app.put(job_nam);
-        app.put("\n    job_rev = ");  app.put(job_rev);
-        app.put("\n    sblot_id = "); app.put(sblot_id);
-        app.put("\n    oper_nam = "); app.put(oper_nam);
-        app.put("\n    exec_typ = "); app.put(exec_typ);
-        app.put("\n    exec_ver = "); app.put(exec_ver);
-        app.put("\n    test_cod = "); app.put(test_cod);
-        app.put("\n    tst_temp = "); app.put(tst_temp);
-        app.put("\n    user_txt = "); app.put(user_txt);
-        app.put("\n    aux_file = "); app.put(aux_file);
-        app.put("\n    pkg_typ = ");  app.put(pkg_typ);
-        app.put("\n    famly_id = "); app.put(famly_id);
-        app.put("\n    date_cod = "); app.put(date_cod);
-        app.put("\n    facil_id = "); app.put(facil_id);
-        app.put("\n    floor_id = "); app.put(floor_id);
-        app.put("\n    proc_id = ");  app.put(proc_id);
-        app.put("\n    oper_frq = "); app.put(oper_frq);
-        app.put("\n    spec_nam = "); app.put(spec_nam);
-        app.put("\n    spec_ver = "); app.put(spec_ver);
-        app.put("\n    flow_id = ");  app.put(flow_id);
-        app.put("\n    setup_id = "); app.put(setup_id);
-        app.put("\n    dsgn_rev = "); app.put(dsgn_rev);
-        app.put("\n    eng_id = ");   app.put(eng_id);
-        app.put("\n    rom_cod = ");  app.put(rom_cod);
-        app.put("\n    serl_num = "); app.put(serl_num);
-        app.put("\n    supr_nam = "); app.put(supr_nam);
+        app.put("\n    lot_id = ");   app.put(lot_id.toString());
+        app.put("\n    part_typ = "); app.put(part_typ.toString());
+        app.put("\n    node_nam = "); app.put(node_nam.toString());
+        app.put("\n    tstr_typ = "); app.put(tstr_typ.toString());
+        app.put("\n    job_nam = ");  app.put(job_nam.toString());
+        app.put("\n    job_rev = ");  app.put(job_rev.toString());
+        app.put("\n    sblot_id = "); app.put(sblot_id.toString());
+        app.put("\n    oper_nam = "); app.put(oper_nam.toString());
+        app.put("\n    exec_typ = "); app.put(exec_typ.toString());
+        app.put("\n    exec_ver = "); app.put(exec_ver.toString());
+        app.put("\n    test_cod = "); app.put(test_cod.toString());
+        app.put("\n    tst_temp = "); app.put(tst_temp.toString());
+        app.put("\n    user_txt = "); app.put(user_txt.toString());
+        app.put("\n    aux_file = "); app.put(aux_file.toString());
+        app.put("\n    pkg_typ = ");  app.put(pkg_typ.toString());
+        app.put("\n    famly_id = "); app.put(famly_id.toString());
+        app.put("\n    date_cod = "); app.put(date_cod.toString());
+        app.put("\n    facil_id = "); app.put(facil_id.toString());
+        app.put("\n    floor_id = "); app.put(floor_id.toString());
+        app.put("\n    proc_id = ");  app.put(proc_id.toString());
+        app.put("\n    oper_frq = "); app.put(oper_frq.toString());
+        app.put("\n    spec_nam = "); app.put(spec_nam.toString());
+        app.put("\n    spec_ver = "); app.put(spec_ver.toString());
+        app.put("\n    flow_id = ");  app.put(flow_id.toString());
+        app.put("\n    setup_id = "); app.put(setup_id.toString());
+        app.put("\n    dsgn_rev = "); app.put(dsgn_rev.toString());
+        app.put("\n    eng_id = ");   app.put(eng_id.toString());
+        app.put("\n    rom_cod = ");  app.put(rom_cod.toString());
+        app.put("\n    serl_num = "); app.put(serl_num.toString());
+        app.put("\n    supr_nam = "); app.put(supr_nam.toString());
         app.put("\n");
         return app.data;
     }
@@ -1800,7 +1849,13 @@ class ParametricRecord : TestRecord
     this(Record_t type, ByteReader s)
     {
         super(type, s);
-        this.parm_flg(s);
+        this.parm_flg = U1(s);
+    }
+
+    this(Record_t type, uint test_num, ubyte head_num, ubyte site_num, ubyte test_flg, ubyte parm_flg)
+    {
+        super(type, test_num, head_num, site_num, test_flg);
+        this.parm_flg = U1(parm_flg);
     }
  
     override protected string getString()
@@ -1845,14 +1900,14 @@ class MultipleResultParametricRecord : ParametricRecord
 
     this(size_t reclen, ByteReader s)
     {
-        super(reclen, Record_t.MPR, get!U4(s), get!U1(s), get!U1(s), get!U1(s), get!U1(s));
+        super(Record_t.MPR, s);
         reclen -= 8;
         rtn_icnt = OptionalField!U2(reclen, s, 0);
         rslt_cnt = OptionalField!U2(reclen, s, 0);
         rtn_stat = OptionalArray!N1(reclen, rtn_icnt.getValue(), s);
         rtn_rslt = OptionalArray!R4(reclen, rslt_cnt.getValue(), s);
-        test_txt = OptionalField!CN(reclen, s, new char[0]);
-        alarm_id = OptionalField!CN(reclen, s, new char[0]);
+        test_txt = OptionalField!CN(reclen, s, "");
+        alarm_id = OptionalField!CN(reclen, s, "");
         opt_flag = OptionalField!U1(reclen, s, 0);
         res_scal = OptionalField!I1(reclen, s, 0);
         llm_scal = OptionalField!I1(reclen, s, 0);
@@ -1862,20 +1917,20 @@ class MultipleResultParametricRecord : ParametricRecord
         start_in = OptionalField!R4(reclen, s, 0.0f);
         incr_in  = OptionalField!R4(reclen, s, 0.0f);
         rtn_indx = OptionalArray!U2(reclen, rtn_icnt.getValue(), s);
-        units    = OptionalField!CN(reclen, s, new char[0]);
-        units_in = OptionalField!CN(reclen, s, new char[0]);
-        c_resfmt = OptionalField!CN(reclen, s, new char[0]);
-        c_llmfmt = OptionalField!CN(reclen, s, new char[0]);
-        c_hlmfmt = OptionalField!CN(reclen, s, new char[0]);
+        units    = OptionalField!CN(reclen, s, "");
+        units_in = OptionalField!CN(reclen, s, "");
+        c_resfmt = OptionalField!CN(reclen, s, "");
+        c_llmfmt = OptionalField!CN(reclen, s, "");
+        c_hlmfmt = OptionalField!CN(reclen, s, "");
         lo_spec  = OptionalField!R4(reclen, s, 0.0f);
         hi_spec  = OptionalField!R4(reclen, s, 0.0f);
     }
  
-    this(U4 test_num,
-         U1 head_num,
-         U1 site_num,
-         U1 test_flg,
-         U1 parm_flg,
+    this(uint test_num,
+         ubyte head_num,
+         ubyte site_num,
+         ubyte test_flg,
+         ubyte parm_flg,
          OptionalField!U2 rtn_icnt,
          OptionalField!U2 rslt_cnt,
          OptionalArray!N1 rtn_stat,
@@ -1899,7 +1954,7 @@ class MultipleResultParametricRecord : ParametricRecord
          OptionalField!R4 lo_spec,
          OptionalField!R4 hi_spec)
     {
-        super(0, Record_t.MPR, test_num, head_num, site_num, test_flg, parm_flg);
+        super(Record_t.MPR, test_num, head_num, site_num, test_flg, parm_flg);
         this.rtn_icnt = rtn_icnt;
         this.rslt_cnt = rslt_cnt;
         this.rtn_stat = rtn_stat;
@@ -1922,7 +1977,6 @@ class MultipleResultParametricRecord : ParametricRecord
         this.c_hlmfmt = c_hlmfmt;
         this.lo_spec = lo_spec;
         this.hi_spec = hi_spec;
-        reclen = getReclen();
     }
 
     override protected size_t getReclen()
@@ -2023,26 +2077,27 @@ class MultipleResultParametricRecord : ParametricRecord
 class MasterResultsRecord : StdfRecord
 {
     U4 finish_t;
-    C1 disp_cod;
-    CN usr_desc;
-    CN exc_desc;
+    OptionalField!C1 disp_cod;
+    OptionalField!CN usr_desc;
+    OptionalField!CN exc_desc;
 
-    this(ByteReader s)
+    this(size_t reclen, ByteReader s)
     {
         super(Record_t.MRR);
-        finish_t(s);
-        disp_cod(s);
-        usr_desc(s);
-        exc_desc(s);
+        finish_t = U4(s);
+        reclen -= 4;
+        disp_cod = OptionalField!C1(reclen, s, ' ');
+        usr_desc = OptionalField!CN(reclen, s, "");
+        exc_desc = OptionalField!CN(reclen, s, "");
     }
 
-    this(U4 finish_t, 
-         C1 disp_cod, 
-         CN usr_desc, 
-         CN exc_desc)
+    this(ushort finish_t, 
+         OptionalField!C1 disp_cod, 
+         OptionalField!CN usr_desc, 
+         OptionalField!CN exc_desc)
     {
         super(Record_t.MRR);
-        this.finish_t = finish_t;
+        this.finish_t = U4!(finish_t);
         this.disp_cod = disp_cod;
         this.usr_desc = usr_desc;
         this.exc_desc = exc_desc;
@@ -2076,8 +2131,8 @@ class MasterResultsRecord : StdfRecord
         app.put("MasterResultsRecord:");
         app.put("\n    finish_t = "); app.put(to!string(finish_t));
         app.put("\n    disp_cod = "); app.put(to!string(disp_cod));
-        app.put("\n    usr_desc = "); app.put(usr_desc);
-        app.put("\n    exc_desc = "); app.put(exc_desc);
+        app.put("\n    usr_desc = "); app.put(usr_desc.toString());
+        app.put("\n    exc_desc = "); app.put(exc_desc.toString());
         app.put("\n");
         return app.data;
     }
@@ -2088,35 +2143,36 @@ class PartCountRecord : StdfRecord
     U1 head_num;
     U1 site_num;
     U4 part_cnt;
-    U4 rtst_cnt;
-    U4 abrt_cnt;
-    U4 good_cnt;
-    U4 func_cnt;
+    OptionalField!U4 rtst_cnt;
+    OptionalField!U4 abrt_cnt;
+    OptionalField!U4 good_cnt;
+    OptionalField!U4 func_cnt;
 
-    this(ByteReader s)
+    this(size_t reclen, ByteReader s)
     {
         super(Record_t.PCR);
-        head_num(s);
-        site_num(s);
-        part_cnt(s);
-        rtst_cnt(s);
-        abrt_cnt(s);
-        good_cnt(s);
-        func_cnt(s);
+        head_num = U1(s);
+        site_num = U1(s);
+        part_cnt = U4(s);
+        reclen -= 6;
+        rtst_cnt = OptionalField!U4(reclen, s, 4294967295);
+        abrt_cnt = OptionalField!U4(reclen, s, 4294967295);
+        good_cnt = OptionalField!U4(reclen, s, 4294967295);
+        func_cnt = OptionalField!U4(reclen, s, 4294967295);
     }
 
-    this(U1 head_num,
-         U1 site_num,
-         U4 part_cnt,
-         U4 rtst_cnt,
-         U4 abrt_cnt,
-         U4 good_cnt,
-         U4 func_cnt)
+    this(ubyte head_num,
+         ubyte site_num,
+         uint part_cnt,
+         OptionalField!U4 rtst_cnt,
+         OptionalField!U4 abrt_cnt,
+         OptionalField!U4 good_cnt,
+         OptionalField!U4 func_cnt)
     {
         super(Record_t.PCR);
-        this.head_num = head_num;
-        this.site_num = site_num;
-        this.part_cnt = part_cnt;
+        this.head_num = U1!(head_num);
+        this.site_num = U1!(site_num);
+        this.part_cnt =U4!( part_cnt);
         this.rtst_cnt = rtst_cnt;
         this.abrt_cnt = abrt_cnt;
         this.good_cnt = good_cnt;
@@ -2164,29 +2220,30 @@ class PinGroupRecord : StdfRecord
     U2 grp_indx;
     CN grp_nam;
     U2 indx_cnt;
-    U2[] pmr_indx;
+    OptionalArray!U2 pmr_indx;
 
-    this(ByteReader s)
+    this(size_t reclen, ByteReader s)
     {
         super(Record_t.PGR);
-        grp_indx(s);
-        grp_nam(s);
-        indx_cnt(s);
-        pmr_indx = new U2[indx_cnt.getValue()];
-        for (int i=0; i<indx_cnt; i++) pmr_indx[i](s);
+        grp_indx = U2(s);
+        reclen -= 2;
+        grp_nam = CN(s);
+        reclen -= grp_nam.size;
+        indx_cnt = U2(s);
+        reclen -= 2;
+        pmr_indx = OptionalArray!U2(reclen, indx_cnt.getValue(), s);
     }
 
-    this(U2 grp_indx,
-         CN grp_nam,
-         U2 indx_cnt,
-         U2[] pmr_indx)
+    this(ushort grp_indx,
+         string grp_nam,
+         ushort indx_cnt,
+         OptionalArray!U2 pmr_indx)
     {
          super(Record_t.PGR);
-         this.grp_indx = grp_indx;
-         this.grp_nam = grp_nam;
-         this.indx_cnt = indx_cnt;
-         this.pmr_indx = new U2[indx_cnt];
-         foreach(i, d; pmr_indx) this.pmr_indx[i].setValue(d);
+         this.grp_indx = U2(grp_indx);
+         this.grp_nam = CN(grp_nam);
+         this.indx_cnt = U2(indx_cnt);
+         this.pmr_indx = pmr_indx;
     }
 
     override protected size_t getReclen()
@@ -2214,7 +2271,7 @@ class PinGroupRecord : StdfRecord
         auto app = appender!string();
         app.put("PinGroupRecord:");
         app.put("\n    grp_indx = "); app.put(to!string(grp_indx));
-        app.put("\n    grp_nam = ");  app.put(grp_nam);
+        app.put("\n    grp_nam = ");  app.put(grp_nam.toString());
         app.put("\n    indx_cnt = "); app.put(to!string(indx_cnt));
         app.put("\n    pmr_indx = "); app.put(to!string(pmr_indx));
         app.put("\n");
@@ -2230,15 +2287,15 @@ class PartInformationRecord : StdfRecord
     this(ByteReader s)
     {
         super(Record_t.PIR);
-        head_num(s);
-        site_num(s);
+        head_num = U1(s);
+        site_num = U1(s);
     }
 
-    this(U1 head_num, U1 site_num)
+    this(ubyte head_num, ubyte site_num)
     {
         super(Record_t.PIR);
-        this.head_num = head_num;
-        this.site_num = site_num;
+        this.head_num = U1(head_num);
+        this.site_num = U1(site_num);
     }
 
     override protected size_t getReclen()
@@ -2271,65 +2328,55 @@ class PinListRecord : StdfRecord
 {
     U2 grp_cnt;
     U2[] grp_indx;
-    U2[] grp_mode;
-    U1[] grp_radx;
-    CN[] pgm_char;
-    CN[] rtn_char;
-    CN[] pgm_chal;
-    CN[] rtn_chal;
+    OptionalArray!U2 grp_mode;
+    OptionalArray!U1 grp_radx;
+    OptionalArray!CN pgm_char;
+    OptionalArray!CN rtn_char;
+    OptionalArray!CN pgm_chal;
+    OptionalArray!CN rtn_chal;
 
-    this(ByteReader s)
+    this(size_t reclen, ByteReader s)
     {
         super(Record_t.PLR);
-        grp_cnt(s);
+        grp_cnt = U2(s);
+        reclen -= 2;
         grp_indx = new U2[grp_cnt.getValue()];
-        for (int i=0; i<grp_cnt; i++) grp_indx[i](s);
-        grp_mode = new U2[grp_cnt.getValue()];
-        for (int i=0; i<grp_cnt; i++) grp_mode[i](s);
-        grp_radx = new U1[grp_cnt.getValue()];
-        for (int i=0; i<grp_cnt; i++) grp_radx[i](s);
-        pgm_char = new CN[grp_cnt.getValue()];
-        for (int i=0; i<grp_cnt; i++) pgm_char[i](s);
-        rtn_char = new CN[grp_cnt.getValue()];
-        for (int i=0; i<grp_cnt; i++) rtn_char[i](s);
-        pgm_chal = new CN[grp_cnt.getValue()];
-        for (int i=0; i<grp_cnt; i++) pgm_chal[i](s);
-        rtn_chal = new CN[grp_cnt.getValue()];
-        for (int i=0; i<grp_cnt; i++) rtn_chal[i](s);
+        for (int i=0; i<grp_cnt.getValue(); i++) grp_indx[i] = U2(s);
+        reclen -= 2 * grp_cnt.getValue(); 
+        grp_mode = OptionalArray!U2(reclen, grp_cnt.getValue(), s);
+        grp_radx = OptionalArray!U1(reclen, grp_cnt.getValue(), s);
+        pgm_char = OptionalArray!CN(reclen, grp_cnt.getValue(), s);
+        rtn_char = OptionalArray!CN(reclen, grp_cnt.getValue(), s);
+        pgm_chal = OptionalArray!CN(reclen, grp_cnt.getValue(), s);
+        rtn_chal = OptionalArray!CN(reclen, grp_cnt.getValue(), s);
     }
 
-    this(U2 grp_cnt,
-         U2[] grp_indx,
-         U2[] grp_mode,
-         U1[] grp_radx,
-         CN[] pgm_char,
-         CN[] rtn_char,
-         CN[] pgm_chal,
-         CN[] rtn_chal)
+    this(ushort grp_cnt,
+         ushort[] grp_indx,
+         OptionalArray!U2 grp_mode,
+         OptionalArray!U1 grp_radx,
+         OptionalArray!CN pgm_char,
+         OptionalArray!CN rtn_char,
+         OptionalArray!CN pgm_chal,
+         OptionalArray!CN rtn_chal)
     {
         super(Record_t.PLR);
-        this.grp_cnt = grp_cnt;
-        this.grp_indx = new U2[grp_cnt.getValue()];
-        foreach(i, d; grp_indx) this.grp_indx[i].setValue(d);
-        this.grp_mode = new U2[grp_cnt.getValue()];
-        foreach(i, d; grp_mode) this.grp_mode[i].setValue(d);
-        this.grp_radx = new U1[grp_cnt.getValue()];
-        foreach(i, d; grp_radx) this.grp_radx[i].setValue(d);
-        this.pgm_char = new CN[grp_cnt.getValue()];
-        foreach(i, d; pgm_char) this.pgm_char[i].setValue(d);
-        this.rtn_char = new CN[grp_cnt.getValue()];
-        foreach(i, d; rtn_char) this.rtn_char[i].setValue(d);
-        this.pgm_chal = new CN[grp_cnt.getValue()];
-        foreach(i, d; pgm_chal) this.pgm_chal[i].setValue(d);
-        this.rtn_chal = new CN[grp_cnt.getValue()];
-        foreach(i, d; rtn_chal) this.rtn_chal[i].setValue(d);
+        this.grp_cnt = U2(grp_cnt);
+        this.grp_indx = new U2[grp_cnt];
+        foreach(i, d; grp_indx) this.grp_indx[i] = U2(d);
+        this.grp_mode = grp_mode;
+        this.grp_radx = grp_radx;
+        this.pgm_char = pgm_char;
+        this.rtn_char = rtn_char;
+        this.pgm_chal = pgm_chal;
+        this.rtn_chal = rtn_chal;
     }
 
     override protected size_t getReclen()
     {
         size_t l = 2;
-        l += (5 * grp_cnt);
-        for (int i=0; i<gpr_cnt.getValue(); i++)
+        l += (5 * grp_cnt.getValue());
+        for (int i=0; i<grp_cnt.getValue(); i++)
         {
             l += pgm_char[i].size;
             l += rtn_char[i].size;
@@ -2375,35 +2422,36 @@ class PinListRecord : StdfRecord
 class PinMapRecord : StdfRecord
 {
     U2 pmr_indx;
-    U2 chan_typ;
-    CN chan_nam;
-    CN phy_nam;
-    CN log_nam;
-    U1 head_num;
-    U1 site_num;
+    OptionalField!U2 chan_typ;
+    OptionalField!CN chan_nam;
+    OptionalField!CN phy_nam;
+    OptionalField!CN log_nam;
+    OptionalField!U1 head_num;
+    OptionalField!U1 site_num;
 
-    this(ByteReader s)
+    this(size_t reclen, ByteReader s)
     {
         super(Record_t.PMR);
-        pmr_indx(s);
-        chan_typ(s);
-        chan_nam(s);
-        phy_nam(s);
-        log_nam(s);
-        head_num(s);
-        site_num(s);
+        pmr_indx = U2(s);
+        reclen -= 2;
+        chan_typ = OptionalField!U2(reclen, s, 0);
+        chan_nam = OptionalField!CN(reclen, s, "");
+        phy_nam = OptionalField!CN(reclen, s, "");
+        log_nam = OptionalField!CN(reclen, s, "");
+        head_num = OptionalField!U1(reclen, s, 1);
+        site_num = OptionalField!U1(reclen, s, 1);
     }
 
-    this(U2 pmr_indx,
-         U2 chan_typ,
-         CN chan_nam,
-         CN phy_nam,
-         CN log_nam,
-         U1 head_num,
-         U1 site_num)
+    this(ushort pmr_indx,
+         OptionalField!U2 chan_typ,
+         OptionalField!CN chan_nam,
+         OptionalField!CN phy_nam,
+         OptionalField!CN log_nam,
+         OptionalField!U1 head_num,
+         OptionalField!U1 site_num)
     {
         super(Record_t.PMR);
-        this.pmr_indx = pmr_indx;
+        this.pmr_indx = U2(pmr_indx);
         this.chan_typ = chan_typ;
         this.chan_nam = chan_nam;
         this.phy_nam = phy_nam;
@@ -2442,9 +2490,9 @@ class PinMapRecord : StdfRecord
         app.put("PinMapRecord:");
         app.put("\n    pmr_indx = "); app.put(to!string(pmr_indx));
         app.put("\n    chan_typ = "); app.put(to!string(chan_typ));
-        app.put("\n    chan_nam = "); app.put(chan_nam);
-        app.put("\n    phy_nam = "); app.put(phy_nam);
-        app.put("\n    log_nam = "); app.put(log_nam);
+        app.put("\n    chan_nam = "); app.put(chan_nam.toString());
+        app.put("\n    phy_nam = "); app.put(phy_nam.toString());
+        app.put("\n    log_nam = "); app.put(log_nam.toString());
         app.put("\n    head_num = "); app.put(to!string(head_num));
         app.put("\n    site_num = "); app.put(to!string(site_num));
         app.put("\n");
@@ -2470,46 +2518,46 @@ class PartResultsRecord : StdfRecord
     this(ByteReader s)
     {
         super(Record_t.PRR);
-        head_num(s);
-        site_num(s);
-        part_flg(s);
-        num_test(s);
-        hard_bin(s);
-        soft_bin(s);
-        x_coord(s);
-        y_coord(s);
-        test_t(s);
-        part_id(s);
-        part_txt(s);
-        part_fix(s);
+        head_num = U1(s);
+        site_num = U1(s);
+        part_flg = U1(s);
+        num_test = U2(s);
+        hard_bin = U2(s);
+        soft_bin = U2(s);
+        x_coord = I2(s);
+        y_coord = I2(s);
+        test_t = I4(s);
+        part_id = CN(s);
+        part_txt = CN(s);
+        part_fix = BN(s);
     }
 
-    this(U1 head_num,
-         U1 site_num,
-         U1 part_flg,
-         U2 num_test,
-         U2 hard_bin,
-         U2 soft_bin,
-         I2 x_coord,
-         I2 y_coord,
-         I4 test_t,
-         CN part_id,
-         CN part_txt,
-         BN part_fix)
+    this(ubyte head_num,
+         ubyte site_num,
+         ubyte part_flg,
+         ushort num_test,
+         ushort hard_bin,
+         ushort soft_bin,
+         short x_coord,
+         short y_coord,
+         int test_t,
+         string part_id,
+         string part_txt,
+         ubyte[] part_fix)
     {
         super(Record_t.PRR);
-        this.head_num = head_num;
-        this.site_num = site_num;
-        this.part_flg = part_flg;
-        this.num_test = num_test;
-        this.hard_bin = hard_bin;
-        this.soft_bin = soft_bin;
-        this.x_coord = x_coord;
-        this.y_coord = y_coord;
-        this.test_t = test_t;
-        this.part_id = part_id;
-        this.part_txt = part_txt;
-        this.part_fix = part_fix;
+        this.head_num = U1(head_num);
+        this.site_num = U1(site_num);
+        this.part_flg = U1(part_flg);
+        this.num_test = U2(num_test);
+        this.hard_bin = U2(hard_bin);
+        this.soft_bin = U2(soft_bin);
+        this.x_coord = I2(x_coord);
+        this.y_coord = I2(y_coord);
+        this.test_t = I4(test_t);
+        this.part_id = CN(part_id);
+        this.part_txt = CN(part_txt);
+        this.part_fix = BN(part_fix);
     }
 
     override protected size_t getReclen()
@@ -2554,8 +2602,8 @@ class PartResultsRecord : StdfRecord
         app.put("\n    x_coord = "); app.put(to!string(x_coord));
         app.put("\n    y_coord = "); app.put(to!string(y_coord));
         app.put("\n    test_t = "); app.put(to!string(test_t));
-        app.put("\n    part_id = "); app.put(part_id);
-        app.put("\n    part_txt = "); app.put(part_txt);
+        app.put("\n    part_id = "); app.put(part_id.toString());
+        app.put("\n    part_txt = "); app.put(part_txt.toString());
         app.put("\n    part_fix = "); app.put(to!string(part_fix));
         app.put("\n");
         return app.data;
@@ -2583,32 +2631,34 @@ class ParametricTestRecord : ParametricRecord
     this(ref size_t reclen, ByteReader s)
     {
         super(Record_t.PTR, s);
-        result(s);
+        result = R4(s);
         reclen -= 12;
-        test_txt(reclen, s, "");
-        alarm_id(reclen, s, "");
-        opt_flag(reclen, s, 0xFF);
-        res_scal(reclen, s, 0);
-        llm_scal(reclen, s, 0);
-        hlm_scal(reclen, s, 0);
-        lo_limit(reclen, s, 0.0f);
-        hi_limit(reclen, s, 0.0f);
-        units(reclen, s, "");
-        c_resfmt(reclen, s, "");
-        c_llmfmt(reclen, s, "");
-        c_hlmfmt(reclen, s, "");
-        lo_spec(reclen, s, 0.0f);
-        hi_spec(reclen, s, 0.0f);
+        test_txt = CN(s);
+        alarm_id = CN(s);
+        reclen -= test_txt.size;
+        reclen -= alarm_id.size;
+        opt_flag = OptionalField!U1(reclen, s, 0xFF);
+        res_scal = OptionalField!I1(reclen, s, 0);
+        llm_scal = OptionalField!I1(reclen, s, 0);
+        hlm_scal = OptionalField!I1(reclen, s, 0);
+        lo_limit = OptionalField!R4(reclen, s, 0.0f);
+        hi_limit = OptionalField!R4(reclen, s, 0.0f);
+        units = OptionalField!CN(reclen, s, "");
+        c_resfmt = OptionalField!CN(reclen, s, "");
+        c_llmfmt = OptionalField!CN(reclen, s, "");
+        c_hlmfmt = OptionalField!CN(reclen, s, "");
+        lo_spec = OptionalField!R4(reclen, s, 0.0f);
+        hi_spec = OptionalField!R4(reclen, s, 0.0f);
     }
 
-    this(U4 test_num,
-         U1 head_num,
-         U1 site_num,
-         U1 test_flg,
-         U1 parm_flg,
-         R4 result,
-         CN test_txt,
-         CN alarm_id,
+    this(uint test_num,
+         ubyte head_num,
+         ubyte site_num,
+         ubyte test_flg,
+         ubyte parm_flg,
+         float result,
+         string test_txt,
+         string alarm_id,
          OptionalField!U1 opt_flag,
          OptionalField!I1 res_scal,
          OptionalField!I1 llm_scal,
@@ -2623,9 +2673,9 @@ class ParametricTestRecord : ParametricRecord
          OptionalField!R4 hi_spec)
      {
         super(Record_t.PTR, test_num, head_num, site_num, test_flg, parm_flg);
-        this.result = result;
-        this.test_txt = test_txt;
-        this.alarm_id = alarm_id;
+        this.result = R4(result);
+        this.test_txt = CN(test_txt);
+        this.alarm_id = CN(alarm_id);
         this.opt_flag = opt_flag;
         this.res_scal = res_scal;
         this.llm_scal = llm_scal;
@@ -2694,8 +2744,8 @@ class ParametricTestRecord : ParametricRecord
         app.put("ParametricTestRecord:\n");
         app.put(getString());
         app.put("\n    result = "); app.put(to!string(result));
-        app.put("\n    test_txt = "); app.put(test_txt);
-        app.put("\n    alarm_id = "); app.put(alarm_id);
+        app.put("\n    test_txt = "); app.put(test_txt.toString());
+        app.put("\n    alarm_id = "); app.put(alarm_id.toString());
         if (!opt_flag.empty) { app.put("\n    opt_flag = "); app.put((opt_flag.toString())); }
         if (!res_scal.empty) { app.put("\n    res_scal = "); app.put(to!string(res_scal)); }
         if (!llm_scal.empty) { app.put("\n    llm_scal = "); app.put(to!string(llm_scal)); }
@@ -2721,14 +2771,15 @@ class RetestDataRecord : StdfRecord
     this(size_t reclen, ByteReader s)
     {
         super(Record_t.RDR);
-        num_bins(s);
-        rtst_bin(reclen, s);
+        num_bins = U2(s);
+        reclen -= 2;
+        rtst_bin = OptionalArray!U2(reclen, num_bins.getValue(), s);
     }
 
-    this(U2 num_bins, OptionalArray!U2 rtst_bin)
+    this(ushort num_bins, OptionalArray!U2 rtst_bin)
     {
         super(Record_t.RDR);
-        this.num_bins = num_bins;
+        this.num_bins = U2(num_bins);
         this.rtst_bin = rtst_bin;
     }
 
@@ -2766,32 +2817,33 @@ class SoftwareBinRecord : StdfRecord
     U1 site_num;
     U2 sbin_num;
     U4 sbin_cnt;
-    C1 sbin_pf;
-    CN sbin_nam;
+    OptionalField!C1 sbin_pf;
+    OptionalField!CN sbin_nam;
 
-    this(ByteReader s)
+    this(size_t reclen, ByteReader s)
     {
         super(Record_t.SBR);
-        head_num(s);
-        site_num(s);
-        sbin_num(s);
-        sbin_cnt(s);
-        sbin_pf(s);
-        sbin_nam(s);
+        head_num = U1(s);
+        site_num = U1(s);
+        sbin_num = U2(s);
+        sbin_cnt = U4(s);
+        reclen -= 8;
+        sbin_pf = OptionalField!C1(reclen, s, ' ');
+        sbin_nam = OptionalField!CN(reclen, s, "");
     }
 
-    this(U1 head_num,
-         U1 site_num,
-         U2 sbin_num,
-         U4 sbin_cnt,
-         C1 sbin_pf,
-         CN sbin_nam)
+    this(ubyte head_num,
+         ubyte site_num,
+         ushort sbin_num,
+         uint sbin_cnt,
+         OptionalField!C1 sbin_pf,
+         OptionalField!CN sbin_nam)
     {
         super(Record_t.SBR);
-        this.head_num = head_num;
-        this.site_num = site_num;
-        this.sbin_num = sbin_num;
-        this.sbin_cnt = sbin_cnt;
+        this.head_num = U1(head_num);
+        this.site_num = U1(site_num);
+        this.sbin_num = U2(sbin_num);
+        this.sbin_cnt = U4(sbin_cnt);
         this.sbin_pf  = sbin_pf;
         this.sbin_nam = sbin_nam;
     }
@@ -2827,7 +2879,7 @@ class SoftwareBinRecord : StdfRecord
         app.put("\n    sbin_num = "); app.put(to!string(sbin_num));
         app.put("\n    sbin_cnt = "); app.put(to!string(sbin_cnt));
         app.put("\n    sbin_pf = "); app.put(to!string(sbin_pf));
-        app.put("\n    sbin_nam = "); app.put(sbin_nam);
+        app.put("\n    sbin_nam = "); app.put(sbin_nam.toString());
         app.put("\n");
         return app.data;
     }
@@ -2839,76 +2891,78 @@ class SiteDescriptionRecord : StdfRecord
     U1 site_grp;
     U1 site_cnt;
     U1[] site_num;
-    CN hand_typ;
-    CN hand_id;
-    CN card_typ;
-    CN card_id;
-    CN load_typ;
-    CN load_id;
-    CN dib_typ;
-    CN dib_id;
-    CN cabl_typ;
-    CN cabl_id;
-    CN cont_typ;
-    CN cont_id;
-    CN lasr_typ;
-    CN lasr_id;
-    CN extr_typ;
-    CN extr_id;
+    OptionalField!CN hand_typ;
+    OptionalField!CN hand_id;
+    OptionalField!CN card_typ;
+    OptionalField!CN card_id;
+    OptionalField!CN load_typ;
+    OptionalField!CN load_id;
+    OptionalField!CN dib_typ;
+    OptionalField!CN dib_id;
+    OptionalField!CN cabl_typ;
+    OptionalField!CN cabl_id;
+    OptionalField!CN cont_typ;
+    OptionalField!CN cont_id;
+    OptionalField!CN lasr_typ;
+    OptionalField!CN lasr_id;
+    OptionalField!CN extr_typ;
+    OptionalField!CN extr_id;
 
-    this(ByteReader s)
+    this(size_t reclen, ByteReader s)
     {
         super(Record_t.SDR);
-        head_num(s);
-        site_grp(s);
-        site_cnt(s);
+        head_num = U1(s);
+        site_grp = U1(s);
+        site_cnt = U1(s);
+        reclen -= 3;
         site_num = new U1[site_cnt.getValue()];
-        for (int i=0; i<site_cnt; i++) site_num[i](s);
-        hand_typ(s);
-        hand_id(s);
-        card_typ(s);
-        card_id(s);
-        load_typ(s);
-        load_id(s);
-        dib_typ(s);
-        dib_id(s);
-        cabl_typ(s);
-        cabl_id(s);
-        cont_typ(s);
-        cont_id(s);
-        lasr_typ(s);
-        lasr_id(s);
-        extr_typ(s);
-        extr_id(s);
+        for (int i=0; i<site_cnt.getValue(); i++) site_num[i] = U1(s);
+        reclen -= site_cnt.getValue();
+        hand_typ = OptionalField!CN(reclen, s, "");
+        hand_id = OptionalField!CN(reclen, s, "");
+        card_typ = OptionalField!CN(reclen, s, "");
+        card_id = OptionalField!CN(reclen, s, "");
+        load_typ = OptionalField!CN(reclen, s, "");
+        load_id = OptionalField!CN(reclen, s, "");
+        dib_typ = OptionalField!CN(reclen, s, "");
+        dib_id = OptionalField!CN(reclen, s, "");
+        cabl_typ = OptionalField!CN(reclen, s, "");
+        cabl_id = OptionalField!CN(reclen, s, "");
+        cont_typ = OptionalField!CN(reclen, s, "");
+        cont_id = OptionalField!CN(reclen, s, "");
+        lasr_typ = OptionalField!CN(reclen, s, "");
+        lasr_id = OptionalField!CN(reclen, s, "");
+        extr_typ = OptionalField!CN(reclen, s, "");
+        extr_id = OptionalField!CN(reclen, s, "");
     }
 
-    this(U1 head_num,
-         U1 site_grp,
-         U1 site_cnt,
-         U1[] site_num,
-         CN hand_typ,
-         CN hand_id,
-         CN card_typ,
-         CN card_id,
-         CN load_typ,
-         CN load_id,
-         CN dib_typ,
-         CN dib_id,
-         CN cabl_typ,
-         CN cabl_id,
-         CN cont_typ,
-         CN cont_id,
-         CN lasr_typ,
-         CN lasr_id,
-         CN extr_typ,
-         CN extr_id)
+    this(ubyte head_num,
+         ubyte site_grp,
+         ubyte site_cnt,
+         ubyte[] site_num,
+         OptionalField!CN hand_typ,
+         OptionalField!CN hand_id,
+         OptionalField!CN card_typ,
+         OptionalField!CN card_id,
+         OptionalField!CN load_typ,
+         OptionalField!CN load_id,
+         OptionalField!CN dib_typ,
+         OptionalField!CN dib_id,
+         OptionalField!CN cabl_typ,
+         OptionalField!CN cabl_id,
+         OptionalField!CN cont_typ,
+         OptionalField!CN cont_id,
+         OptionalField!CN lasr_typ,
+         OptionalField!CN lasr_id,
+         OptionalField!CN extr_typ,
+         OptionalField!CN extr_id)
     {
         super(Record_t.SDR);
-        this.head_num = head_num;
-        this.site_grp = site_grp;
-        this.site_cnt = site_cnt;
-        this.site_num = new U1[site_cnt.getValue()];
-        foreach(i, d; site_num) this.site_num[i] = d;
+        this.head_num = U1(head_num);
+        this.site_grp = U1(site_grp);
+        this.site_cnt = U1(site_cnt);
+        this.site_num = new U1[site_cnt];
+        foreach(i, d; site_num) this.site_num[i] = U1(d);
         this.hand_typ = hand_typ;
         this.hand_id = hand_id;
         this.card_typ = card_typ;
@@ -2931,7 +2985,7 @@ class SiteDescriptionRecord : StdfRecord
     override protected size_t getReclen()
     {
         ushort l = 3;
-        l += site_cnt;
+        l += site_cnt.getValue();
         l += hand_typ.size;
         l += hand_id.size;
         l += card_typ.size;
@@ -2987,22 +3041,22 @@ class SiteDescriptionRecord : StdfRecord
         app.put("\n    site_grp = "); app.put(to!string(site_grp));
         app.put("\n    site_cnt = "); app.put(to!string(site_cnt));
         app.put("\n    site_num = "); app.put(to!string(site_num));
-        app.put("\n    hand_typ = "); app.put(hand_typ);
-        app.put("\n    hand_id = "); app.put(hand_id);
-        app.put("\n    card_typ = "); app.put(card_typ);
-        app.put("\n    card_id = "); app.put(card_id);
-        app.put("\n    load_typ = "); app.put(load_typ);
-        app.put("\n    load_id = "); app.put(load_id);
-        app.put("\n    dib_typ = "); app.put(dib_typ);
-        app.put("\n    dib_id = "); app.put(dib_id);
-        app.put("\n    cabl_typ = "); app.put(cabl_typ);
-        app.put("\n    cabl_id = "); app.put(cabl_id);
-        app.put("\n    cont_typ = "); app.put(cont_typ);
-        app.put("\n    cont_id = "); app.put(cont_id);
-        app.put("\n    lasr_typ = "); app.put(lasr_typ);
-        app.put("\n    lasr_id = "); app.put(lasr_id);
-        app.put("\n    extr_typ = "); app.put(extr_typ);
-        app.put("\n    extr_id = "); app.put(extr_id);
+        app.put("\n    hand_typ = "); app.put(hand_typ.toString());
+        app.put("\n    hand_id = "); app.put(hand_id.toString());
+        app.put("\n    card_typ = "); app.put(card_typ.toString());
+        app.put("\n    card_id = "); app.put(card_id.toString());
+        app.put("\n    load_typ = "); app.put(load_typ.toString());
+        app.put("\n    load_id = "); app.put(load_id.toString());
+        app.put("\n    dib_typ = "); app.put(dib_typ.toString());
+        app.put("\n    dib_id = "); app.put(dib_id.toString());
+        app.put("\n    cabl_typ = "); app.put(cabl_typ.toString());
+        app.put("\n    cabl_id = "); app.put(cabl_id.toString());
+        app.put("\n    cont_typ = "); app.put(cont_typ.toString());
+        app.put("\n    cont_id = "); app.put(cont_id.toString());
+        app.put("\n    lasr_typ = "); app.put(lasr_typ.toString());
+        app.put("\n    lasr_id = "); app.put(lasr_id.toString());
+        app.put("\n    extr_typ = "); app.put(extr_typ.toString());
+        app.put("\n    extr_id = "); app.put(extr_id.toString());
         app.put("\n");
         return app.data;
     }
@@ -3031,28 +3085,28 @@ class TestSynopsisRecord : StdfRecord
     {
         super(Record_t.TSR);
         reclen -= 7;
-        head_num = get!U1(s);
-        site_num = get!U1(s);
-        test_typ = cast(char) get!U1(s);
-        test_num = get!U4(s);
-        exec_cnt(reclen, s, 0);
-        fail_cnt(reclen, s, 0);
-        alrm_cnt(reclen, s, 0);
-        test_nam(reclen, s, "");
-        seq_name(reclen, s, "");
-        test_lbl(reclen, s, "");
-        opt_flag(reclen, s, 0);
-        test_tim(reclen, s, 0.0f);
-        test_min(reclen, s, 0.0f);
-        test_max(reclen, s, 0.0f);
-        tst_sums(reclen, s, 0.0f);
-        tst_sqrs(reclen, s, 0.0f);
+        head_num = U1(s);
+        site_num = U1(s);
+        test_typ = C1(s);
+        test_num = U4(s);
+        exec_cnt = OptionalField!U4(reclen, s, 0);
+        fail_cnt = OptionalField!U4(reclen, s, 0);
+        alrm_cnt = OptionalField!U4(reclen, s, 0);
+        test_nam = OptionalField!CN(reclen, s, "");
+        seq_name = OptionalField!CN(reclen, s, "");
+        test_lbl = OptionalField!CN(reclen, s, "");
+        opt_flag = OptionalField!U1(reclen, s, 0);
+        test_tim = OptionalField!R4(reclen, s, 0.0f);
+        test_min = OptionalField!R4(reclen, s, 0.0f);
+        test_max = OptionalField!R4(reclen, s, 0.0f);
+        tst_sums = OptionalField!R4(reclen, s, 0.0f);
+        tst_sqrs = OptionalField!R4(reclen, s, 0.0f);
     }
 
-    this(U1 head_num,
-         U1 site_num,
-         C1 test_typ,
-         U4 test_num,
+    this(ubyte head_num,
+         ubyte site_num,
+         char test_typ,
+         uint test_num,
          OptionalField!U4 exec_cnt,
          OptionalField!U4 fail_cnt,
          OptionalField!U4 alrm_cnt,
@@ -3066,11 +3120,11 @@ class TestSynopsisRecord : StdfRecord
          OptionalField!R4 tst_sums,
          OptionalField!R4 tst_sqrs)
     {
-        super(Record_t.TSR, 0);
-        this.head_num = head_num;
-        this.site_num = site_num;
-        this.test_typ = test_typ;
-        this.test_num = test_num;
+        super(Record_t.TSR);
+        this.head_num = U1(head_num);
+        this.site_num = U1(site_num);
+        this.test_typ = C1(test_typ);
+        this.test_num = uint(test_num);
         this.exec_cnt = exec_cnt;
         this.fail_cnt = fail_cnt;
         this.alrm_cnt = alrm_cnt;
@@ -3167,37 +3221,37 @@ class WaferConfigurationRecord : StdfRecord
     this(ByteReader s)
     {
         super(Record_t.WCR);
-        wafr_siz(s);
-        die_ht(s);
-        die_wid(s);
-        wf_units(s);
-        wf_flat(s);
-        center_x(s);
-        center_y(s);
-        pos_x(s);
-        pos_y(s);
+        wafr_siz = R4(s);
+        die_ht = R4(s);
+        die_wid = R4(s);
+        wf_units = U1(s);
+        wf_flat = C1(s);
+        center_x = I2(s);
+        center_y = I2(s);
+        pos_x = C1(s);
+        pos_y = C1(s);
     }
 
-    this(R4 wafr_siz,
-         R4 die_ht,
-         R4 die_wid,
-         U1 wf_units,
-         C1 wf_flat,
-         I2 center_x,
-         I2 center_y,
-         C1 pos_x,
-         C1 pos_y)
+    this(float wafr_siz,
+         float die_ht,
+         float die_wid,
+         ubyte wf_units,
+         char wf_flat,
+         short center_x,
+         short center_y,
+         char pos_x,
+         char pos_y)
     {
         super(Record_t.WCR);
-        this.wafr_siz = wafr_siz;
-        this.die_ht = die_ht;
-        this.die_wid = die_wid;
-        this.wf_units = wf_units;
-        this.wf_flat = wf_flat;
-        this.center_x = center_x;
-        this.center_y = center_y;
-        this.pos_x = pos_x;
-        this.pos_y = pos_y;
+        this.wafr_siz = R4(wafr_siz);
+        this.die_ht = R4(die_ht);
+        this.die_wid = R4(die_wid);
+        this.wf_units = U1(wf_units);
+        this.wf_flat = C1(wf_flat);
+        this.center_x = I2(center_x);
+        this.center_y = I2(center_y);
+        this.pos_x = C1(pos_x);
+        this.pos_y = C1(pos_y);
     }
 
     override protected size_t getReclen()
@@ -3246,26 +3300,27 @@ class WaferInformationRecord : StdfRecord
     U1 head_num;
     U1 site_grp;
     U4 start_t;
-    CN wafer_id;
+    OptionalField!CN wafer_id;
 
-    this(ByteReader s)
+    this(size_t reclen, ByteReader s)
     {
         super(Record_t.WIR);
-        head_num(s);
-        site_grp(s);
-        start_t(s);
-        wafer_id(s);
+        head_num = U1(s);
+        site_grp = U1(s);
+        start_t = U4(s);
+        reclen -= 6;
+        wafer_id = OptionalField!CN(reclen, s, "");
     }
 
-    this(U1 head_num,
-         U1 site_grp,
-         U4 start_t,
-         CN wafer_id)
+    this(ubyte head_num,
+         ubyte site_grp,
+         uint start_t,
+         OptionalField!CN wafer_id)
     {
         super(Record_t.WIR);
-        this.head_num = head_num;
-        this.site_grp = site_grp;
-        this.start_t = start_t;
+        this.head_num = U1(head_num);
+        this.site_grp = U1(site_grp);
+        this.start_t = U4(start_t);
         this.wafer_id = wafer_id;
     }
 
@@ -3309,56 +3364,57 @@ class WaferResultsRecord : StdfRecord
     U1 site_grp;
     U4 finish_t;
     U4 part_cnt;
-    U4 rtst_cnt;
-    U4 abrt_cnt;
-    U4 good_cnt;
-    U4 func_cnt;
-    CN wafer_id;
-    CN fabwf_id;
-    CN frame_id;
-    CN mask_id;
-    CN usr_desc;
-    CN exc_desc;
+    OptionalField!U4 rtst_cnt;
+    OptionalField!U4 abrt_cnt;
+    OptionalField!U4 good_cnt;
+    OptionalField!U4 func_cnt;
+    OptionalField!CN wafer_id;
+    OptionalField!CN fabwf_id;
+    OptionalField!CN frame_id;
+    OptionalField!CN mask_id;
+    OptionalField!CN usr_desc;
+    OptionalField!CN exc_desc;
 
-    this(ByteReader s)
+    this(size_t reclen, ByteReader s)
     {
         super(Record_t.WRR);
-        head_num(s);
-        site_grp(s);
-        finish_t(s);
-        part_cnt(s);
-        rtst_cnt(s);
-        abrt_cnt(s);
-        good_cnt(s);
-        func_cnt(s);
-        wafer_id(s);
-        fabwf_id(s);
-        frame_id(s);
-        mask_id(s);
-        usr_desc(s);
-        exc_desc(s);
+        head_num = U1(s);
+        site_grp = U1(s);
+        finish_t = U4(s);
+        part_cnt = U4(s);
+        reclen -= 10;
+        rtst_cnt = OptionalField!U4(reclen, s, 4294967295);
+        abrt_cnt = OptionalField!U4(reclen, s, 4294967295);
+        good_cnt = OptionalField!U4(reclen, s, 4294967295);
+        func_cnt = OptionalField!U4(reclen, s, 4294967295);
+        wafer_id = OptionalField!CN(reclen, s, "");
+        fabwf_id = OptionalField!CN(reclen, s, "");
+        frame_id = OptionalField!CN(reclen, s, "");
+        mask_id = OptionalField!CN(reclen, s, "");
+        usr_desc = OptionalField!CN(reclen, s, "");
+        exc_desc = OptionalField!CN(reclen, s, "");
     }
 
-    this(U1 head_num,
-         U1 site_grp,
-         U4 finish_t,
-         U4 part_cnt,
-         U4 rtst_cnt,
-         U4 abrt_cnt,
-         U4 good_cnt,
-         U4 func_cnt,
-         CN wafer_id,
-         CN fabwf_id,
-         CN frame_id,
-         CN mask_id,
-         CN usr_desc,
-         CN exc_desc)
+    this(ubyte head_num,
+         ubyte site_grp,
+         uint finish_t,
+         uint part_cnt,
+         OptionalField!U4 rtst_cnt,
+         OptionalField!U4 abrt_cnt,
+         OptionalField!U4 good_cnt,
+         OptionalField!U4 func_cnt,
+         OptionalField!CN wafer_id,
+         OptionalField!CN fabwf_id,
+         OptionalField!CN frame_id,
+         OptionalField!CN mask_id,
+         OptionalField!CN usr_desc,
+         OptionalField!CN exc_desc)
     {
         super(Record_t.WRR);
-        this.head_num = head_num;
-        this.site_grp = site_grp;
-        this.finish_t = finish_t;
-        this.part_cnt = part_cnt;
+        this.head_num = U1(head_num);
+        this.site_grp = U1(site_grp);
+        this.finish_t = U4(finish_t);
+        this.part_cnt = U4(part_cnt);
         this.rtst_cnt = rtst_cnt;
         this.abrt_cnt = abrt_cnt;
         this.good_cnt = good_cnt;
@@ -3374,12 +3430,12 @@ class WaferResultsRecord : StdfRecord
     override protected size_t getReclen()
     {
         size_t l = 26;
-        l += wafer_id.length.size;
-        l += fabwf_id.length.size;
-        l += frame_id.length.size;
-        l += mask_id.length.size;
-        l += usr_desc.length.size;
-        l += exc_desc.length.size;
+        l += wafer_id.size;
+        l += fabwf_id.size;
+        l += frame_id.size;
+        l += mask_id.size;
+        l += usr_desc.size;
+        l += exc_desc.size;
         return l;
     }
 
@@ -3419,12 +3475,12 @@ class WaferResultsRecord : StdfRecord
         app.put("\n    abrt_Cnt = "); app.put(to!string(abrt_cnt));
         app.put("\n    good_cnt = "); app.put(to!string(good_cnt));
         app.put("\n    func_cnt = "); app.put(to!string(func_cnt));
-        app.put("\n    wafer_id = "); app.put(wafer_id);
-        app.put("\n    fabwf_id = "); app.put(fabwf_id);
-        app.put("\n    frame_id = "); app.put(frame_id);
-        app.put("\n    mask_id = "); app.put(mask_id);
-        app.put("\n    usr_desc = "); app.put(usr_desc);
-        app.put("\n    exc_desc = "); app.put(exc_desc);
+        app.put("\n    wafer_id = "); app.put(wafer_id.toString());
+        app.put("\n    fabwf_id = "); app.put(fabwf_id.toString());
+        app.put("\n    frame_id = "); app.put(frame_id.toString());
+        app.put("\n    mask_id = "); app.put(mask_id.toString());
+        app.put("\n    usr_desc = "); app.put(usr_desc.toString());
+        app.put("\n    exc_desc = "); app.put(exc_desc.toString());
         app.put("\n");
         return app.data;
     }
