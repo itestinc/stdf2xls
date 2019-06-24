@@ -5,6 +5,13 @@ import std.range;
 import std.bitmanip;
 import makechip.util.InputSource;
 
+enum Cpu_t : const(CPU)
+{
+    VAX = new const CPU(null, 0),
+    SUN = new const CPU(VAX, 1),
+    PC  = new const CPU(SUN, 2)
+}
+
 class CPU : EnumValue!(const CPU)
 {
     const ubyte type;
@@ -350,13 +357,10 @@ class CPU : EnumValue!(const CPU)
         return b;
     }
 
-    ubyte[] getN1(ByteReader s) const
+    ubyte getN1(ByteReader s) const
     {
-        ubyte[] b = new ubyte[2];
         ubyte n = s.nextByte();
-        b[0] = cast(ubyte) (0x0F & n);
-        b[1] = cast(ubyte) ((0xF0 & n) >> 4);
-        return b;
+        return n;
     }
 
     ubyte getN1Byte(ubyte b0, ubyte b1) const
@@ -366,14 +370,6 @@ class CPU : EnumValue!(const CPU)
         b |= cast(ubyte) ((b1 & 0x0F) << 4);
         return b;
     }
-
-}
-
-enum Cpu_t : const(CPU)
-{
-    VAX = new const CPU(null, 0),
-    SUN = new const CPU(VAX, 1),
-    PC = new const CPU(SUN, 2)
 
 }
 
