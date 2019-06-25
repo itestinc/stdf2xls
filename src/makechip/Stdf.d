@@ -911,7 +911,7 @@ unittest
     foreach(string name; dirEntries("stdf", SpanMode.depth))
     {
         //writeln("file = ", name);
-        StdfReader stdf = new StdfReader(name);
+        StdfReader stdf = new StdfReader(No.dumpText, No.dumpBytes, name);
         stdf.read();
         StdfRecord[] rs = stdf.getRecords();
         File f = File("x.tmp", "w");
@@ -936,12 +936,16 @@ class StdfReader
     private ByteReader src;
     public const string filename;
     private StdfRecord[] records;
+    private Flag!"textDump" textDump;
+    private Flag!"byteDump" byteDump;
     
-    this(string filename)
+    this(Flag!"textDump" textDump, Flag!"byteDump" byteDump, string filename)
     {
         this.filename = filename;
         auto f = new File(filename, "rb");
         src = new BinarySource(filename);
+        this.textDump = textDump;
+        this.byteDump = byteDump; 
     }
 
     StdfRecord[] getRecords() { return(records); }
