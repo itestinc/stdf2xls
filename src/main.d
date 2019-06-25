@@ -35,7 +35,7 @@ int main(string[] args)
         if (save)
         {
             StdfRecord[] rs = rdr.getRecords();
-            string outname = outDir ~ basename(args[i]);
+            string outname = outputDir ~ baseName(args[i]);
             File f = File(outname, "w");
             foreach (r; rs)
             {
@@ -54,12 +54,12 @@ int main(string[] args)
             f2.rawRead(bs2);
             bool pass = true;
             size_t mismatches = 0L;
-            for (size_t i=0; i<f1.size() && i<f2.size(); i++)
+            for (size_t j=0; j<f1.size() && j<f2.size(); j++)
             {
-                if (bs1[i] != bs2[i])
+                if (bs1[j] != bs2[j])
                 {
-                    writeln("diff at index ", i, ": ", toHexString([bs1[i]]), " vs ", toHexString([bs2[i]]));
-                    pass = false
+                    writeln("diff at index ", j, ": ", toHexString([bs1[j]]), " vs ", toHexString([bs2[j]]));
+                    pass = false;
                     mismatches++;
                 }
                 if (mismatches > 20) break;

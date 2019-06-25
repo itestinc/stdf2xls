@@ -910,7 +910,6 @@ unittest
     import std.string;
     foreach(string name; dirEntries("stdf", SpanMode.depth))
     {
-        //writeln("file = ", name);
         StdfReader stdf = new StdfReader(No.dumpText, No.dumpBytes, name);
         stdf.read();
         StdfRecord[] rs = stdf.getRecords();
@@ -957,11 +956,10 @@ class StdfReader
         rs.reserve(100000);
         while (src.remaining() > 3)
         {
-            //writeln("src.remaining() = ", src.remaining());
             ubyte b0 = src.getByte();
             ubyte b1 = src.getByte();
             size_t reclen = ((cast(size_t) b0) + (((cast(size_t) b1) << 8L) & 0xFF00L)) & 0xFFFFL;
-            writeln("reclen = ", reclen);
+            if (Yes.textDump) writeln("reclen = ", reclen);
             if (src.remaining() < 2) 
             {
                 writeln("Warining: premature end if STDF file");
@@ -969,9 +967,8 @@ class StdfReader
             }
             ubyte rtype = src.getByte();
             ubyte stype = src.getByte();
-            writeln("rtype = ", rtype, " stype = ", stype);
             Record_t type = RecordType.getRecordType(rtype, stype);
-            writeln("type = ", type, " reclen = ", reclen);
+            if (Yes.textDump) writeln("type = ", type, "rtype = ", rtype, " stype = ", stype, " reclen = ", reclen);
             if (type is null)
             {
                 writeln("Corrupt file: ", filename, " invalid record type:");
@@ -1008,9 +1005,12 @@ class StdfReader
                 case WRR.ordinal: r = new WaferResultsRecord(reclen, src); break;
                 default: throw new Exception("Unknown record type: " ~ type.stringof);
             }
-            writeln("reclen = ", r.getReclen());
-            writeln(r.toString());
-            stdout.flush();
+            if (Yes.textDump)
+            {
+                writeln("reclen = ", r.getReclen());
+                writeln(r.toString());
+                stdout.flush();
+            }
             rs ~= r;
             if (type == Record_t.MRR) break;
         }
