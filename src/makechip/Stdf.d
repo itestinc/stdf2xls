@@ -1007,7 +1007,25 @@ class StdfReader
             }
             if (Yes.textDump)
             {
+                import std.digest;
                 writeln("reclen = ", r.getReclen());
+                if (Yes.byteDump)
+                {
+                    ubyte[] bs = r.getBytes();
+                    writeln("", type, " = [");
+                    int cnt = 0;
+                    foreach(b; bs)
+                    {
+                        write(toHexString([b]), " ");
+                        if (cnt == 40) 
+                        {
+                            writeln("");
+                            cnt = 0;
+                        }
+                        cnt++;
+                    }
+                    writeln("]");
+                }
                 writeln(r.toString());
                 stdout.flush();
             }
