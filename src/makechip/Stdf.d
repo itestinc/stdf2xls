@@ -181,24 +181,25 @@ struct GenericData
         writeln("type = ", type);
         switch (type) with (GenericData_t)
         {
-        case U1: return to!string(h.a);
-        case U2: return to!string(h.b);
-        case U4: return to!string(h.c);
-        case I1: return to!string(h.d);
-        case I2: return to!string(h.e);
-        case I4: return to!string(h.f);
-        case R4: return to!string(h.g);
-        case R8: return to!string(h.h);
-        case CN: return to!string(h.i);
-        case BN: return to!string(h.j);
+        case U1: return h.a.toString();
+        case U2: return h.b.toString();
+        case U4: return h.c.toString();
+        case I1: return h.d.toString();
+        case I2: return h.e.toString();
+        case I4: return h.f.toString();
+        case R4: return h.g.toString();
+        case R8: return h.h.toString();
+        case CN: return h.i.toString();
+        case BN: return h.j.toString();
         case DN: string s = to!string(numBits) ~ " : " ~ to!string(h.k); return s;
-        default: return to!string(h.l);
+        default: return h.l.toString();
         }
     }
 
     ubyte[] getBytes()
     {
         auto bs = appender!(ubyte[]);
+        bs.reserve(8);
         bs ~= cast(ubyte) type;
         switch (type) with (GenericData_t)
         {
@@ -275,9 +276,9 @@ struct CN
 
 struct C1
 {
-    private ubyte[] myVal;
+    private ubyte[1] myVal;
 
-    public this(ByteReader s) { myVal = s.getBytes(1).dup; }
+    public this(ByteReader s) { myVal[0] = s.getByte(); }
     public this(char c) { myVal = new ubyte[1]; myVal[0] = cast(ubyte) c; }
     public char getValue() { return cast(char) myVal[0]; }
     public ubyte[] getBytes() { return myVal.dup; }
@@ -291,25 +292,24 @@ struct C1
 
 struct U1
 {
-    private ubyte[] myVal;
+    private ubyte[1] myVal;
 
-    this(ByteReader s) { myVal = s.getBytes(1).dup; } 
-    this(ubyte b) { myVal = new ubyte[1]; myVal[0] = b; }
+    this(ByteReader s) { myVal[0] = s.getByte(); } 
+    this(ubyte b) { myVal[0] = b; }
     public ubyte getValue() { return myVal[0]; }
     public ubyte[] getBytes() { return myVal.dup; }
     public @property size_t size() { return 1; }
     import std.digest;
-    public string toString() { return toHexString(myVal); }
+    public string toString() { return toHexString([myVal[0]]); }
 }
         
 struct U2  
 {
-    private ubyte[] myVal;
+    private ubyte[2] myVal;
 
-    this(ByteReader s) { myVal = s.getBytes(2).dup; }
+    this(ByteReader s) { myVal[0] = s.getByte(); myVal[1] = s.getByte(); }
     this(ushort b) 
     {
-        myVal = new ubyte[2];
         myVal[0] = cast(ubyte) (b & 0xFF);
         myVal[1] = cast(ubyte) ((b & 0xFF00) >> 8);
     }
@@ -321,11 +321,17 @@ struct U2
 
 struct U4
 {   
-    private ubyte[] myVal;
-    this(ByteReader s) { myVal = s.getBytes(4).dup; }
+    private ubyte[4] myVal;
+    this(ByteReader s) 
+    { 
+        myVal[0] = s.getByte(); 
+        myVal[1] = s.getByte();
+        myVal[2] = s.getByte();
+        myVal[3] = s.getByte();
+    }
+
     this(uint b)
     {
-        myVal = new ubyte[4];
         myVal[0] = cast(ubyte) (b & 0xFF);
         myVal[1] = cast(ubyte) ((b & 0xFF00) >> 8);
         myVal[2] = cast(ubyte) ((b & 0xFF0000) >> 16);
@@ -340,9 +346,9 @@ struct U4
 
 struct I1
 {
-    private ubyte[] myVal;
-    this(ByteReader s) { myVal = s.getBytes(1).dup; }
-    this(byte b) { myVal = new ubyte[1]; myVal[0] = cast(ubyte) b; }
+    private ubyte[1] myVal;
+    this(ByteReader s) { myVal[0] = s.getByte(); }
+    this(byte b) { myVal[0] = cast(ubyte) b; }
     public byte getValue() { return cast(byte) myVal[0]; }
     public ubyte[] getBytes() { return myVal.dup; }
     public @property size_t size() { return 1; }
@@ -351,11 +357,10 @@ struct I1
 
 struct I2
 {
-    private ubyte[] myVal;
-    this(ByteReader s) { myVal = s.getBytes(2).dup; }
+    private ubyte[2] myVal;
+    this(ByteReader s) { myVal[0] = s.getByte(); myVal[1] = s.getByte(); }
     this(short b)
     {
-        myVal = new ubyte[2];
         myVal[0] = cast(ubyte) (b & 0xFF);
         myVal[1] = cast(ubyte) ((b & 0xFF00) >> 8);
     }
@@ -367,11 +372,17 @@ struct I2
 
 struct I4
 {
-    private ubyte[] myVal;
-    this(ByteReader s) { myVal = s.getBytes(4).dup; }
+    private ubyte[4] myVal;
+    this(ByteReader s) 
+    { 
+        myVal[0] = s.getByte(); 
+        myVal[1] = s.getByte(); 
+        myVal[2] = s.getByte(); 
+        myVal[3] = s.getByte(); 
+    }
+
     this(int b)
     {
-        myVal = new ubyte[4];
         myVal[0] = cast(ubyte) (b & 0xFF);
         myVal[1] = cast(ubyte) ((b & 0xFF00) >> 8);
         myVal[2] = cast(ubyte) ((b & 0xFF0000) >> 16);
@@ -386,8 +397,15 @@ struct I4
 struct R4
 {
     import std.bitmanip;
-    private ubyte[] myVal;
-    this(ByteReader s) { myVal = s.getBytes(4).dup; }
+    private ubyte[4] myVal;
+    this(ByteReader s) 
+    { 
+        myVal[0] = s.getByte(); 
+        myVal[1] = s.getByte(); 
+        myVal[2] = s.getByte(); 
+        myVal[3] = s.getByte(); 
+    }
+
     this(float v)
     {
         FloatRep f;
@@ -397,7 +415,6 @@ struct R4
         uint exp = (f.exponent << 23) & 0x7F800000;
         x |= exp;
         x |= f.fraction & 0x007FFFFF;
-        myVal = new ubyte[4];
         myVal[0] = cast(ubyte) (x & 0xFF);
         myVal[1] = cast(ubyte) ((x & 0xFF00) >> 8);
         myVal[2] = cast(ubyte) ((x & 0xFF0000) >> 16);
@@ -420,8 +437,19 @@ struct R4
 struct R8
 {
     import std.bitmanip;
-    private ubyte[] myVal;
-    this(ByteReader s) { myVal = s.getBytes(8).dup; }
+    private ubyte[8] myVal;
+    this(ByteReader s) 
+    { 
+        myVal[0] = s.getByte(); 
+        myVal[1] = s.getByte(); 
+        myVal[2] = s.getByte(); 
+        myVal[3] = s.getByte(); 
+        myVal[4] = s.getByte(); 
+        myVal[5] = s.getByte(); 
+        myVal[6] = s.getByte(); 
+        myVal[7] = s.getByte(); 
+    }
+
     this(double d)
     {
         DoubleRep f;
@@ -431,7 +459,6 @@ struct R8
         ulong exp = (cast(ulong) f.exponent << 52) & 0x7FF0000000000000L;
         x |= exp;
         x |= f.fraction & 0xFFFFFFFFFFFFFL;
-        myVal = new ubyte[8];
         myVal[0] = cast(ubyte) (x & 0xFFL);
         myVal[1] = cast(ubyte) ((x & 0xFF00L) >> 8);
         myVal[2] = cast(ubyte) ((x & 0xFF0000L) >> 16);
@@ -513,16 +540,11 @@ struct DN
 
 struct N1 
 {
-    private ubyte[] myVal;
-    this(ByteReader s) { myVal = s.getBytes(1); }
-    this(ubyte val)
-    {
-        myVal = new ubyte[1];
-        myVal[0] = val;
-    }
+    private ubyte[1] myVal;
+    this(ByteReader s) { myVal[0] = s.getByte(); }
+    this(ubyte val) { myVal[0] = val; }
     this(ubyte val1, ubyte val2)
     {
-        myVal = new ubyte[1];
         myVal[0] = val1;
         myVal[0] |= (val2 << 4) & 0xF0;
     }
@@ -910,7 +932,7 @@ unittest
     import std.string;
     foreach(string name; dirEntries("stdf", SpanMode.depth))
     {
-        StdfReader stdf = new StdfReader(No.dumpText, No.dumpBytes, name);
+        StdfReader stdf = new StdfReader(No.textDump, No.byteDump, name);
         stdf.read();
         StdfRecord[] rs = stdf.getRecords();
         File f = File("x.tmp", "w");
@@ -959,7 +981,7 @@ class StdfReader
             ubyte b0 = src.getByte();
             ubyte b1 = src.getByte();
             size_t reclen = ((cast(size_t) b0) + (((cast(size_t) b1) << 8L) & 0xFF00L)) & 0xFFFFL;
-            if (Yes.textDump) writeln("reclen = ", reclen);
+            //if (textDump == Yes.textDump) writeln("reclen = ", reclen);
             if (src.remaining() < 2) 
             {
                 writeln("Warining: premature end if STDF file");
@@ -968,7 +990,7 @@ class StdfReader
             ubyte rtype = src.getByte();
             ubyte stype = src.getByte();
             Record_t type = RecordType.getRecordType(rtype, stype);
-            if (Yes.textDump) writeln("type = ", type, "rtype = ", rtype, " stype = ", stype, " reclen = ", reclen);
+            //if (textDump == Yes.textDump) writeln("type = ", type, "rtype = ", rtype, " stype = ", stype, " reclen = ", reclen);
             if (type is null)
             {
                 writeln("Corrupt file: ", filename, " invalid record type:");
@@ -1005,11 +1027,11 @@ class StdfReader
                 case WRR.ordinal: r = new WaferResultsRecord(reclen, src); break;
                 default: throw new Exception("Unknown record type: " ~ type.stringof);
             }
-            if (Yes.textDump)
+            if (textDump == Yes.textDump)
             {
                 import std.digest;
-                writeln("reclen = ", r.getReclen());
-                if (Yes.byteDump)
+                //writeln("reclen = ", r.getReclen());
+                if (byteDump == Yes.byteDump)
                 {
                     ubyte[] bs = r.getBytes();
                     writeln("", type, " = [");
@@ -1105,7 +1127,7 @@ class AuditTrailRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
+        auto app = StringAppender(256);
         app.put(recordType.description);
         app.put(":\n    date = ");
         app.put(date.toString());
@@ -1180,7 +1202,7 @@ class DatalogTextRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
+        auto app = StringAppender(128);
         app.put(recordType.description);
         app.put(":\n    text = ");
         app.put(text.toString());
@@ -1249,10 +1271,10 @@ class FileAttributesRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
+        auto app = StringAppender(64);
         app.put(recordType.description);
         app.put(":\n    cpu = PC");
-        app.put("    stdfVersion = ");
+        app.put("\n    stdfVersion = ");
         app.put(stdfVersion.toString());
         app.put("\n");
         return app.data;
@@ -1284,10 +1306,11 @@ abstract class TestRecord : StdfRecord
         this.test_flg = U1(test_flg);
     }
  
-    protected string getString()
+    public string getString()
     {
-        auto app = appender!string();
-        app.put("    test_num = "); 
+        auto app = StringAppender(128);
+        app.put(recordType.description);
+        app.put(":\n    test_num = "); 
         app.put(test_num.toString());
         app.put("\n    head_num = ");
         app.put(head_num.toString());
@@ -1300,7 +1323,6 @@ abstract class TestRecord : StdfRecord
 
     override abstract protected size_t getReclen();
     override abstract ubyte[] getBytes();
-    override abstract string toString();
 
 }
 
@@ -1483,9 +1505,7 @@ class FunctionalTestRecord : TestRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put(recordType.description);
-        app.put(":\n");
+        auto app = StringAppender(1024);
         app.put(getString());        
         if (!opt_flag.empty) { app.put("    opt_flag = "); app.put(to!string(opt_flag)); }
         if (!cycl_cnt.empty) { app.put("\n    cycl_cnt = "); app.put(to!string(cycl_cnt)); }
@@ -1588,8 +1608,9 @@ class GenericDataRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("GenericDataRecord: fields = " ~ to!string(data.length));
+        auto app = StringAppender(1024);
+        app.put(recordType.description);
+        app.put("\n: fields = " ~ to!string(data.length));
         foreach(d; data) 
         {
             app.put("\n    ");
@@ -1654,8 +1675,9 @@ class HardwareBinRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("HardwareBinRecord:");
+        auto app = StringAppender(1024);
+        app.put(recordType.description);
+        app.put(":\n");
         app.put("\n    head_num = "); app.put(to!string(head_num));
         app.put("\n    site_num = "); app.put(to!string(site_num));
         app.put("\n    hbin_num = "); app.put(to!string(hbin_num));
@@ -1920,8 +1942,9 @@ class MasterInformationRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("MasterInformationRecord:");
+        auto app = StringAppender(1024);
+        app.put(recordType.description);
+        app.put(":\n");
         app.put("\n    setup_t = ");  app.put(to!string(setup_t));
         app.put("\n    start_t = ");  app.put(to!string(start_t));
         app.put("\n    stat_num = "); app.put(to!string(stat_num));
@@ -1983,7 +2006,7 @@ class ParametricRecord : TestRecord
  
     override protected string getString()
     {
-        auto app = appender!string();
+        auto app = StringAppender(256);
         app.put(super.getString());
         app.put("\n    patm_flg = ");
         app.put(to!string(parm_flg));
@@ -2165,8 +2188,7 @@ class MultipleResultParametricRecord : ParametricRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("MultipleResultParametricRecord:\n");
+        auto app = StringAppender(2048);
         app.put(getString());
         app.put("\n    rtn_icnt = "); app.put(to!string(rtn_icnt));
         app.put("\n    rslt_cnt = "); app.put(to!string(rslt_cnt));
@@ -2247,9 +2269,9 @@ class MasterResultsRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("MasterResultsRecord:");
-        app.put("\n    finish_t = "); app.put(to!string(finish_t));
+        auto app = StringAppender(128);
+        app.put(recordType.description);
+        app.put(":\n    finish_t = "); app.put(to!string(finish_t));
         app.put("\n    disp_cod = "); app.put(to!string(disp_cod));
         app.put("\n    usr_desc = "); app.put(usr_desc.toString());
         app.put("\n    exc_desc = "); app.put(exc_desc.toString());
@@ -2324,9 +2346,9 @@ class PartCountRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("PartCountRecord:");
-        app.put("\n    head_num = "); app.put(to!string(head_num));
+        auto app = StringAppender(256);
+        app.put(recordType.description);
+        app.put(":\n    head_num = "); app.put(to!string(head_num));
         app.put("\n    site_num = "); app.put(to!string(site_num));
         app.put("\n    part_cnt = "); app.put(to!string(part_cnt));
         app.put("\n    rtst_cnt = "); app.put(to!string(rtst_cnt));
@@ -2389,9 +2411,9 @@ class PinGroupRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("PinGroupRecord:");
-        app.put("\n    grp_indx = "); app.put(to!string(grp_indx));
+        auto app = StringAppender(128);
+        app.put(recordType.description);
+        app.put(":\n    grp_indx = "); app.put(to!string(grp_indx));
         app.put("\n    grp_nam = ");  app.put(grp_nam.toString());
         app.put("\n    indx_cnt = "); app.put(to!string(indx_cnt));
         app.put("\n    pmr_indx = "); app.put(to!string(pmr_indx));
@@ -2434,9 +2456,9 @@ class PartInformationRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("PartInformationRecord:");
-        app.put("\n    head_num = "); app.put(to!string(head_num));
+        auto app = StringAppender(64);
+        app.put(recordType.description);
+        app.put(":\n    head_num = "); app.put(to!string(head_num));
         app.put("\n    site_num = "); app.put(to!string(site_num));
         app.put("\n");
         return app.data;
@@ -2508,22 +2530,21 @@ class PinListRecord : StdfRecord
     override protected size_t getReclen()
     {
         size_t l = 2;
-        l += (5 * grp_cnt.getValue());
-        for (int i=0; i<grp_cnt.getValue(); i++)
-        {
-            l += pgm_char.size;
-            l += rtn_char.size;
-            l += pgm_chal.size;
-            l += rtn_chal.size;
-        }
+        l += (2 * grp_cnt.getValue());
+        l += grp_mode.size;
+        l += grp_radx.size;
+        l += pgm_char.size;
+        l += rtn_char.size;
+        l += pgm_chal.size;
+        l += rtn_chal.size;
         return l;
     }
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("PinListRecord:");
-        app.put("\n    grp_cnt = "); app.put(to!string(grp_cnt));
+        auto app = StringAppender(1024);
+        app.put(recordType.description);
+        app.put(":\n    grp_cnt = "); app.put(to!string(grp_cnt));
         app.put("\n    grp_indx = "); app.put(to!string(grp_indx));
         app.put("\n    grp_mode = "); app.put(to!string(grp_mode));
         app.put("\n    grp_radx = "); app.put(to!string(grp_radx));
@@ -2604,9 +2625,9 @@ class PinMapRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("PinMapRecord:");
-        app.put("\n    pmr_indx = "); app.put(to!string(pmr_indx));
+        auto app = StringAppender(256);
+        app.put(recordType.description);
+        app.put(":\n    pmr_indx = "); app.put(to!string(pmr_indx));
         app.put("\n    chan_typ = "); app.put(to!string(chan_typ));
         app.put("\n    chan_nam = "); app.put(chan_nam.toString());
         app.put("\n    phy_nam = "); app.put(phy_nam.toString());
@@ -2712,9 +2733,9 @@ class PartResultsRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("PartResultsRecord:");
-        app.put("\n    head_num = "); app.put(to!string(head_num));
+        auto app = StringAppender(256);
+        app.put(recordType.description);
+        app.put(":\n    head_num = "); app.put(to!string(head_num));
         app.put("\n    site_num = "); app.put(to!string(site_num));
         app.put("\n    part_flg = "); app.put(to!string(part_flg));
         app.put("\n    num_test = "); app.put(to!string(num_test));
@@ -2858,8 +2879,7 @@ class ParametricTestRecord : ParametricRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("ParametricTestRecord:\n");
+        auto app = StringAppender(1024);
         app.put(getString());
         app.put("\n    result = "); app.put(to!string(result));
         app.put("\n    test_txt = "); app.put(test_txt.toString());
@@ -2918,9 +2938,9 @@ class RetestDataRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("RetestDataRecord:");
-        app.put("\n    num_bins = "); app.put(to!string(num_bins)); 
+        auto app = StringAppender(64);
+        app.put(recordType.description);
+        app.put(":\n    num_bins = "); app.put(to!string(num_bins)); 
         app.put("\n    rtst_bin = "); app.put(to!string(rtst_bin));
         app.put("\n");
         return app.data;
@@ -2986,9 +3006,9 @@ class SoftwareBinRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("SoftwareBinRecord:");
-        app.put("\n    head_num = "); app.put(to!string(head_num));
+        auto app = StringAppender(256);
+        app.put(recordType.description);
+        app.put(":\n    head_num = "); app.put(to!string(head_num));
         app.put("\n    site_num = "); app.put(to!string(site_num));
         app.put("\n    sbin_num = "); app.put(to!string(sbin_num));
         app.put("\n    sbin_cnt = "); app.put(to!string(sbin_cnt));
@@ -3146,9 +3166,9 @@ class SiteDescriptionRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("SiteDescriptionRecord:");
-        app.put("\n    head_num = "); app.put(to!string(head_num));
+        auto app = StringAppender(1024);
+        app.put(recordType.description);
+        app.put(":\n    head_num = "); app.put(to!string(head_num));
         app.put("\n    site_grp = "); app.put(to!string(site_grp));
         app.put("\n    site_cnt = "); app.put(to!string(site_cnt));
         app.put("\n    site_num = "); app.put(to!string(site_num));
@@ -3292,9 +3312,9 @@ class TestSynopsisRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("TestSynopsisRecord:");
-        app.put("\n    head_num = "); app.put(to!string(head_num));
+        auto app = StringAppender(1024);
+        app.put(recordType.description);
+        app.put(":\n    head_num = "); app.put(to!string(head_num));
         app.put("\n    site_num = "); app.put(to!string(site_num));
         app.put("\n    test_typ = "); app.put(to!string(test_typ));
         app.put("\n    test_num = "); app.put(to!string(test_num));
@@ -3395,9 +3415,9 @@ class WaferConfigurationRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("WaferConfigurationRecord:");
-        app.put("\n    wafr_siz = "); app.put(to!string(wafr_siz));
+        auto app = StringAppender(256);
+        app.put(recordType.description);
+        app.put(":\n    wafr_siz = "); app.put(to!string(wafr_siz));
         app.put("\n    die_ht = "); app.put(to!string(die_ht));
         app.put("\n    die_wid = "); app.put(to!string(die_wid));
         app.put("\n    wf_units = "); app.put(to!string(wf_units));
@@ -3460,9 +3480,9 @@ class WaferInformationRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("WaferInformationRecord:");
-        app.put("\n    head_num = "); app.put(to!string(head_num));
+        auto app = StringAppender(256);
+        app.put(recordType.description);
+        app.put(":\n    head_num = "); app.put(to!string(head_num));
         app.put("\n    site_grp = "); app.put(to!string(site_grp));
         app.put("\n    start_t = "); app.put(to!string(start_t));
         app.put("\n    wafer_id = "); app.put(to!string(wafer_id));
@@ -3578,9 +3598,9 @@ class WaferResultsRecord : StdfRecord
 
     override string toString()
     {
-        auto app = appender!string();
-        app.put("WaferResultsRecord:");
-        app.put("\n    head_num = "); app.put(to!string(head_num));
+        auto app = StringAppender(1024);
+        app.put(recordType.description);
+        app.put(":\n    head_num = "); app.put(to!string(head_num));
         app.put("\n    site_grp = "); app.put(to!string(site_grp));
         app.put("\n    finish_t = "); app.put(to!string(finish_t));
         app.put("\n    part_cnt = "); app.put(to!string(part_cnt));
