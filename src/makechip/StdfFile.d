@@ -27,7 +27,8 @@ struct StdfFile
 
     this(string filename, Flag!"textDump" textDump, Flag!"byteDump" byteDump)
     {
-        StdfReader stdf = new StdfReader(No.textDump, No.byteDump, name);
+        StdfReader stdf = new StdfReader(No.textDump, No.byteDump, filename);
         stdf.read();
         StdfRecord[] rs = stdf.getRecords();
     }
+}
