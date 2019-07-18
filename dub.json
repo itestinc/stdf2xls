@@ -12,8 +12,14 @@
 	"TargetType" : "executable",
 	"mainSourceFile" : "src/main.d",
     "dependencies" : {
+        "xlsxd": "~>2.2.0",
+        "printed": "~>0.0.10",
         "util_mc" : {
             "path" : "../util_mc"
         },
-    }
+    },
+    "subPackages": [
+        "./xlsxTest/",
+        "./histoTest/"
+    ]
 }
