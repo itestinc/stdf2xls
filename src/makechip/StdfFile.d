@@ -108,18 +108,11 @@ struct PartID
     }
 }
 
-enum DTRFormat : uint
-{
-    FLOAT = 0,
-    HEX_INT = 1,
-    DEC_INT = 2,
-    STRING = 3
-}
-
 union DTRValue
 {
     float f;
     long l;
+    ulong u;
     string s;
 }
 
@@ -127,7 +120,10 @@ enum TestType
 {
     FUNCTIONAL,
     PARAMETRIC,
-    TEXTDATA
+    FLOAT,
+    HEX_INT,
+    DEC_INT,
+    STRING
 }
 
 class TestRecord
@@ -141,7 +137,7 @@ class TestRecord
     const ubyte parmFlags;
     float loLimit;
     float hiLimit;
-    float result;
+    const DTRValue result;
     string units;
     byte resScal;
     byte llmScal;
@@ -170,6 +166,7 @@ class TestRecord
          byte llmScal,
          byte hlmScal)
     {
+        this.type = TestType.PARAMETRIC;
         this.id = id;
         this.site = site; 
         this.head = head; 
@@ -178,14 +175,62 @@ class TestRecord
         this.parmFlags = parmFlags;
         this.loLimit = loLimit;
         this.hiLimit = hiLimit;
-        this.result = result;
+        this.result.f = result;
         this.units = units;
         this.resScal = resScal;
         this.llmScal = llmScal;
         this.hlmScal = hlmScal;
     }
 
-    
+    this(TestID id,
+         ubyte site,
+         ubyte head,
+         float rslt)
+    {
+        this.type = TestType.FLOAT;
+        this.head = head;
+        this.site = site;
+        results.f = rslt;
+    }
+
+    this(TestID id,
+         ubyte site,
+         ubyte head,
+         ulong rslt)
+    {
+        this.type = TestType.HEX_INT;
+        this.head = head;
+        this.site = site;
+        result.u = rslt;
+    }
+
+    this(TestID id,
+         ubyte site,
+         ubyte head,
+         long  rslt)
+    {
+        this.type = TestType.DEC_INT;
+        this.head = head;
+        this.site = site;
+        result.l = rslt;
+    }
+
+    this(TestID id,
+         ubyte site,
+         ubyte headm
+         string rslt)
+    {
+        this.type = TestType.STRING;
+        this.head = head;
+        this.site = site;
+        result.s = rslt;
+    }
+
+    public bool pass()
+    {
+        assert(type == TestType.PARAMETRIC || type == TestType.FUNCTIONAL);
+        if (type == TestType.Functional) return !failed();
+        
 
     public bool failed()            { return (testFlags & 0x80) == 0x80; }
     public bool alarm()             { return (testFlags & 0x01) == 0x01; }
@@ -392,7 +437,7 @@ struct StdfFile
                 break;
             /**
                 Note TEXT_DATA records have the following format:
-                TEXT_DATA : <test_name> : <value> : <units> : <test_number> [: <site_number> [: <format> [: <head_number>]]]
+                TEXT_DATA : <test_name> : <value> [<units>] : <test_number> [: <site_number> [: <format> [: <head_number>]]]
             */
             case Record_t.DTR.ordinal:
                 auto dtr = cast(Record!DTR) rec;
