@@ -82,88 +82,88 @@ public class DefaultValueDatabase
 
     public void setFTRDefaults(Record!FTR ftr, uint dup)
     {
-        string s = defaultTestNames.get("", ftr.recordType, ftr.TEST_NUM, ftr.SITE_NUM, ftr.HEAD_NUM);
+        string s = defaultTestNames.get("", ftr.recordType, ftr.TEST_NUM, dup);
         if (s == "" && !ftr.TEST_TXT.isEmpty())
         {
-            defaultTestNames.put(ftr.TEST_TXT, r.recordType, ftr.TEST_NUM, dup);
+            defaultTestNames.put(ftr.TEST_TXT, ftr.recordType, ftr.TEST_NUM, dup);
         }
     }
 
     public void setPTRDefaults(Record!PTR ptr, uint dup)
     {
-        string s = defaultTestNames.get("", r.recordType, ptr.TEST_NUM, dup);
+        string s = defaultTestNames.get("", ptr.recordType, ptr.TEST_NUM, dup);
         if (s == "" && !ptr.TEST_TXT.isEmpty())
         {
-            defaultTestNames.put(ptr.TEST_TXT, r.recordType, ptr.TEST_NUM, dup);
+            defaultTestNames.put(ptr.TEST_TXT, ptr.recordType, ptr.TEST_NUM, dup);
         }
-        if (!ptr.OPT_FLAG.isEmpty() && defaultOptFlags.get(0, r.recordType, ptr.TEST_NUM, dup) == 0)
+        if (!ptr.OPT_FLAG.isEmpty() && defaultOptFlags.get(0, ptr.recordType, ptr.TEST_NUM, dup) == 0)
         {
-            defaultOptFlags.put(ptr.OPT_FLAG, r.recordType, ptr.TEST_NUM, dup);
+            defaultOptFlags.put(ptr.OPT_FLAG, ptr.recordType, ptr.TEST_NUM, dup);
         }
-        if (!ptr.RES_SCAL.isEmpty() && defaultResScals.get(byte.min, r.recordType, ptr.TEST_NUM, dup) == byte.min)
+        if (!ptr.RES_SCAL.isEmpty() && defaultResScals.get(byte.min, ptr.recordType, ptr.TEST_NUM, dup) == byte.min)
         {
-            defaultResScals.put(ptr.RES_SCAL, r.recordType, ptr.TEST_NUM, dup);
+            defaultResScals.put(ptr.RES_SCAL, ptr.recordType, ptr.TEST_NUM, dup);
         }
-        if (!ptr.LLM_SCAL.isEmpty() && defaultLlmScals.get(byte.min, r.recordType, ptr.TEST_NUM, dup) == byte.min)
+        if (!ptr.LLM_SCAL.isEmpty() && defaultLlmScals.get(byte.min, ptr.recordType, ptr.TEST_NUM, dup) == byte.min)
         {
-            defaultLlmScals.put(ptr.LLM_SCAL, r.recordType, ptr.TEST_NUM, dup);
+            defaultLlmScals.put(ptr.LLM_SCAL, ptr.recordType, ptr.TEST_NUM, dup);
         }
-        if (!ptr.HLM_SCAL.isEmpty() && defaultHlmScals.get(byte.min, r.recordType, ptr.TEST_NUM, dup) == byte.min)
+        if (!ptr.HLM_SCAL.isEmpty() && defaultHlmScals.get(byte.min, ptr.recordType, ptr.TEST_NUM, dup) == byte.min)
         {
-            defaultHlmScals.put(ptr.HLM_SCAL, r.recordType, ptr.TEST_NUM, dup);
+            defaultHlmScals.put(ptr.HLM_SCAL, ptr.recordType, ptr.TEST_NUM, dup);
         }
-        if (!ptr.LO_LIMIT.isEmpty() && defaultLoLimits.get(float.nan, r.recordType, ptr.TEST_NUM, dup) == float.nan)
+        if (!ptr.LO_LIMIT.isEmpty() && defaultLoLimits.get(float.nan, ptr.recordType, ptr.TEST_NUM, dup) == float.nan)
         {
-            defaultLoLimits.put(ptr.LO_LIMIT, r.recordType, ptr.TEST_NUM, dup);
+            defaultLoLimits.put(ptr.LO_LIMIT, ptr.recordType, ptr.TEST_NUM, dup);
         }
-        if (!ptr.HI_LIMIT.isEmpty() && defaultHiLimits.get(float.nan, r.recordType, ptr.TEST_NUM, dup) == float.nan)
+        if (!ptr.HI_LIMIT.isEmpty() && defaultHiLimits.get(float.nan, ptr.recordType, ptr.TEST_NUM, dup) == float.nan)
         {
-            defaultHiLimits.put(ptr.HI_LIMIT, r.recordType, ptr.TEST_NUM, dup);
+            defaultHiLimits.put(ptr.HI_LIMIT, ptr.recordType, ptr.TEST_NUM, dup);
         }
-        if (!ptr.UNITS.isEmpty() && defaultUnits.get("*&^%$##", r.recordType, ptr.TEST_NUM, dup) == "*&^%$##")
+        if (!ptr.UNITS.isEmpty() && defaultUnits.get("*&^%$##", ptr.recordType, ptr.TEST_NUM, dup) == "*&^%$##")
         {
-            defaultUnits.put(ptr.UNITS, r.recordType, ptr.TEST_NUM, dup);
+            defaultUnits.put(ptr.UNITS, ptr.recordType, ptr.TEST_NUM, dup);
         }
     }
 
     public void setMPRDefaults(Record!MPR mpr, uint dup)
     {
-        string s = defaultTestNames.get("", r.recordType, mpr.TEST_NUM, dup);
+        string s = defaultTestNames.get("", mpr.recordType, mpr.TEST_NUM, dup);
         if (s == "" && !mpr.TEST_TXT.isEmpty())
         {
-            defaultTestNames.put(mpr.TEST_TXT, r.recordType, mpr.TEST_NUM, dup);
+            defaultTestNames.put(mpr.TEST_TXT.getValue(), mpr.recordType, mpr.TEST_NUM.getValue(), dup);
         }
-        if (!mpr.OPT_FLAG.isEmpty() && defaultOptFlags.get(0, r.recordType, mpr.TEST_NUM, dup) == 0)
+        if (!mpr.OPT_FLAG.isEmpty() && defaultOptFlags.get(0, mpr.recordType, mpr.TEST_NUM, dup) == 0)
         {
-            defaultOptFlags.put(mpr.OPT_FLAG, r.recordType, mpr.TEST_NUM, dup);
+            defaultOptFlags.put(mpr.OPT_FLAG, mpr.recordType, mpr.TEST_NUM, dup);
         }
-        if (!mpr.RES_SCAL.isEmpty() && defaultResScals.get(byte.min, r.recordType, mpr.TEST_NUM, dup) == byte.min)
+        if (!mpr.RES_SCAL.isEmpty() && defaultResScals.get(byte.min, mpr.recordType, mpr.TEST_NUM, dup) == byte.min)
         {
-            defaultResScals.put(mpr.RES_SCAL, r.recordType, mpr.TEST_NUM, dup);
+            defaultResScals.put(mpr.RES_SCAL, mpr.recordType, mpr.TEST_NUM, dup);
         }
-        if (!mpr.LLM_SCAL.isEmpty() && defaultLlmScals.get(byte.min, r.recordType, mpr.TEST_NUM, dup) == byte.min)
+        if (!mpr.LLM_SCAL.isEmpty() && defaultLlmScals.get(byte.min, mpr.recordType, mpr.TEST_NUM, dup) == byte.min)
         {
-            defaultLlmScals.put(mpr.LLM_SCAL, r.recordType, mpr.TEST_NUM, dup);
+            defaultLlmScals.put(mpr.LLM_SCAL, mpr.recordType, mpr.TEST_NUM, dup);
         }
-        if (!mpr.HLM_SCAL.isEmpty() && defaultHlmScals.get(byte.min, r.recordType, mpr.TEST_NUM, dup) == byte.min)
+        if (!mpr.HLM_SCAL.isEmpty() && defaultHlmScals.get(byte.min, mpr.recordType, mpr.TEST_NUM, dup) == byte.min)
         {
-            defaultHlmScals.put(mpr.HLM_SCAL, r.recordType, mpr.TEST_NUM, dup);
+            defaultHlmScals.put(mpr.HLM_SCAL, mpr.recordType, mpr.TEST_NUM, dup);
         }
-        if (!mpr.LO_LIMIT.isEmpty() && defaultLoLimits.get(float.nan, r.recordType, mpr.TEST_NUM, dup) == float.nan)
+        if (!mpr.LO_LIMIT.isEmpty() && defaultLoLimits.get(float.nan, mpr.recordType, mpr.TEST_NUM, dup) == float.nan)
         {
-            defaultLoLimits.put(mpr.LO_LIMIT, r.recordType, mpr.TEST_NUM, dup);
+            defaultLoLimits.put(mpr.LO_LIMIT, mpr.recordType, mpr.TEST_NUM, dup);
         }
-        if (!mpr.HI_LIMIT.isEmpty() && defaultHiLimits.get(float.nan, r.recordType, mpr.TEST_NUM, dup) == float.nan)
+        if (!mpr.HI_LIMIT.isEmpty() && defaultHiLimits.get(float.nan, mpr.recordType, mpr.TEST_NUM, dup) == float.nan)
         {
-            defaultHiLimits.put(mpr.HI_LIMIT, r.recordType, mpr.TEST_NUM, dup);
+            defaultHiLimits.put(mpr.HI_LIMIT, mpr.recordType, mpr.TEST_NUM, dup);
         }
-        if (!mpr.UNITS.isEmpty() && defaultUnits.get("*&^%$##", r.recordType, mpr.TEST_NUM, dup) == "*&^%$##")
+        if (!mpr.UNITS.isEmpty() && defaultUnits.get("*&^%$##", mpr.recordType, mpr.TEST_NUM, dup) == "*&^%$##")
         {
-            defaultUnits.put(mpr.UNITS, r.recordType, mpr.TEST_NUM, dup);
+            defaultUnits.put(mpr.UNITS, mpr.recordType, mpr.TEST_NUM, dup);
         }
-        if (!mpr.RTN_INDX.isEmpty() && defaultPinIndicies.get(none, r.recordType, mpr.TEST_NUM, dup) == none)
+        if (!mpr.RTN_INDX.isEmpty() && defaultPinIndicies.get(none, mpr.recordType, mpr.TEST_NUM, dup) == none)
         {
-            defaultPinIndicies.put(mpr.RTN_INDX.getValue(), r.recordType, mpr.TEST_NUM, dup);
+            defaultPinIndicies.put(mpr.RTN_INDX.getValue(), mpr.recordType, mpr.TEST_NUM, dup);
         }
     }
 }
