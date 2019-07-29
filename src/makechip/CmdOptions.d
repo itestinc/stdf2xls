@@ -59,31 +59,31 @@ class Options
     bool byteDump;
     bool quiet;
     bool extractPin;
-    char pinDelim;
     private string[] modify;
     string outputDir = "/";
     bool saveStdf;
     bool success;
     string[] stdfFiles;
     Modifier[] modifiers;
+    char[] delims;
 
     this(string[] args)
     {
         success = true;
         modifiers = null;
         writeln("args.length = ", args.length);
-        pinDelim = '@';
         auto rslt = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.passThrough,
             "dumptext|d", "dump the STDF in text form", &textDump,
             "dumpBytes|b", "dump the STDF in ascii byte form", &byteDump,
             "modify|m", "modify a string field in specified record type.\n     Example: -m 'MIR TST_TEMP \"TEMPERATURE :\" \"TEMPERATURE:\"'", &modify,
-            "extractPin|e", "Extract pin name from test name suffix", &extractPin,
-            "pinDelimiter|a", "Delimiter character that separates pin name from test name (Default = '@')", &pinDelim,
+            "extract-pin|a", "Extract pin name from test name suffix (default delimiter = '@')", &extractPin,
+            "pin-delimiter|p", "Delimiter character that separates pin name from test name (Default = '@')", &delims,
             "quiet|q", "don't output verbose messages", &quiet,
             "outputDir|o", "write out the STDF to this directory", &outputDir);
         writeln("args.length = ", args.length);
+        if (delims.length == 0) delims ~= '@';
         stdfFiles.length = args.length-1;
         for (int i=1; i<args.length; i++) stdfFiles[i-1] = args[i];
         if (rslt.helpWanted)
