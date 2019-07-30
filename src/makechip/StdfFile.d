@@ -46,12 +46,12 @@ import makechip.DefaultValueDatabase;
 
 struct HeaderInfo
 {
-    const string step;
-    const string temperature;
-    const string lot_id;
-    const string sublot_id;
-    const string wafer_id;
-    const string devName;
+    string step;
+    string temperature;
+    string lot_id;
+    string sublot_id;
+    string wafer_id;
+    string devName;
     string[string] headerItems;
 }
 
@@ -286,24 +286,15 @@ class TestRecord
     public bool useLEQwithHiLimit() { return (parmFlags & 0x80) == 0x80; }
 }
 
-class DeviceResult
+struct DeviceResult
 {
-    const PartID devId;
-    const uint site;
-    const uint head;
-    const ulong tstamp;
-    const HeaderInfo hdr;
+    PartID devId;
+    uint site;
+    uint head;
+    ulong tstamp;
+    HeaderInfo hdr;
     TestRecord[] tests;
 
-    this(PartID devId, uint site, uint head, ulong tstamp, const HeaderInfo hdr, const TestRecord[] tests)
-    {
-        this.devId = devId;
-        this.site = site;
-        this.head = head;
-        this.tstamp = tstamp;
-        this.hdr = hdr;
-        this.tests = tests;
-    }
 }
 
 enum PMRNameType
@@ -403,8 +394,8 @@ struct StdfFile
         if (!options.quiet) writeln("INFO: missing values detected");
         auto dupNums = new MultiMap!(DupNumber_t, Record_t, TestNumber_t, Site_t, Head_t)();
         DeviceResult[][] dr;
-        dr.length = 1 + maxSite - minSite;
-        for (int i=0; i<dr.length; i++) dr[i].length = 1 + maxHead - minHead;
+        dr.length = maxSite;
+        for (int i=0; i<dr.length; i++) dr[i].length = maxHead;
         size_t numSites = sites.length;
         size_t numHeads = heads.length;
         ulong time = mir.START_T;
@@ -443,7 +434,7 @@ struct StdfFile
                     break;
 
                 case Record_t.PTR.ordinal:
-                    auto ptr = cast(Record!PTR) r;
+                    auto ptr = cast(Record!PTR) rec;
                     uint dup = dupNums.get(uint.max, ptr.recordType, ptr.TEST_NUM, ptr.SITE_NUM, ptr.HEAD_NUM);
                     if (dup == uint.max) dup = 1; else dup++;
                     dupNums.put(dup, ptr.recordType, ptr.TEST_NUM, ptr.SITE_NUM, ptr.HEAD_NUM);
@@ -458,7 +449,7 @@ struct StdfFile
                             if (p >= 0)
                             {
                                 pin = testName[p+1..$].dup;
-                                testName = testName[0, p];
+                                testName = testName[0..p];
                             }
                         }
                     }
@@ -472,19 +463,20 @@ struct StdfFile
                     byte resScal = ptr.RES_SCAL.isEmpty() ? dvd.getDefaultResScal(Record_t.PTR, ptr.TEST_NUM, dup) : ptr.RES_SCAL;
                     byte llmScal = ptr.LLM_SCAL.isEmpty() ? dvd.getDefaultLlmScal(Record_t.PTR, ptr.TEST_NUM, dup) : ptr.LLM_SCAL;
                     byte hlmScal = ptr.HLM_SCAL.isEmpty() ? dvd.getDefaultHlmScal(Record_t.PTR, ptr.TEST_NUM, dup) : ptr.HLM_SCAL;
-                    ParametricTestRecord tr = new ParametricTestRecord(id, ptr.SITE_NUM, ptr.HEAD_NUM, ptr.TST_FLAG, optFlags,
+                    // scale result, limits, and units:
+                    TestRecord tr = new TestRecord(id, ptr.SITE_NUM, ptr.HEAD_NUM, ptr.TEST_FLG, optFlags,
                             parmFlags, loLimit, hiLimit, result, units, resScal, llmScal, hlmScal, seq);
                     dr[ptr.SITE_NUM - minSite][ptr.HEAD_NUM - minHead].tests ~= tr;
                     seq++;
                     break;
 
                 case Record_t.MPR.ordinal:
-                    auto mpr = cast(Record!MPR) r;
-                    uint dup = dupNums.get(uint.max, r.recordType, mpr.TEST_NUM, mpr.SITE_NUM, mpr.HEAD_NUM);
+                    auto mpr = cast(Record!MPR) rec;
+                    uint dup = dupNums.get(uint.max, rec.recordType, mpr.TEST_NUM, mpr.SITE_NUM, mpr.HEAD_NUM);
                     if (dup == uint.max) dup = 1; else dup++;
-                    dupNums.put(dup, r.recordType, mpr.TEST_NUM, mpr.SITE_NUM, mpr.HEAD_NUM);
+                    dupNums.put(dup, rec.recordType, mpr.TEST_NUM, mpr.SITE_NUM, mpr.HEAD_NUM);
                     dvd.setMPRDefaults(mpr, dup);
-                    string testName = mpr.TEST_TXT.isEmpty() ? dvd.getDefaultTestName(Record_t.MPR, ptr.TEST_NUM, dup) : mpr.TEST_TXT;
+                    string testName = mpr.TEST_TXT.isEmpty() ? dvd.getDefaultTestName(Record_t.MPR, mpr.TEST_NUM, dup) : mpr.TEST_TXT;
                     if (options.extractPin)
                     {
                         for (int i=0; i<options.delims.length; i++)
@@ -492,7 +484,7 @@ struct StdfFile
                             auto p = testName.indexOf(options.delims[i]);
                             if (p >= 0)
                             {
-                                testName = testName[0, p];
+                                testName = testName[0..p];
                             }
                         }
                     }
@@ -500,7 +492,6 @@ struct StdfFile
                     ubyte parmFlags = mpr.PARM_FLG;
                     float loLimit = mpr.LO_LIMIT.isEmpty() ? dvd.getDefaultLoLimit(Record_t.MPR, mpr.TEST_NUM, dup) : mpr.LO_LIMIT;
                     float hiLimit = mpr.HI_LIMIT.isEmpty() ? dvd.getDefaultHiLimit(Record_t.MPR, mpr.TEST_NUM, dup) : mpr.HI_LIMIT;
-                    float result = mpr.RESULT;
                     string units = mpr.UNITS.isEmpty() ? dvd.getDefaultUnits(Record_t.MPR, mpr.TEST_NUM, dup) : mpr.UNITS;
                     byte resScal = mpr.RES_SCAL.isEmpty() ? dvd.getDefaultResScal(Record_t.MPR, mpr.TEST_NUM, dup) : mpr.RES_SCAL;
                     byte llmScal = mpr.LLM_SCAL.isEmpty() ? dvd.getDefaultLlmScal(Record_t.MPR, mpr.TEST_NUM, dup) : mpr.LLM_SCAL;
@@ -509,9 +500,10 @@ struct StdfFile
                     foreach(i, rslt; mpr.RTN_RSLT.getValue())
                     {
                         ushort pinIndex = indicies[i];
+                        float result = mpr.RTN_INDX.getValue()[i];
                         string pin = pinData.get(mpr.HEAD_NUM, mpr.SITE_NUM, pinIndex);
                         TestID id = TestID.getTestID(Record_t.MPR, pin, mpr.TEST_NUM, testName, dup);
-                        ParametricTestRecord tr = new ParametricTestRecord(id, mpr.SITE_NUM, mpr.HEAD_NUM, mpr.TST_FLAG, optFlags, parmFlags, 
+                        TestRecord tr = new TestRecord(id, mpr.SITE_NUM, mpr.HEAD_NUM, mpr.TEST_FLG, optFlags, parmFlags, 
                                 loLimit, hiLimit, result, units, resScal, llmScal, hlmScal, seq);
                         dr[mpr.SITE_NUM - minSite][mpr.HEAD_NUM - minHead].tests ~= tr;
                         seq++;
@@ -519,11 +511,11 @@ struct StdfFile
                     break;
                     /**
                       Note TEXT_DATA records have the following format:
-TEXT_DATA : <test_name> : <value> [<units>] : <test_number> [: <site_number> [: <format> [: <head_number>]]]
+                      TEXT_DATA : <test_name> : <value> [<units>] : <test_number> [: <site_number> [: <format> [: <head_number>]]]
                      */
                 case Record_t.DTR.ordinal:
                     auto dtr = cast(Record!DTR) rec;
-                    string text = dtr.TEXT_DAT.getValue().trim();
+                    string text = strip(dtr.TEXT_DAT.getValue());
                     if (text[0..9] == "TEXT_DATA")
                     {
                         auto toks = text.split(":");
@@ -536,12 +528,12 @@ TEXT_DATA : <test_name> : <value> [<units>] : <test_number> [: <site_number> [: 
                         }
                         else if (toks[1] == SERIAL_MARKER)
                         {
-                            serial_number = toks[2].trim();
-                            pid = PartID(toks[2].trim);
+                            serial_number = strip(toks[2]);
+                            pid = PartID(strip(toks[2]));
                         }
                         else
                         {
-                            string testName = toks[1].trim();
+                            string testName = strip(toks[1]);
                             string pin = "";
                             if (options.extractPin)
                             {
@@ -551,7 +543,7 @@ TEXT_DATA : <test_name> : <value> [<units>] : <test_number> [: <site_number> [: 
                                     if (p >= 0)
                                     {
                                         pin = testName[p+1..$].dup;
-                                        testName = testName[0, p];
+                                        testName = testName[0..p];
                                         break;
                                     }
                                 }
@@ -560,30 +552,30 @@ TEXT_DATA : <test_name> : <value> [<units>] : <test_number> [: <site_number> [: 
                             //HEX_INT,
                             //DEC_INT,
                             //STRING
-                            string valueUnitsOpt = toks[2].trim();
-                            string testNumber = toks[3].trim();
-                            string site = "";
+                            string valueUnitsOpt = strip(toks[2]);
+                            string testNumber = strip(toks[3]);
+                            string site = "1";
                             string format = "";
-                            string head = "";
+                            string head = "1";
                             string value = "";
                             string units = "";
-                            if (toks.length > 4) site = toks[4].trim();
-                            if (toks.length > 5) format = toks[5].trim();
-                            if (toks.length > 6) head = toks[6].trim();
-                            int index = valueUnitsOpt.indexOf(' ');
+                            if (toks.length > 4) site = strip(toks[4]);
+                            if (toks.length > 5) format = strip(toks[5]);
+                            if (toks.length > 6) head = strip(toks[6]);
+                            long index = valueUnitsOpt.indexOf(' ');
                             if (index <= 0) index = valueUnitsOpt.indexOf('\t');
                             if (index > 0)
                             {
                                 value = valueUnitsOpt[0..index];
-                                units = valueUnitsOpt[index..$].trim();
+                                units = strip(valueUnitsOpt[index..$]);
                             }
                             else
                             {
                                 value = valueUnitsOpt;
                             }
-                            uint dup = dupNums.get(uint.max, r.recordType, to!uint(testNumber), to!ubyte(site), to!ubyte(head));
+                            uint dup = dupNums.get(uint.max, rec.recordType, to!uint(testNumber), to!ubyte(site), to!ubyte(head));
                             if (dup == uint.max) dup = 1; else dup++;
-                            dupNums.put(dup, r.recordType, to!uint(testNumber), to!ubyte(site), to!ubyte(head));
+                            dupNums.put(dup, rec.recordType, to!uint(testNumber), to!ubyte(site), to!ubyte(head));
                             TestID id = TestID.getTestID(Record_t.DTR, pin, to!uint(testNumber), testName, dup);
                             TestRecord tr = null;
                             if (format == "float")
@@ -603,34 +595,34 @@ TEXT_DATA : <test_name> : <value> [<units>] : <test_number> [: <site_number> [: 
                                 tr = new TestRecord(id, to!ubyte(site), to!ubyte(head), value, seq);
                             }
                             seq++;
-                            dr[ptr.SITE_NUM - minSite][ptr.HEAD_NUM - minHead].tests ~= tr;
+                            dr[to!(ubyte)(site) - minSite][to!(ubyte)(head) - minHead].tests ~= tr;
                         }
                     }
                     else // could be header info
                     {
                         if (text.startsWith("STEP #"))
                         {
-                            auto i = s.indexOf(':');
-                            auto ss = s[i+1..$];
+                            auto i = text.indexOf(':');
+                            auto ss = text[i+1..$];
                             hdr.step = strip(ss);
                         }
                         else if (text.startsWith("TEMPERATURE"))
                         {
-                            auto i = s.indexOf(':');
-                            auto ss = s[i+1..$];
+                            auto i = text.indexOf(':');
+                            auto ss = text[i+1..$];
                             hdr.temperature = strip(ss);
                         }
                         else if (text.startsWith("LOT #"))
                         {
-                            auto i = s.indexOf(':');
-                            auto ss = s[i+1..$];
+                            auto i = text.indexOf(':');
+                            auto ss = text[i+1..$];
                             hdr.lot_id = strip(ss);
                         }
                         else if (text.startsWith("DEVICE_NUMBER"))
                         {
-                            auto i = s.indexOf(':');
-                            auto ss = s[i+1..$];
-                            header.devName = strip(ss);
+                            auto i = text.indexOf(':');
+                            auto ss = text[i+1..$];
+                            hdr.devName = strip(ss);
                         }
                         else if (text.startsWith(">>>"))
                         {
@@ -661,7 +653,7 @@ TEXT_DATA : <test_name> : <value> [<units>] : <test_number> [: <site_number> [: 
                     break;
                 case Record_t.PRR.ordinal:
                     dupNums = new MultiMap!(uint, Record_t, TestNumber_t, Site_t, Head_t)();
-                    Record!(PRR) prr = cast(Record!(PRR)) r;
+                    Record!(PRR) prr = cast(Record!(PRR)) rec;
                     if (serial_number == "")
                     {
                         if (wafersort)
@@ -674,8 +666,8 @@ TEXT_DATA : <test_name> : <value> [<units>] : <test_number> [: <site_number> [: 
                         }
                     }
                     serial_number = "";
-                    size_t head = prr.HEAD_NUM;
-                    size_t site = prr.SITE_NUM;
+                    uint head = prr.HEAD_NUM;
+                    uint site = prr.SITE_NUM;
                     if (minSite == 0) site++;
                     if (minHead == 0) head++;
                     if (hdr.temperature == "") hdr.temperature = mir.TST_TEMP;
@@ -689,6 +681,7 @@ TEXT_DATA : <test_name> : <value> [<units>] : <test_number> [: <site_number> [: 
                     dr[site - minSite][head - minHead].tstamp = time;
                     dr[site - minSite][head - minHead].hdr = hdr;
                     dr[site - minSite][head - minHead].hdr.headerItems = hdr.headerItems.dup;
+                    devices ~= dr[site - minSite][head - minHead];
                     seq = 0;
                     break;
                 default:
