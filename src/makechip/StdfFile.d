@@ -776,3 +776,151 @@ class TestID
     }
 }
 
+private void normalizeValues(TestRecord tr)
+{
+    int scale = findScale(tr);
+    float ll = scaleValue(tr.loLimit, scale);
+    float hl = scaleValue(tr.hiLimit, scale);
+    string units = scaleUnits(tr.units, scale);
+    float value = getScaledResult(tr, scale);
+    tr.loLimit = ll;
+    tr.hiLimit = hl;
+    tr.units = units;
+    tr.result = value;
+}
+
+private float getScaledResult(TestRecord tr, int scale)
+{
+    if (tr.result == float.nan) return(tr.result);
+    if (tr.units == "") return tr.result;
+    return scaleValue(tr.result, scale);
+}
+
+private int findScale(TestRecord tr)
+{
+    import std.math;
+    float val = 0.0f;
+    if (tr.hiLimit == float.nan && tr.loLimit == float.nan) return(0);
+    if (tr.loLimit == float.nan) val = fabs(hiLimit);
+    else if (tr.hiLimit == float.nan) val = fabs(loLimit);
+    else val = (fabs(tr.hiLimit) > fabs(tr.loLimit)) ? fabs(tr.hiLimit) : fabs(tr.loLimit);
+    int scale = 0;
+    if (val <= 1.0E-6f) scale = 9;
+    else if (val <= 0.001f) scale = 6;
+    else if (val <= 1.0f) scale = 3;
+    else if (val <= 1000.0f) scale = 0;
+    else if (val <= 1000000.0f) scale = -3;
+    else if (val <= 1E9f) scale = -6;
+    else scale = -9;
+    return(scale);
+}
+
+private float scaleValue(float value, int scale)
+{
+    if (value == float.nan) return(value);
+    switch (scale)
+    {
+        case -12: value /= 1E12f; break;
+        case -9:  value /= 1E9f; break;
+        case -6:  value /= 1E6f; break;
+        case -3:  value /= 1E3f; break;
+        case  3:  value *= 1E3f; break;
+        case  6:  value *= 1E6f; break;
+        case  9:  value *= 1E9f; break;
+        case 12:  value *= 1E12f; break;
+        default:
+    }
+    return(value);
+}
+
+private string scaleUnits(string units, int scale)
+{
+    if (units == "") return("");
+    String u = units;
+    switch (scale)
+    {
+        case -12: u = "T" + units; break;
+        case -9:  u = "G" + units; break;
+        case -6:  u = "M" + units; break;
+        case -3:  u = "K" + units; break;
+        case  0:  u = units;       break;
+        case  3:  u = "m" + units; break;
+        case  6:  u = "u" + units; break;
+        case  9:  u = "n" + units; break;
+        case 12:  u = "p" + units; break;
+        case 15:  u = "f" + units; break;
+        default:
+    }
+    if (u.length() >= 3)
+    {
+        // Potential bug here. Tester may use uppercase letter when it should
+        // be using a lower case letter.  Consequently we may not be able
+        // to differentiate between milli and Mega
+        String p = u.substring(0, 2);
+        boolean fix = false;
+        if      (p.equals("mT")) { p = "G"; fix = true; }
+        else if (p.equalsIgnoreCase("uT")) { p = "M"; fix = true; }
+        else if (p.equalsIgnoreCase("nT")) { p = "K"; fix = true; }
+        else if (p.equalsIgnoreCase("pT")) { p = "";  fix = true; }
+        else if (p.equalsIgnoreCase("fT")) { p = "m"; fix = true; }
+        else if (p.equalsIgnoreCase("KG")) { p = "T"; fix = true; }
+        else if (p.equals("mG")) { p = "M"; fix = true; }
+        else if (p.equalsIgnoreCase("uG")) { p = "K"; fix = true; }
+        else if (p.equalsIgnoreCase("nG")) { p = "";  fix = true; }
+        else if (p.equalsIgnoreCase("pG")) { p = "m"; fix = true; }
+        else if (p.equalsIgnoreCase("fG")) { p = "u"; fix = true; }
+        else if (p.equals("MM")) { p = "T"; fix = true; }
+        else if (p.equals("KM") || p.equals("kM")) { p = "G"; fix = true; }
+        else if (p.equals("mM")) { p = "K"; fix = true; }
+        else if (p.equals("uM") || p.equals("UM")) { p = "";  fix = true; }
+        else if (p.equals("nM") || p.equals("NM")) { p = "m"; fix = true; }
+        else if (p.equals("pM") || p.equals("PM")) { p = "u"; fix = true; }
+        else if (p.equals("fM") || p.equals("FM")) { p = "n"; fix = true; }
+        else if (p.equalsIgnoreCase("GK")) { p = "T"; fix = true; }
+        else if (p.equals("MK") || p.equals("Mk")) { p = "G"; fix = true; }
+        else if (p.equalsIgnoreCase("KK")) { p = "M"; fix = true; }
+        else if (p.equals("mK") || p.equals("mk")) { p = "";  fix = true; }
+        else if (p.equalsIgnoreCase("uK")) { p = "m"; fix = true; }
+        else if (p.equalsIgnoreCase("nK")) { p = "u"; fix = true; }
+        else if (p.equalsIgnoreCase("pK")) { p = "n"; fix = true; }
+        else if (p.equalsIgnoreCase("fK")) { p = "p"; fix = true; }
+        else if (p.equals("Tm")) { p = "G"; fix = true; }
+        else if (p.equals("Gm")) { p = "M"; fix = true; }
+        else if (p.equals("Mm")) { p = "K"; fix = true; }
+        else if (p.equals("Km") || p.equals("km")) { p = "";  fix = true; }
+        else if (p.equals("mm")) { p = "u"; fix = true; }
+        else if (p.equals("um") || p.equals("Um")) { p = "n"; fix = true; }
+        else if (p.equals("nm") || p.equals("Nm")) { p = "p"; fix = true; }
+        else if (p.equals("pm") || p.equals("Pm")) { p = "f"; fix = true; }
+        else if (p.equalsIgnoreCase("Tu")) { p = "M"; fix = true; }
+        else if (p.equalsIgnoreCase("Gu")) { p = "K"; fix = true; }
+        else if (p.equals("Mu") || p.equals("MU")) { p = "";  fix = true; }
+        else if (p.equalsIgnoreCase("Ku")) { p = "m"; fix = true; }
+        else if (p.equals("mu") || p.equals("mU")) { p = "n"; fix = true; }
+        else if (p.equalsIgnoreCase("uu")) { p = "p"; fix = true; }
+        else if (p.equalsIgnoreCase("nu")) { p = "f"; fix = true; }
+        else if (p.equalsIgnoreCase("Tn")) { p = "K"; fix = true; }
+        else if (p.equalsIgnoreCase("Gn")) { p = "";  fix = true; }
+        else if (p.equals("Mn") || p.equals("MN")) { p = "m"; fix = true; }
+        else if (p.equalsIgnoreCase("Kn")) { p = "u"; fix = true; }
+        else if (p.equals("mn") || p.equals("mN")) { p = "p"; fix = true; }
+        else if (p.equalsIgnoreCase("un")) { p = "f"; fix = true; }
+        else if (p.equalsIgnoreCase("Tp")) { p = "";  fix = true; }
+        else if (p.equalsIgnoreCase("Gp")) { p = "m"; fix = true; }
+        else if (p.equals("Mp") || p.equals("MP")) { p = "u"; fix = true; }
+        else if (p.equalsIgnoreCase("Kp")) { p = "n"; fix = true; }
+        else if (p.equals("mp") || p.equals("mP")) { p = "f"; fix = true; }
+        else if (p.equalsIgnoreCase("Tf")) { p = "m"; fix = true; }
+        else if (p.equalsIgnoreCase("Gf")) { p = "u"; fix = true; }
+        else if (p.equals("Mf") || p.equals("MF")) { p = "n"; fix = true; }
+        else if (p.equalsIgnoreCase("Kf")) { p = "p"; fix = true; }
+        if (fix)
+        {
+            String newUnits = units.substring(1);
+            u = p + newUnits;
+        }
+    }
+    return(u);
+}
+
+
