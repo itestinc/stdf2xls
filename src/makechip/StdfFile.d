@@ -139,7 +139,7 @@ class TestRecord
     const ubyte parmFlags;
     float loLimit;
     float hiLimit;
-    const DTRValue result;
+    DTRValue result;
     string units;
     byte resScal;
     byte llmScal;
@@ -466,6 +466,7 @@ struct StdfFile
                     // scale result, limits, and units:
                     TestRecord tr = new TestRecord(id, ptr.SITE_NUM, ptr.HEAD_NUM, ptr.TEST_FLG, optFlags,
                             parmFlags, loLimit, hiLimit, result, units, resScal, llmScal, hlmScal, seq);
+                    normalizeValues(tr);
                     dr[ptr.SITE_NUM - minSite][ptr.HEAD_NUM - minHead].tests ~= tr;
                     seq++;
                     break;
@@ -505,6 +506,7 @@ struct StdfFile
                         TestID id = TestID.getTestID(Record_t.MPR, pin, mpr.TEST_NUM, testName, dup);
                         TestRecord tr = new TestRecord(id, mpr.SITE_NUM, mpr.HEAD_NUM, mpr.TEST_FLG, optFlags, parmFlags, 
                                 loLimit, hiLimit, result, units, resScal, llmScal, hlmScal, seq);
+                        normalizeValues(tr);
                         dr[mpr.SITE_NUM - minSite][mpr.HEAD_NUM - minHead].tests ~= tr;
                         seq++;
                     }
@@ -786,14 +788,14 @@ private void normalizeValues(TestRecord tr)
     tr.loLimit = ll;
     tr.hiLimit = hl;
     tr.units = units;
-    tr.result = value;
+    tr.result.f = value;
 }
 
 private float getScaledResult(TestRecord tr, int scale)
 {
-    if (tr.result == float.nan) return(tr.result);
-    if (tr.units == "") return tr.result;
-    return scaleValue(tr.result, scale);
+    if (tr.result.f == float.nan) return(tr.result.f);
+    if (tr.units == "") return tr.result.f;
+    return scaleValue(tr.result.f, scale);
 }
 
 private int findScale(TestRecord tr)
@@ -801,8 +803,8 @@ private int findScale(TestRecord tr)
     import std.math;
     float val = 0.0f;
     if (tr.hiLimit == float.nan && tr.loLimit == float.nan) return(0);
-    if (tr.loLimit == float.nan) val = fabs(hiLimit);
-    else if (tr.hiLimit == float.nan) val = fabs(loLimit);
+    if (tr.loLimit == float.nan) val = fabs(tr.hiLimit);
+    else if (tr.hiLimit == float.nan) val = fabs(tr.loLimit);
     else val = (fabs(tr.hiLimit) > fabs(tr.loLimit)) ? fabs(tr.hiLimit) : fabs(tr.loLimit);
     int scale = 0;
     if (val <= 1.0E-6f) scale = 9;
@@ -836,88 +838,89 @@ private float scaleValue(float value, int scale)
 private string scaleUnits(string units, int scale)
 {
     if (units == "") return("");
-    String u = units;
+    string u = units;
     switch (scale)
     {
-        case -12: u = "T" + units; break;
-        case -9:  u = "G" + units; break;
-        case -6:  u = "M" + units; break;
-        case -3:  u = "K" + units; break;
+        case -12: u = "T" ~ units; break;
+        case -9:  u = "G" ~ units; break;
+        case -6:  u = "M" ~ units; break;
+        case -3:  u = "K" ~ units; break;
         case  0:  u = units;       break;
-        case  3:  u = "m" + units; break;
-        case  6:  u = "u" + units; break;
-        case  9:  u = "n" + units; break;
-        case 12:  u = "p" + units; break;
-        case 15:  u = "f" + units; break;
+        case  3:  u = "m" ~ units; break;
+        case  6:  u = "u" ~ units; break;
+        case  9:  u = "n" ~ units; break;
+        case 12:  u = "p" ~ units; break;
+        case 15:  u = "f" ~ units; break;
         default:
     }
-    if (u.length() >= 3)
+    if (u.length >= 3)
     {
         // Potential bug here. Tester may use uppercase letter when it should
         // be using a lower case letter.  Consequently we may not be able
         // to differentiate between milli and Mega
-        String p = u.substring(0, 2);
-        boolean fix = false;
-        if      (p.equals("mT")) { p = "G"; fix = true; }
-        else if (p.equalsIgnoreCase("uT")) { p = "M"; fix = true; }
-        else if (p.equalsIgnoreCase("nT")) { p = "K"; fix = true; }
-        else if (p.equalsIgnoreCase("pT")) { p = "";  fix = true; }
-        else if (p.equalsIgnoreCase("fT")) { p = "m"; fix = true; }
-        else if (p.equalsIgnoreCase("KG")) { p = "T"; fix = true; }
-        else if (p.equals("mG")) { p = "M"; fix = true; }
-        else if (p.equalsIgnoreCase("uG")) { p = "K"; fix = true; }
-        else if (p.equalsIgnoreCase("nG")) { p = "";  fix = true; }
-        else if (p.equalsIgnoreCase("pG")) { p = "m"; fix = true; }
-        else if (p.equalsIgnoreCase("fG")) { p = "u"; fix = true; }
-        else if (p.equals("MM")) { p = "T"; fix = true; }
-        else if (p.equals("KM") || p.equals("kM")) { p = "G"; fix = true; }
-        else if (p.equals("mM")) { p = "K"; fix = true; }
-        else if (p.equals("uM") || p.equals("UM")) { p = "";  fix = true; }
-        else if (p.equals("nM") || p.equals("NM")) { p = "m"; fix = true; }
-        else if (p.equals("pM") || p.equals("PM")) { p = "u"; fix = true; }
-        else if (p.equals("fM") || p.equals("FM")) { p = "n"; fix = true; }
-        else if (p.equalsIgnoreCase("GK")) { p = "T"; fix = true; }
-        else if (p.equals("MK") || p.equals("Mk")) { p = "G"; fix = true; }
-        else if (p.equalsIgnoreCase("KK")) { p = "M"; fix = true; }
-        else if (p.equals("mK") || p.equals("mk")) { p = "";  fix = true; }
-        else if (p.equalsIgnoreCase("uK")) { p = "m"; fix = true; }
-        else if (p.equalsIgnoreCase("nK")) { p = "u"; fix = true; }
-        else if (p.equalsIgnoreCase("pK")) { p = "n"; fix = true; }
-        else if (p.equalsIgnoreCase("fK")) { p = "p"; fix = true; }
-        else if (p.equals("Tm")) { p = "G"; fix = true; }
-        else if (p.equals("Gm")) { p = "M"; fix = true; }
-        else if (p.equals("Mm")) { p = "K"; fix = true; }
-        else if (p.equals("Km") || p.equals("km")) { p = "";  fix = true; }
-        else if (p.equals("mm")) { p = "u"; fix = true; }
-        else if (p.equals("um") || p.equals("Um")) { p = "n"; fix = true; }
-        else if (p.equals("nm") || p.equals("Nm")) { p = "p"; fix = true; }
-        else if (p.equals("pm") || p.equals("Pm")) { p = "f"; fix = true; }
-        else if (p.equalsIgnoreCase("Tu")) { p = "M"; fix = true; }
-        else if (p.equalsIgnoreCase("Gu")) { p = "K"; fix = true; }
-        else if (p.equals("Mu") || p.equals("MU")) { p = "";  fix = true; }
-        else if (p.equalsIgnoreCase("Ku")) { p = "m"; fix = true; }
-        else if (p.equals("mu") || p.equals("mU")) { p = "n"; fix = true; }
-        else if (p.equalsIgnoreCase("uu")) { p = "p"; fix = true; }
-        else if (p.equalsIgnoreCase("nu")) { p = "f"; fix = true; }
-        else if (p.equalsIgnoreCase("Tn")) { p = "K"; fix = true; }
-        else if (p.equalsIgnoreCase("Gn")) { p = "";  fix = true; }
-        else if (p.equals("Mn") || p.equals("MN")) { p = "m"; fix = true; }
-        else if (p.equalsIgnoreCase("Kn")) { p = "u"; fix = true; }
-        else if (p.equals("mn") || p.equals("mN")) { p = "p"; fix = true; }
-        else if (p.equalsIgnoreCase("un")) { p = "f"; fix = true; }
-        else if (p.equalsIgnoreCase("Tp")) { p = "";  fix = true; }
-        else if (p.equalsIgnoreCase("Gp")) { p = "m"; fix = true; }
-        else if (p.equals("Mp") || p.equals("MP")) { p = "u"; fix = true; }
-        else if (p.equalsIgnoreCase("Kp")) { p = "n"; fix = true; }
-        else if (p.equals("mp") || p.equals("mP")) { p = "f"; fix = true; }
-        else if (p.equalsIgnoreCase("Tf")) { p = "m"; fix = true; }
-        else if (p.equalsIgnoreCase("Gf")) { p = "u"; fix = true; }
-        else if (p.equals("Mf") || p.equals("MF")) { p = "n"; fix = true; }
-        else if (p.equalsIgnoreCase("Kf")) { p = "p"; fix = true; }
+        import std.string;
+        string p = u[0..2];
+        bool fix = false;
+        if      (p == "mT") { p = "G"; fix = true; }
+        else if (icmp(p, "uT") == 0) { p = "M"; fix = true; }
+        else if (icmp(p, "nT") == 0) { p = "K"; fix = true; }
+        else if (icmp(p, "pT") == 0) { p = "";  fix = true; }
+        else if (icmp(p, "fT") == 0) { p = "m"; fix = true; }
+        else if (icmp(p, "KG") == 0) { p = "T"; fix = true; }
+        else if (p == "mG") { p = "M"; fix = true; }
+        else if (icmp(p, "uG") == 0) { p = "K"; fix = true; }
+        else if (icmp(p, "nG") == 0) { p = "";  fix = true; }
+        else if (icmp(p, "pG") == 0) { p = "m"; fix = true; }
+        else if (icmp(p, "fG") == 0) { p = "u"; fix = true; }
+        else if (p == "MM") { p = "T"; fix = true; }
+        else if (p == "KM" || p == "kM") { p = "G"; fix = true; }
+        else if (p == "mM") { p = "K"; fix = true; }
+        else if (p == "uM" || p == "UM") { p = "";  fix = true; }
+        else if (p == "nM" || p == "NM") { p = "m"; fix = true; }
+        else if (p == "pM" || p == "PM") { p = "u"; fix = true; }
+        else if (p == "fM" || p == "FM") { p = "n"; fix = true; }
+        else if (icmp(p, "GK") == 0) { p = "T"; fix = true; }
+        else if (p == "MK" || p == "Mk") { p = "G"; fix = true; }
+        else if (icmp(p, "KK") == 0) { p = "M"; fix = true; }
+        else if (p == "mK" || p == "mk") { p = "";  fix = true; }
+        else if (icmp(p, "uK") == 0) { p = "m"; fix = true; }
+        else if (icmp(p, "nK") == 0) { p = "u"; fix = true; }
+        else if (icmp(p, "pK") == 0) { p = "n"; fix = true; }
+        else if (icmp(p, "fK") == 0) { p = "p"; fix = true; }
+        else if (p == "Tm") { p = "G"; fix = true; }
+        else if (p == "Gm") { p = "M"; fix = true; }
+        else if (p == "Mm") { p = "K"; fix = true; }
+        else if (p == "Km" || p == "km") { p = "";  fix = true; }
+        else if (p == "mm") { p = "u"; fix = true; }
+        else if (p == "um" || p == "Um") { p = "n"; fix = true; }
+        else if (p == "nm" || p == "Nm") { p = "p"; fix = true; }
+        else if (p == "pm" || p == "Pm") { p = "f"; fix = true; }
+        else if (icmp(p, "Tu") == 0) { p = "M"; fix = true; }
+        else if (icmp(p, "Gu") == 0) { p = "K"; fix = true; }
+        else if (p == "Mu" || p == "MU") { p = "";  fix = true; }
+        else if (icmp(p, "Ku") == 0) { p = "m"; fix = true; }
+        else if (p == "mu" || p == "mU") { p = "n"; fix = true; }
+        else if (icmp(p, "uu") == 0) { p = "p"; fix = true; }
+        else if (icmp(p, "nu") == 0) { p = "f"; fix = true; }
+        else if (icmp(p, "Tn") == 0) { p = "K"; fix = true; }
+        else if (icmp(p, "Gn") == 0) { p = "";  fix = true; }
+        else if (p == "Mn" || p == "MN") { p = "m"; fix = true; }
+        else if (icmp(p, "Kn") == 0) { p = "u"; fix = true; }
+        else if (p == "mn" || p == "mN") { p = "p"; fix = true; }
+        else if (icmp(p, "un") == 0) { p = "f"; fix = true; }
+        else if (icmp(p, "Tp") == 0) { p = "";  fix = true; }
+        else if (icmp(p, "Gp") == 0) { p = "m"; fix = true; }
+        else if (p == "Mp" || p == "MP") { p = "u"; fix = true; }
+        else if (icmp(p, "Kp") == 0) { p = "n"; fix = true; }
+        else if (p == "mp" || p == "mP") { p = "f"; fix = true; }
+        else if (icmp(p, "Tf") == 0) { p = "m"; fix = true; }
+        else if (icmp(p, "Gf") == 0) { p = "u"; fix = true; }
+        else if (p == "Mf" || p == "MF") { p = "n"; fix = true; }
+        else if (icmp(p, "Kf") == 0) { p = "p"; fix = true; }
         if (fix)
         {
-            String newUnits = units.substring(1);
-            u = p + newUnits;
+            string newUnits = "" ~ units[1];
+            u = p ~ newUnits;
         }
     }
     return(u);
