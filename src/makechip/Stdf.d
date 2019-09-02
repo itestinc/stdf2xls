@@ -90,31 +90,31 @@ struct  RecordType
 
 enum Record_t : const(RecordType)
 {
-    ATR = const RecordType(256L,  0, 0, 20, "Audit Trail Record"),
-    BPS = const RecordType(32L,   1, 20, 10, "Begin Program Selection Record"),
-    DTR = const RecordType(128L,  2, 50, 30, "Datalog Text Record"),
-    EPS = const RecordType(32L,   4, 20, 20, "End Program Selection Record"),
-    FAR = const RecordType(64L,   5, 0, 10, "File Attributes Record"),
-    FTR = const RecordType(1200L, 6, 15, 20, "Functional Test Record"),
-    GDR = const RecordType(1024L, 7, 50, 10, "Generic Data Record"),
-    HBR = const RecordType(1024L, 8, 1, 40, "Hardware Bin Record"),
-    MIR = const RecordType(1024L, 9, 1, 10, "Master Information Record"),
+    ATR = const RecordType(256L,  0,   0, 20, "Audit Trail Record"),
+    BPS = const RecordType(32L,   1,  20, 10, "Begin Program Selection Record"),
+    DTR = const RecordType(128L,  2,  50, 30, "Datalog Text Record"),
+    EPS = const RecordType(32L,   4,  20, 20, "End Program Selection Record"),
+    FAR = const RecordType(64L,   5,   0, 10, "File Attributes Record"),
+    FTR = const RecordType(1200L, 6,  15, 20, "Functional Test Record"),
+    GDR = const RecordType(1024L, 7,  50, 10, "Generic Data Record"),
+    HBR = const RecordType(1024L, 8,   1, 40, "Hardware Bin Record"),
+    MIR = const RecordType(1024L, 9,   1, 10, "Master Information Record"),
     MPR = const RecordType(2300L, 10, 15, 15, "Multiple-Result Parametric Record"),
-    MRR = const RecordType(128L,  11, 1, 20, "Master Results Record"),
-    PCR = const RecordType(256L,  12, 1, 30, "Part Count Record"),
-    PGR = const RecordType(128L,  13, 1, 62, "Pin Group Record"),
-    PIR = const RecordType(64L,   14, 5, 10, "Part Information Record"),
-    PLR = const RecordType(1024L, 15, 1, 63, "Pin List Record"),
-    PMR = const RecordType(256L,  16, 1, 60, "Pin Map Record"),
-    PRR = const RecordType(256L,  17, 5, 20, "Part Results Record"),
+    MRR = const RecordType(128L,  11,  1, 20, "Master Results Record"),
+    PCR = const RecordType(256L,  12,  1, 30, "Part Count Record"),
+    PGR = const RecordType(128L,  13,  1, 62, "Pin Group Record"),
+    PIR = const RecordType(64L,   14,  5, 10, "Part Information Record"),
+    PLR = const RecordType(1024L, 15,  1, 63, "Pin List Record"),
+    PMR = const RecordType(256L,  16,  1, 60, "Pin Map Record"),
+    PRR = const RecordType(256L,  17,  5, 20, "Part Results Record"),
     PTR = const RecordType(1300L, 18, 15, 10, "Parametric Test Record"),
-    RDR = const RecordType(64L,   19, 1, 70, "Retest Data Record"),
-    SBR = const RecordType(256L,  20, 1, 50, "Software Bin Record"),
-    SDR = const RecordType(1024L, 21, 1, 80, "Site Description Record"),
+    RDR = const RecordType(64L,   19,  1, 70, "Retest Data Record"),
+    SBR = const RecordType(256L,  20,  1, 50, "Software Bin Record"),
+    SDR = const RecordType(1024L, 21,  1, 80, "Site Description Record"),
     TSR = const RecordType(1024L, 22, 10, 30, "Test Synopsis Record"),
-    WCR = const RecordType(256L,  23, 2, 30, "Wafer Configuration Record"),
-    WIR = const RecordType(256L,  24, 2, 10, "Wafer Information Record"),
-    WRR = const RecordType(1024L, 25, 2, 20, "Wafer Results Record")
+    WCR = const RecordType(256L,  23,  2, 30, "Wafer Configuration Record"),
+    WIR = const RecordType(256L,  24,  2, 10, "Wafer Information Record"),
+    WRR = const RecordType(1024L, 25,  2, 20, "Wafer Results Record")
 }
 
 enum GenericDataType : ubyte
@@ -1477,20 +1477,3 @@ class Record(T: GDR) : StdfRecord
         return l;
     }
 }
-
-enum DtxFormat_t
-{
-    STRING,
-    HEX,
-    INT,
-    FLOAT
-}
-
-public DtxFormat_t getFormat(string fmt)
-{
-    if (fmt == "STRING") return DtxFormat_t.STRING;
-    if (fmt == "HEX") return DtxFormat_t.HEX;
-    if (fmt == "INT") return DtxFormat_t.INT;
-    return DtxFormat_t.FLOAT;
-}
-

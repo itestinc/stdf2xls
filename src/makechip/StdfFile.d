@@ -338,7 +338,7 @@ struct StdfFile
       bool byteDump - dumps byte array for each reacord while reading the STDF
       PMRNameType - use channel name, physical name, logical name, or auto detect for PMR pin indicies
      */
-    this(string filename, Options options, PMRNameType pmrNameType)
+    this(string filename, Options options)
     {
         uint seq = 0;
         StdfReader stdf = new StdfReader(options, filename);
@@ -349,7 +349,8 @@ struct StdfFile
         import std.algorithm.iteration;
         auto r = rs.filter!(a => a.recordType == Record_t.MIR);
         Record!MIR mir = cast(Record!MIR) r.front;
-        if (pmrNameType == PMRNameType.AUTO)
+        PMRNameType pmrNameType;
+        if (options.channelType == PMRNameType.AUTO)
         {
             if (mir.TSTR_TYP == "fusion_cx" || 
                     mir.TSTR_TYP == "CTX" || 
@@ -361,6 +362,10 @@ struct StdfFile
             {
                 pmrNameType = PMRNameType.CHANNEL;
             }
+        }
+        else
+        {
+            pmrNameType = options.channelType;
         }
         // 2. build the pin maps for MPRs
         pinData = buildPinMap(pmrNameType, rs);
@@ -402,6 +407,45 @@ struct StdfFile
         string serial_number = "";
         PartID pid;
         import std.string;
+        import std.digest;
+        if (options.saveStdf)
+        {
+            string outname = options.outputDir ~ filename;
+            File f = File(outname, "w");
+            foreach (rec; rs)
+            {
+                ubyte[] bs = rec.getBytes();
+                f.rawWrite(bs);
+            }
+            f.close();
+            if (options.verifyWrittenStdf)
+            {
+                File f1 = File(filename, "r");
+                File f2 = File(outname, "r");
+                ubyte[] bs1;
+                ubyte[] bs2;
+                bs1.length = f1.size();
+                bs2.length = f2.size();
+                f1.rawRead(bs1);
+                f2.rawRead(bs2);
+                bool pass = true;
+                size_t mismatches = 0L;
+                for (size_t j=0; j<f1.size() && j<f2.size(); j++)
+                {
+                    if (bs1[j] != bs2[j])
+                    {
+                        writeln("diff at index ", j, ": ", toHexString([bs1[j]]), " vs ", toHexString([bs2[j]]));
+                    pass = false;
+                    mismatches++;
+                }
+                if (mismatches > 20) break;
+                }
+                if (pass)
+                {
+                    writeln("Saved file matches input file");
+                }
+            }
+        }
         foreach (rec; rs)
         {
             switch (rec.recordType.ordinal)

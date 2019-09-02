@@ -53,13 +53,17 @@ class Modifier
 }
 
 import std.regex;
+import makechip.StdfFile;
 class Options
 {
     bool textDump;
     bool byteDump;
     bool quiet;
     bool extractPin;
+    bool verifyWrittenStdf;
+    bool noMultithreading;
     private string[] modify;
+    PMRNameType channelType;
     string outputDir = "/";
     bool saveStdf;
     bool success;
@@ -78,9 +82,12 @@ class Options
             "dumptext|d", "dump the STDF in text form", &textDump,
             "dumpBytes|b", "dump the STDF in ascii byte form", &byteDump,
             "modify|m", "modify a string field in specified record type.\n     Example: -m 'MIR TST_TEMP \"TEMPERATURE :\" \"TEMPERATURE:\"'", &modify,
+            "no-mt", "force single-threaded operation", &noMultithreading,
+            "channel-type|t", "Channel type: AUTO, CHANNEL, PHYSICAL, or LOGICAL", &channelType,
             "extract-pin|a", "Extract pin name from test name suffix (default delimiter = '@')", &extractPin,
             "pin-delimiter|p", "Delimiter character that separates pin name from test name (Default = '@')", &delims,
             "quiet|q", "don't output verbose messages", &quiet,
+            "verify|v", "Verify written STDF; only useful if --outputDir is specified", &verifyWrittenStdf,
             "outputDir|o", "write out the STDF to this directory", &outputDir);
         writeln("args.length = ", args.length);
         if (delims.length == 0) delims ~= '@';
