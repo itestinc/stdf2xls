@@ -3,14 +3,12 @@
   add dynamic limits if necessary, and sorts the S/N or X/Y as required.
 
   The following following is done at the top level:
-  1. Sort by device type
-  2. Sort by Step
-  3. Possibly sort by timestamp and/or SN/XY
-  4. Optionally remove duplicates
-  5. Figure out dynamic limits
-  6. Generate spreadsheets
-  7. Generate histograms
-  8. Generate wafermaps
+  1. Possibly sort by timestamp and/or SN/XY
+  2. Optionally remove duplicates
+  3. Figure out dynamic limits
+  4. Generate spreadsheets
+  5. Generate histograms
+  6. Generate wafermaps
 
  */
 module makechip.Stdf2xlsx;
@@ -25,6 +23,8 @@ import makechip.DefaultValueDatabase;
 import makechip.StdfFile;
 //                 device  step
 private MultiMap!(StdfFile[], string, string) files;
+private string[string] devices;
+private string[string] steps;
 
 static this()
 {
@@ -56,6 +56,8 @@ private void processFile(string file, Options options)
 {
     auto sfile = StdfFile(file, options);
     StdfFile[] x;
+    devices[sfile.hdr.devName] = sfile.hdr.devName;
+    steps[sfile.hdr.step] = sfile.hdr.step;
     StdfFile[] data = files.get(x, sfile.hdr.devName, sfile.hdr.step);
     if (data.length == 0)
     {
