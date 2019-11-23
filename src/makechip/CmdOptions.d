@@ -1,6 +1,7 @@
 module makechip.CmdOptions;
 import makechip.util.Util;
 import makechip.Stdf;
+import makechip.StdfDB;
 import makechip.Descriptors;
 import std.conv;
 import std.stdio;
@@ -62,6 +63,7 @@ class Options
     bool extractPin;
     bool verifyWrittenStdf;
     bool noMultithreading;
+    bool noIgnoreMiscHeader;
     private string[] modify;
     PMRNameType channelType;
     string outputDir = "/";
@@ -88,7 +90,8 @@ class Options
             "pin-delimiter|p", "Delimiter character that separates pin name from test name (Default = '@')", &delims,
             "quiet|q", "don't output verbose messages", &quiet,
             "verify|v", "Verify written STDF; only useful if --outputDir is specified", &verifyWrittenStdf,
-            "outputDir|o", "write out the STDF to this directory", &outputDir);
+            "outputDir|o", "write out the STDF to this directory", &outputDir,
+            "noIgnoreMiscHeader", "Don't ignore custom user header items when comparing headers from different files", &noIgnoreMiscHeader);
         writeln("args.length = ", args.length);
         if (delims.length == 0) delims ~= '@';
         stdfFiles.length = args.length-1;
