@@ -21,7 +21,7 @@ import std.typecons;
 import makechip.CmdOptions;
 import makechip.DefaultValueDatabase;
 import makechip.StdfFile;
-//                 device  step
+//                            device  step
 private MultiMap!(StdfFile[], string, string) files;
 private string[string] devices;
 private string[string] steps;
@@ -48,13 +48,24 @@ public void processStdf(Options options)
             processFile(file, options);
         }
     }
-    import std.algorith.sorting;
-    sort!((a, b) => cmp(a, b) < 0)(numbers);
+    //import std.algorithm.sorting;
+    //sort!((a, b) => cmp(a, b) < 0)(numbers);
 }
 
 private void processFile(string file, Options options)
 {
     auto sfile = StdfFile(file, options);
+    import std.stdio;
+    foreach(d; sfile.devices)
+    {
+        foreach(t; d.tests)
+        {
+            if ((t.testFlags & 8) == 8)
+            {
+                stderr.writeln("site = ", d.site, "name = ", t.id);
+            }
+        }
+    }
     StdfFile[] x;
     devices[sfile.hdr.devName] = sfile.hdr.devName;
     steps[sfile.hdr.step] = sfile.hdr.step;

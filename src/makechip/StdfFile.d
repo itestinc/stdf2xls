@@ -71,11 +71,12 @@ import makechip.util.Collections;
 import makechip.CmdOptions;
 import std.algorithm.iteration;
 import std.conv;
+import std.string;
 import std.typecons;
 import makechip.CmdOptions;
 import makechip.DefaultValueDatabase;
 
-struct HeaderInfo
+class HeaderInfo
 {
     const bool ignoreMiscItems;
     const string step;
@@ -97,8 +98,17 @@ struct HeaderInfo
         this.devName = devName;
     }
 
-    bool opEquals()(auto ref const HeaderIndo h) const
+    bool isWafersort()
     {
+        return wafer_id != "";
+    }
+
+    override
+    bool opEquals()(Object o) const
+    {
+        if (o is null) return false;
+        if (typeid(o) != typeid(this)) return false;
+        HeaderInfo h = cast(HeaderInfo) o;
         if (ignoreMiscItems != h.ignoreMiscItems) return false;
         if (step != h.step) return false;
         if (temperature != h.temperature) return false;
@@ -119,20 +129,6 @@ struct HeaderInfo
         return true;
     }
 }
-
-struct Point
-{
-    int x;
-    int y;
-}
-
-union SN
-{
-    string sn;
-    Point xy;
-}
-
-private immutable string SERIAL_MARKER = "S/N";
 
 struct StdfFile
 {
@@ -161,10 +157,79 @@ struct StdfFile
 
     private HeaderInfo getHeaderInfo()
     {
-        StdfRecord[] dtrs = records.filter(r => r.recordType == Record_t.DTR);
-        MasterInformationRecord mir = cast(MasterInformationRecord) records.findFirst(r => r.recordType = Record_t.MIR);
+        auto dtrs = records.filter!(r => r.recordType == Record_t.DTR).map!(a => cast(Record!DTR) a);
+        Record!(MIR) mir;
+        for (int i=0; i<records.length; i++)
+        {
+            if (records[i].recordType == Record_t.MIR)
+            {
+                mir = cast(Record!(MIR)) records[i];
+                break;
+            }
+        }
+        Record!(WIR) wir = null;
+        for (int i=0; i<records.length; i++)
+        {
+            if (records[i].recordType == Record_t.WIR)
+            {
+                wir = cast(Record!(WIR)) records[i];
+                break;
+            }
+        }
+        string temp = mir.TST_TEMP;
+        string step = "";
+        string lot = mir.LOT_ID;
+        string sblot = mir.SBLOT_ID;
+        string device = mir.PART_TYP;
+        string wafer = (wir is null) ? "" : wir.WAFER_ID;
+        string[string] miscFields;
+        foreach (dtr; dtrs)
+        {
+            string rec = strip(dtr.TEXT_DAT);
+            auto toks = rec.split(":");
+            // check for legacy headerfiels:
+            if (toks.length == 2)
+            {
+                auto tok0 = toks[0].strip;
+                auto tok1 = toks[1].strip;
+                if (tok0 == "CUSTOMER") miscFields["CUSTOMER"] = tok1;
+                else if (tok0 == "DEVICE NUMBER") device = tok1;
+                else if (tok0 == "SOW") miscFields["SOW"] = tok1;
+                else if (tok0 == "CUSTOMER PO#") miscFields["CUSTOMER PO#"] = tok1;
+                else if (tok0 == "TESTER") miscFields["TESTER"] = tok1;
+                else if (tok0 == "TEST PROGRAM") miscFields["TEST PROGRAM"] = tok1;
+                else if (tok0 == "CONTROL SERIAL #s") miscFields["CONTROL SERIAL #s"] = tok1;
+                else if (tok0 == "JOB #") miscFields["JOB #"] = tok1;
+                else if (tok0 == "LOT #") lot = tok1;
+                else if (tok0 == "STEP #") step = tok1;
+                else if (tok0 == "TEMPERATURE") temp = tok1;
+                else // check for normal header fields:
+                {
+                    if (rec[0..3] == ">>>") // it's a header field
+                    {
+                        rec = rec[3..$];
+                        toks = rec.split(":");
+                        tok0 = toks[0].strip;
+                        tok1 = toks[1].strip;
+                        if (tok0 == "STEP #") step = tok1;
+                        else if (tok0 == "TEMPERATURE") temp = tok1;
+                        else if (tok0 == "LOT #") lot = tok1;
+                        else if (tok0 == "SUBLOT #") sblot = tok1;
+                        else if (tok0 == "WAFER #") wafer = tok1;
+                        else if (tok0 == "DEVICE_NUMBER") device = tok1;
+                        else miscFields[tok0] = tok1;
+                    }
+                }
+            }
+        }
+        HeaderInfo hdr = new HeaderInfo(ignoreMiscHeaderItems, step, temp, lot, sblot, wafer, device);
+        foreach (key; miscFields.keys)
+        {
+            auto value = miscFields.get(key, "");
+            hdr.headerItems[key] = value;
+        }
+        return hdr;
     }
-
 
 
 }
