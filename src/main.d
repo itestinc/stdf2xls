@@ -3,6 +3,7 @@ import makechip.CmdOptions;
 import makechip.Stdf;
 import makechip.Descriptors;
 import makechip.Cpu_t;
+import makechip.Stdf2xlsx;
 import std.conv;
 import std.stdio;
 import std.traits;
@@ -16,6 +17,9 @@ int main(string[] args)
     import std.path;
     import std.digest;
     import std.file;
+    processStdf(options);
+
+    /*
     for (int i=0; i<options.stdfFiles.length; i++)
     {
         if (!exists(options.stdfFiles[i]))
@@ -80,7 +84,6 @@ int main(string[] args)
         auto anyTestRecs = upToPIR.find!(a => a.recordType == Record_t.FTR || a.recordType == Record_t.PTR || a.recordType == Record_t.MPR);
         if (anyTestRecs.empty()) writeln("No test records before PIR: ", options.stdfFiles[i]);
         else writeln("Test records start before PIR: ", options.stdfFiles[i]);
-        /*
         foreach (r; rs)
         {
             if (r.recordType == Record_t.FTR)
@@ -96,8 +99,8 @@ int main(string[] args)
                 }
             }
         }
-        */
     }
+    */
     return 0;
 }
 

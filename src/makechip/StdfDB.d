@@ -44,17 +44,6 @@ import std.typecons;
 import makechip.CmdOptions;
 import makechip.DefaultValueDatabase;
 
-struct HeaderInfo
-{
-    string step;
-    string temperature;
-    string lot_id;
-    string sublot_id;
-    string wafer_id;
-    string devName;
-    string[string] headerItems;
-}
-
 struct Point
 {
     int x;

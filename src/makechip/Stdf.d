@@ -1082,7 +1082,7 @@ unittest
     import std.string;
     foreach(string name; dirEntries("stdf", SpanMode.depth))
     {
-        StdfReader stdf = new StdfReader(No.textDump, No.byteDump, name);
+        StdfReader stdf = new StdfReader(name);
         stdf.read();
         StdfRecord[] rs = stdf.getRecords();
         File f = File("x.tmp", "w");
@@ -1188,16 +1188,12 @@ class StdfReader
     private ByteReader src;
     public const string filename;
     private StdfRecord[] records;
-    private bool textDump;
-    private bool byteDump;
     
-    this(Options options, string filename)
+    this(const string filename)
     {
         this.filename = filename;
         auto f = new File(filename, "rb");
         src = new BinarySource(filename);
-        this.textDump = options.textDump;
-        this.byteDump = options.byteDump; 
     }
 
     StdfRecord[] getRecords() { return(records); }
@@ -1221,7 +1217,7 @@ class StdfReader
             ubyte rtype = src.getByte();
             ubyte stype = src.getByte();
             Record_t type = RecordType.getRecordType(rtype, stype);
-            if (textDump == Yes.textDump) writeln("type = ", type, " rtype = ", rtype, " stype = ", stype, " reclen = ", reclen);
+            //if (textDump == Yes.textDump) writeln("type = ", type, " rtype = ", rtype, " stype = ", stype, " reclen = ", reclen);
             StdfRecord r;
             switch (type.ordinal)
             {
@@ -1252,30 +1248,30 @@ class StdfReader
                 case Record_t.WRR.ordinal: r = new Record!WRR(type, reclen, src); break;
                 default: throw new Exception("Unknown record type: " ~ type.stringof);
             }
-            if (textDump)
-            {
-                import std.digest;
-                //writeln("reclen = ", r.getReclen());
-                if (byteDump)
-                {
-                    ubyte[] bs = r.getBytes();
-                    writeln("", type, " = [");
-                    int cnt = 0;
-                    foreach(b; bs)
-                    {
-                        write(toHexString([b]), " ");
-                        if (cnt == 40) 
-                        {
-                            writeln("");
-                            cnt = 0;
-                        }
-                        cnt++;
-                    }
-                    writeln("]");
-                }
-                writeln(r.toString());
-                stdout.flush();
-            }
+            //if (textDump)
+            //{
+            //    import std.digest;
+            //    //writeln("reclen = ", r.getReclen());
+            //    if (byteDump)
+            //    {
+            //        ubyte[] bs = r.getBytes();
+            //        writeln("", type, " = [");
+            //        int cnt = 0;
+            //        foreach(b; bs)
+            //        {
+            //            write(toHexString([b]), " ");
+            //            if (cnt == 40) 
+            //            {
+            //                writeln("");
+            //                cnt = 0;
+            //            }
+            //            cnt++;
+            //        }
+            //        writeln("]");
+            //    }
+            //    writeln(r.toString());
+            //    stdout.flush();
+            //}
             rs ~= r;
             if (type == Record_t.MRR) break;
         }
