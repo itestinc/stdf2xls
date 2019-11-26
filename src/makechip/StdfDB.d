@@ -37,6 +37,7 @@
  */
 module makechip.StdfDB;
 import makechip.Stdf;
+import makechip.StdfFile;
 import makechip.Descriptors;
 import makechip.util.Collections;
 import std.conv;
@@ -281,7 +282,6 @@ struct DeviceResult
     uint site;
     uint head;
     ulong tstamp;
-    HeaderInfo hdr;
     TestRecord[] tests;
 
 }
@@ -314,50 +314,58 @@ class StdfPinData
     }
 }
 
-struct StdfFilex
+class StdfDB
 {
-    StdfPinData pinData;
-    HeaderInfo hdr;
-    DefaultValueDatabase dvd;
-    DeviceResult[] devices;
+    private StdfPinData[HeaderInfo] pinDataMap;
+    private DefaultValueDatabase[HeaderInfo] dvdMap;
+    private DeviceResult[][HeaderInfo] devicesMap;
+    private Options options;
 
-    /**
-      Options needed:
-      bool textDump - dumps STDF text format while reading the STDF
-      bool byteDump - dumps byte array for each reacord while reading the STDF
-      PMRNameType - use channel name, physical name, logical name, or auto detect for PMR pin indicies
-     */
-    this(string filename, Options options)
+    this(Options options)
+    {
+        this.options = options;
+    }
+
+    void load(StdfFile stdf)
     {
         uint seq = 0;
-        StdfReader stdf = new StdfReader(options, filename);
-        stdf.read();
-        StdfRecord[] rs = stdf.getRecords();
-        dvd = new DefaultValueDatabase();
+        StdfRecord[] rs = stdf.records;
+        DefaultValueDatabase dvd = null;
+        bool dvdDone = false;
+        if (stdf.hdr in dvdMap) dvdDone = true;
+        else
+        {
+            dvd = new DefaultValueDatabase();
+            dvdMap[stdf.hdr] = dvd;
+        }
         // 1. Get the MIR
         import std.algorithm.iteration;
         auto r = rs.filter!(a => a.recordType == Record_t.MIR);
         Record!MIR mir = cast(Record!MIR) r.front;
-        PMRNameType pmrNameType;
-        if (options.channelType == PMRNameType.AUTO)
+        StdfPinData pinData;
+        if (stdf.hdr !in pinDataMap)
         {
-            if (mir.TSTR_TYP == "fusion_cx" || 
-                    mir.TSTR_TYP == "CTX" || 
-                    mir.EXEC_VER == "Smartest : s/w rev. 8")
+            PMRNameType pmrNameType;
+            if (options.channelType == PMRNameType.AUTO)
             {
-                pmrNameType = PMRNameType.PHYSICAL;
+                if (mir.TSTR_TYP == "fusion_cx" || mir.TSTR_TYP == "CTX" || mir.EXEC_VER == "Smartest : s/w rev. 8")
+                {
+                    pmrNameType = PMRNameType.PHYSICAL;
+                }
+                else
+                {
+                    pmrNameType = PMRNameType.CHANNEL;
+                }
             }
             else
             {
-                pmrNameType = PMRNameType.CHANNEL;
+                pmrNameType = options.channelType;
             }
+            // 2. build the pin maps for MPRs
+            pinData = buildPinMap(pmrNameType, rs);
+            pinDataMap[stdf.hdr] = pinData;
         }
-        else
-        {
-            pmrNameType = options.channelType;
-        }
-        // 2. build the pin maps for MPRs
-        pinData = buildPinMap(pmrNameType, rs);
+        else pinData = pinDataMap[stdf.hdr];
         // 3. Store default values and create test records
         // first find min and max site and head numbers:
         ubyte minSite = 255;
@@ -366,7 +374,6 @@ struct StdfFilex
         ubyte maxHead = 0;
         ubyte[ubyte] heads;
         ubyte[ubyte] sites;
-        bool wafersort = false;
         foreach (rec; rs)
         {
             if (rec.recordType == Record_t.PRR)
@@ -379,13 +386,9 @@ struct StdfFilex
                 if (prr.HEAD_NUM < minHead) minHead = prr.HEAD_NUM;
                 if (prr.HEAD_NUM > maxHead) maxHead = prr.HEAD_NUM;
             }
-            if (rec.recordType == Record_t.WCR || rec.recordType == Record_t.WIR)
-            {
-                wafersort = true;
-            }
         }
         import std.stdio;
-        if (!options.quiet) writeln("INFO: missing values detected");
+        import std.string;
         auto dupNums = new MultiMap!(DupNumber_t, Record_t, TestNumber_t, Site_t, Head_t)();
         DeviceResult[][] dr;
         dr.length = maxSite;
@@ -395,46 +398,6 @@ struct StdfFilex
         ulong time = mir.START_T;
         string serial_number = "";
         PartID pid;
-        import std.string;
-        import std.digest;
-        if (options.saveStdf)
-        {
-            string outname = options.outputDir ~ filename;
-            File f = File(outname, "w");
-            foreach (rec; rs)
-            {
-                ubyte[] bs = rec.getBytes();
-                f.rawWrite(bs);
-            }
-            f.close();
-            if (options.verifyWrittenStdf)
-            {
-                File f1 = File(filename, "r");
-                File f2 = File(outname, "r");
-                ubyte[] bs1;
-                ubyte[] bs2;
-                bs1.length = f1.size();
-                bs2.length = f2.size();
-                f1.rawRead(bs1);
-                f2.rawRead(bs2);
-                bool pass = true;
-                size_t mismatches = 0L;
-                for (size_t j=0; j<f1.size() && j<f2.size(); j++)
-                {
-                    if (bs1[j] != bs2[j])
-                    {
-                        writeln("diff at index ", j, ": ", toHexString([bs1[j]]), " vs ", toHexString([bs2[j]]));
-                    pass = false;
-                    mismatches++;
-                }
-                if (mismatches > 20) break;
-                }
-                if (pass)
-                {
-                    writeln("Saved file matches input file");
-                }
-            }
-        }
         foreach (rec; rs)
         {
             switch (rec.recordType.ordinal)
@@ -444,7 +407,7 @@ struct StdfFilex
                     uint dup = dupNums.get(uint.max, ftr.recordType, ftr.TEST_NUM, ftr.SITE_NUM, ftr.HEAD_NUM);
                     if (dup == uint.max) dup = 1; else dup++;
                     dupNums.put(dup, ftr.recordType, ftr.TEST_NUM, ftr.SITE_NUM, ftr.HEAD_NUM);
-                    dvd.setFTRDefaults(ftr, dup);
+                    if (!dvdDone) dvd.setFTRDefaults(ftr, dup);
                     string testName = ftr.TEST_TXT.isEmpty() ? dvd.getDefaultTestName(Record_t.FTR, ftr.TEST_NUM, dup) : ftr.TEST_TXT;
                     string pin = "";
                     if (options.extractPin)
@@ -471,7 +434,7 @@ struct StdfFilex
                     uint dup = dupNums.get(uint.max, ptr.recordType, ptr.TEST_NUM, ptr.SITE_NUM, ptr.HEAD_NUM);
                     if (dup == uint.max) dup = 1; else dup++;
                     dupNums.put(dup, ptr.recordType, ptr.TEST_NUM, ptr.SITE_NUM, ptr.HEAD_NUM);
-                    dvd.setPTRDefaults(ptr, dup);
+                    if (!dvdDone) dvd.setPTRDefaults(ptr, dup);
                     string testName = ptr.TEST_TXT.isEmpty() ? dvd.getDefaultTestName(Record_t.PTR, ptr.TEST_NUM, dup) : ptr.TEST_TXT;
                     string pin = "";
                     if (options.extractPin)
@@ -509,7 +472,7 @@ struct StdfFilex
                     uint dup = dupNums.get(uint.max, rec.recordType, mpr.TEST_NUM, mpr.SITE_NUM, mpr.HEAD_NUM);
                     if (dup == uint.max) dup = 1; else dup++;
                     dupNums.put(dup, rec.recordType, mpr.TEST_NUM, mpr.SITE_NUM, mpr.HEAD_NUM);
-                    dvd.setMPRDefaults(mpr, dup);
+                    if (!dvdDone) dvd.setMPRDefaults(mpr, dup);
                     string testName = mpr.TEST_TXT.isEmpty() ? dvd.getDefaultTestName(Record_t.MPR, mpr.TEST_NUM, dup) : mpr.TEST_TXT;
                     if (options.extractPin)
                     {
@@ -633,65 +596,13 @@ struct StdfFilex
                             dr[to!(ubyte)(site) - minSite][to!(ubyte)(head) - minHead].tests ~= tr;
                         }
                     }
-                    else // could be header info
-                    {
-                        if (text.startsWith("STEP #"))
-                        {
-                            auto i = text.indexOf(':');
-                            auto ss = text[i+1..$];
-                            hdr.step = strip(ss);
-                        }
-                        else if (text.startsWith("TEMPERATURE"))
-                        {
-                            auto i = text.indexOf(':');
-                            auto ss = text[i+1..$];
-                            hdr.temperature = strip(ss);
-                        }
-                        else if (text.startsWith("LOT #"))
-                        {
-                            auto i = text.indexOf(':');
-                            auto ss = text[i+1..$];
-                            hdr.lot_id = strip(ss);
-                        }
-                        else if (text.startsWith("DEVICE_NUMBER"))
-                        {
-                            auto i = text.indexOf(':');
-                            auto ss = text[i+1..$];
-                            hdr.devName = strip(ss);
-                        }
-                        else if (text.startsWith(">>>"))
-                        {
-                            string s1 = text[3..$];
-                            string s2 = strip(s1);
-                            auto i = s2.indexOf(':');
-                            string name = strip(s2[0..i]);
-                            string val = strip(s2[i+1..$]);
-                            if (name == "STEP #") hdr.step = val;
-                            else if (name == "TEMPERATURE") hdr.temperature = val;
-                            else if (name == "LOT") hdr.lot_id = val;
-                            else if (name == "SUBLOT") hdr.sublot_id = val;
-                            else if (name == "WAFER") hdr.wafer_id = val;
-                            else if (name == "DEVICE_NUMBER") hdr.devName = val;
-                            else
-                            {
-                                hdr.headerItems[name] = val;
-                            }
-                        }
-                        else
-                        {
-                            if (!options.quiet)
-                            {
-                                writeln("Warning: unknown text field: ", text);
-                            }
-                        }
-                    }
                     break;
                 case Record_t.PRR.ordinal:
                     dupNums = new MultiMap!(uint, Record_t, TestNumber_t, Site_t, Head_t)();
                     Record!(PRR) prr = cast(Record!(PRR)) rec;
                     if (serial_number == "")
                     {
-                        if (wafersort)
+                        if (stdf.hdr.isWafersort())
                         {
                             pid = PartID(prr.X_COORD, prr.Y_COORD);
                         }
@@ -705,17 +616,11 @@ struct StdfFilex
                     uint site = prr.SITE_NUM;
                     if (minSite == 0) site++;
                     if (minHead == 0) head++;
-                    if (hdr.temperature == "") hdr.temperature = mir.TST_TEMP;
-                    if (hdr.lot_id == "") hdr.lot_id = mir.LOT_ID;
-                    if (hdr.sublot_id == "") hdr.sublot_id = mir.SBLOT_ID;
-                    if (hdr.devName == "") hdr.devName = mir.PART_TYP;
                     time += ((site * head) * prr.TEST_T) / (numSites * numHeads);
                     dr[site - minSite][head - minHead].devId = pid;
                     dr[site - minSite][head - minHead].site = site;
                     dr[site - minSite][head - minHead].head = head;
                     dr[site - minSite][head - minHead].tstamp = time;
-                    dr[site - minSite][head - minHead].hdr = hdr;
-                    dr[site - minSite][head - minHead].hdr.headerItems = hdr.headerItems.dup;
                     devices ~= dr[site - minSite][head - minHead];
                     seq = 0;
                     break;
