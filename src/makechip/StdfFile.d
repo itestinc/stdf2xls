@@ -85,7 +85,7 @@ class HeaderInfo
     const string sublot_id;
     const string wafer_id;
     const string devName;
-    string[const string] headerItems;
+    private string[const string] headerItems;
 
     this(bool ignoreMiscItems, string step, string temperature, string lot_id, string sublot_id, string wafer_id, string devName)
     {
@@ -98,13 +98,11 @@ class HeaderInfo
         this.devName = devName;
     }
 
-    bool isWafersort()
-    {
-        return wafer_id != "";
-    }
+    public bool isWafersort() @safe pure nothrow { return wafer_id != ""; }
 
-    override
-    bool opEquals()(Object o) const
+    public string[string] getHeaderItems() @safe pure nothrow{ return headerItems.idup; } 
+
+    override public bool opEquals()(Object o) const @safe pure nothrow
     {
         if (o is null) return false;
         if (typeid(o) != typeid(this)) return false;
@@ -128,6 +126,20 @@ class HeaderInfo
         }
         return true;
     }
+
+    override public size_t toHash() const @safe pure nothrow
+    {
+        size_t hash = step.hashOf();
+        hash = temperature.hashOf(hash);
+        hash = lot_id.hashOf(hash);
+        hash = sublot_id.hashOf(hash);
+        hash = wafer_id.hashOf(hash);
+        hash = devName.hashOf(hash);
+        if (!ignoreMiscItems) hash = headerItems.hashOf(hash);
+        hash = ignoreMiscItems ? hash ^ 0xAAAA : hash ^ 0x5555;
+        return hash;
+    }
+
 }
 
 struct StdfFile
