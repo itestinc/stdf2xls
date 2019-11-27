@@ -318,7 +318,7 @@ class StdfDB
 {
     private StdfPinData[HeaderInfo] pinDataMap;
     private DefaultValueDatabase[HeaderInfo] dvdMap;
-    private DeviceResult[][HeaderInfo] devicesMap;
+    private DeviceResult[][HeaderInfo] deviceMap;
     private Options options;
 
     this(Options options)
@@ -330,6 +330,7 @@ class StdfDB
     {
         uint seq = 0;
         StdfRecord[] rs = stdf.records;
+        DeviceResult[] devices;
         DefaultValueDatabase dvd = null;
         bool dvdDone = false;
         if (stdf.hdr in dvdMap) dvdDone = true;
@@ -627,7 +628,17 @@ class StdfDB
                 default:
             }
         }
+        if (stdf.hdr !in deviceMap)
+        {
+            deviceMap[stdf.hdr] = devices;
+        }
+        else
+        {
+            DeviceResult[] drs = deviceMap[stdf.hdr];
+            drs ~= devices;
+        }
     }
+
 }
 
 private StdfPinData buildPinMap(PMRNameType nameType, StdfRecord[] rs)

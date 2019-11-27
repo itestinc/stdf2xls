@@ -100,7 +100,16 @@ class HeaderInfo
 
     public bool isWafersort() @safe pure nothrow { return wafer_id != ""; }
 
-    public string[string] getHeaderItems() @safe pure nothrow{ return headerItems.idup; } 
+    public string[const string] getHeaderItems() @safe pure
+    { 
+        string[const string] hi;
+        foreach (key; headerItems)
+        {
+            string value = headerItems[key];
+            hi[key] = value;
+        }
+        return hi;
+    } 
 
     override public bool opEquals()(Object o) const @safe pure nothrow
     {

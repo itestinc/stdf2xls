@@ -18,6 +18,11 @@ int main(string[] args)
     import std.digest;
     import std.file;
     processStdf(options);
+    // print, write, and filter here
+
+
+    // prepare to process test data
+    loadDb(options);
 
     /*
     for (int i=0; i<options.stdfFiles.length; i++)

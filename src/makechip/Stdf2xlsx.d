@@ -21,32 +21,34 @@ import std.typecons;
 import makechip.CmdOptions;
 import makechip.DefaultValueDatabase;
 import makechip.StdfFile;
-//                            device  step
-private MultiMap!(StdfFile[], string, string) files;
+import makechip.StdfDB;
+
+private StdfFile[][HeaderInfo] stdfFiles;
 private string[string] devices;
 private string[string] steps;
-
-static this()
-{
-    files = new MultiMap!(StdfFile[], string, string);
-}
+private StdfDB stdfdb;
 
 public void processStdf(Options options)
 {
     import std.parallelism;
     if (options.noMultithreading)
     {
-        foreach(file; options.stdfFiles)
-        {
-            processFile(file, options);
-        }
+        foreach(file; options.stdfFiles) processFile(file, options);
     }
     else
     {
-        foreach(file; parallel(options.stdfFiles))
-        {
-            processFile(file, options);
-        }
+        foreach(file; parallel(options.stdfFiles)) processFile(file, options);
+    }
+}
+
+public void loadDb(Options options)
+{
+    if (stdfdb is null) stdfdb = new StdfDB(options);
+    // build test results lists here
+    foreach (hdr; stdfFiles.keys)
+    {
+        StdfFile[] f = stdfFiles[hdr];
+        foreach (file; f) stdfdb.load(file);
     }
     //import std.algorithm.sorting;
     //sort!((a, b) => cmp(a, b) < 0)(numbers);
@@ -55,29 +57,17 @@ public void processStdf(Options options)
 private void processFile(string file, Options options)
 {
     auto sfile = StdfFile(file, options);
-    import std.stdio;
-    foreach(d; sfile.devices)
+    sfile.load();
+    if (sfile.hdr !in stdfFiles)
     {
-        foreach(t; d.tests)
-        {
-            if ((t.testFlags & 8) == 8)
-            {
-                stderr.writeln("site = ", d.site, "name = ", t.id);
-            }
-        }
-    }
-    StdfFile[] x;
-    devices[sfile.hdr.devName] = sfile.hdr.devName;
-    steps[sfile.hdr.step] = sfile.hdr.step;
-    StdfFile[] data = files.get(x, sfile.hdr.devName, sfile.hdr.step);
-    if (data.length == 0)
-    {
-        data ~= sfile;
-        files.put(data, sfile.hdr.devName, sfile.hdr.step);
+        StdfFile[] s;
+        s ~= sfile;
+        stdfFiles[sfile.hdr] = s;
     }
     else
     {
-        data ~= sfile;
+        StdfFile[] s = stdfFiles[sfile.hdr];
+        s ~= sfile;
     }
 }
 
