@@ -28,7 +28,7 @@ private string[string] devices;
 private string[string] steps;
 private StdfDB stdfdb;
 
-public void processStdf(Options options)
+public const(StdfFile[][HeaderInfo]) processStdf(Options options)
 {
     import std.parallelism;
     if (options.noMultithreading)
@@ -39,6 +39,7 @@ public void processStdf(Options options)
     {
         foreach(file; parallel(options.stdfFiles)) processFile(file, options);
     }
+    return stdfFiles;
 }
 
 public void loadDb(Options options)
