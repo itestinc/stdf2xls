@@ -520,7 +520,7 @@ class StdfDB
                         auto toks = text.split(":");
                         if (toks.length < 4 && toks[1] != SERIAL_MARKER)
                         {
-                            if (!options.quiet)
+                            if (options.verbosityLevel > 0)
                             {
                                 writeln("Warning: invalid TEXT_DATA format: ", text);
                             }

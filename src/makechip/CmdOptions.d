@@ -57,21 +57,22 @@ import std.regex;
 import makechip.StdfFile;
 class Options
 {
-    bool textDump;
-    bool byteDump;
-    bool quiet;
-    bool extractPin;
-    bool verifyWrittenStdf;
-    bool noMultithreading;
-    bool noIgnoreMiscHeader;
+    bool textDump = false;
+    bool byteDump = false;
+    bool extractPin = false;
+    bool verifyWrittenStdf = false;
+    bool noMultithreading = false;
+    bool noIgnoreMiscHeader = false;
     private string[] modify;
-    PMRNameType channelType;
-    string outputDir = "/";
-    bool saveStdf;
-    bool success;
+    PMRNameType channelType = PMRNameType.AUTO;
+    int verbosityLevel = 0;
+    string outputDir = "";
+
     string[] stdfFiles;
     Modifier[] modifiers;
     char[] delims;
+
+    bool success;
 
     this(string[] args)
     {
@@ -84,14 +85,15 @@ class Options
             "dumptext|d", "dump the STDF in text form", &textDump,
             "dumpBytes|b", "dump the STDF in ascii byte form", &byteDump,
             "modify|m", "modify a string field in specified record type.\n     Example: -m 'MIR TST_TEMP \"TEMPERATURE :\" \"TEMPERATURE:\"'", &modify,
+            "outputDir|o", "write out the STDF to this directory. Specifying this will cause the STDF to be written back out.", &outputDir,
+
             "no-mt", "force single-threaded operation", &noMultithreading,
-            "channel-type|t", "Channel type: AUTO, CHANNEL, PHYSICAL, or LOGICAL", &channelType,
+            "channel-type|t", "Channel type: AUTO, CHANNEL, PHYSICAL, or LOGICAL. Only use this if you know what you are doing.", &channelType,
             "extract-pin|a", "Extract pin name from test name suffix (default delimiter = '@')", &extractPin,
             "pin-delimiter|p", "Delimiter character that separates pin name from test name (Default = '@')", &delims,
-            "quiet|q", "don't output verbose messages", &quiet,
-            "verify|v", "Verify written STDF; only useful if --outputDir is specified", &verifyWrittenStdf,
-            "outputDir|o", "write out the STDF to this directory", &outputDir,
-            "noIgnoreMiscHeader", "Don't ignore custom user header items when comparing headers from different files", &noIgnoreMiscHeader);
+            "verbose|v", "Verbosity level. Default is 0 which means print nothing", &verbosityLevel,
+            "verify|V", "Verify written STDF; only useful if --outputDir is specified. For testing purposes only.", &verifyWrittenStdf,
+            "noIgnoreMiscHeader", "Don't ignore custom user header items when comparing headers from different STDF files", &noIgnoreMiscHeader);
         writeln("args.length = ", args.length);
         if (delims.length == 0) delims ~= '@';
         stdfFiles.length = args.length-1;
@@ -102,7 +104,6 @@ class Options
             success = false;
             return;
         }
-        saveStdf = outputDir != "/";
         writeln("modify.length = ", modify.length);
         foreach(m; modify)
         {

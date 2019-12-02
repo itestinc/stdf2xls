@@ -9,7 +9,7 @@ import std.stdio;
 import std.traits;
 import std.getopt;
 import std.typecons;
-
+import makechip.StdfFile;
 
 int main(string[] args)
 {
@@ -17,95 +17,96 @@ int main(string[] args)
     import std.path;
     import std.digest;
     import std.file;
-    processStdf(options);
-    // print, write, and filter here
-
-
-    // prepare to process test data
-    loadDb(options);
-
-    /*
-    for (int i=0; i<options.stdfFiles.length; i++)
+    StdfFile[][HeaderInfo] stdfs = processStdf(options);
+    // print, write, and modify here - options.textDump, options.byteDump, options.verifyWrittenStdf, option.outputDir
+    foreach (hdr; stdfs.keys)
     {
-        if (!exists(options.stdfFiles[i]))
+        StdfFile[] files = stdfs[hdr];
+        foreach (file; files)
         {
-            writeln("File ", options.stdfFiles[i], " does not exist");
-            continue;
-        }
-        auto rdr = new StdfReader(options, options.stdfFiles[i]);
-        rdr.read();
-        StdfRecord[] rs = rdr.getRecords();
-        if (options.modifiers.length > 0)
-        {
-            foreach(m; options.modifiers)
+            foreach (m; options.modifiers)
             {
-                foreach(r; rs)
+                foreach (rec; file.records)
                 {
-                    if (r.recordType == m.recordType)
+                    if (rec.recordType == m.recordType)
                     {
-                        modify(r, m);
+                        modify(rec, m);
+                    }
+                }
+            }
+            if (options.textDump || options.byteDump)
+            {
+                import std.digest;
+                foreach (rec; file.records)
+                {
+                    writeln("reclen = ", rec.getReclen());
+                    writeln("type = ", rec.recordType); 
+                    if (options.textDump) writeln(rec.toString());
+                    if (options.byteDump)
+                    {
+                        ubyte[] bs = rec.getBytes();
+                        writeln("[");
+                        size_t cnt = 0;
+                        foreach (b; bs)
+                        {
+                            if (b < 0xF) std.stdio.write("0", toHexString([b]), " ");
+                            else std.stdio.write(toHexString([b]), " ");
+                            if (cnt == 40)
+                            {
+                                writeln("");
+                                cnt = 0;
+                            }
+                            cnt++;
+                        }
+                        writeln("]");
+                    }
+                }
+                stdout.flush();
+            }
+            if (options.outputDir != "")
+            {
+                import std.path;
+                string outname = options.outputDir ~ dirSeparator ~ file.filename;
+                File f = File(outname, "w");
+                foreach (r; file.records)
+                {
+                    auto type = r.recordType;
+                    ubyte[] bs = r.getBytes();
+                    f.rawWrite(bs);
+                }
+                f.close();
+                if (options.verifyWrittenStdf)
+                {
+                    File f1 = File(file.filename, "r");
+                    File f2 = File(outname, "r");
+                    ubyte[] bs1;
+                    ubyte[] bs2;
+                    bs1.length = f1.size();
+                    bs2.length = f2.size();
+                    f1.rawRead(bs1);
+                    f2.rawRead(bs2);
+                    bool pass = true;
+                    size_t mismatches = 0L;
+                    for (size_t j=0; j<f1.size() && j<f2.size(); j++)
+                    {
+                        if (bs1[j] != bs2[j])
+                        {
+                            writeln("diff at index ", j, ": ", toHexString([bs1[j]]), " vs ", toHexString([bs2[j]]));
+                            pass = false;
+                            mismatches++;
+                        }
+                        if (mismatches > 20) break;
+                    }
+                    if (pass)
+                    {
+                        writeln("Saved file matches input file");
                     }
                 }
             }
         }
-        if (options.saveStdf)
-        {
-            string outname = options.outputDir ~ options.stdfFiles[0];
-            File f = File(outname, "w");
-            foreach (r; rs)
-            {
-                auto type = r.recordType;
-                ubyte[] bs = r.getBytes();
-                f.rawWrite(bs);
-            }
-            f.close();
-            File f1 = File(args[i], "r");
-            File f2 = File(outname, "r");
-            ubyte[] bs1;
-            ubyte[] bs2;
-            bs1.length = f1.size();
-            bs2.length = f2.size();
-            f1.rawRead(bs1);
-            f2.rawRead(bs2);
-            bool pass = true;
-            size_t mismatches = 0L;
-            for (size_t j=0; j<f1.size() && j<f2.size(); j++)
-            {
-                if (bs1[j] != bs2[j])
-                {
-                    writeln("diff at index ", j, ": ", toHexString([bs1[j]]), " vs ", toHexString([bs2[j]]));
-                    pass = false;
-                    mismatches++;
-                }
-                if (mismatches > 20) break;
-            }
-            if (pass)
-            {
-                writeln("Saved file matches input file");
-            }
-        }
-        import std.algorithm.searching;
-        auto upToPIR = rs.until!(a => a.recordType == Record_t.PIR);
-        auto anyTestRecs = upToPIR.find!(a => a.recordType == Record_t.FTR || a.recordType == Record_t.PTR || a.recordType == Record_t.MPR);
-        if (anyTestRecs.empty()) writeln("No test records before PIR: ", options.stdfFiles[i]);
-        else writeln("Test records start before PIR: ", options.stdfFiles[i]);
-        foreach (r; rs)
-        {
-            if (r.recordType == Record_t.FTR)
-            {
-                Record!FTR rf = cast(Record!FTR) r;
-                if (rf.TEST_TXT.isEmpty())
-                {
-                    writeln("file: ", options.stdfFiles[i], " test ", rf.TEST_NUM, " has no test name");
-                }
-                else
-                {
-                    writeln("file: ", options.stdfFiles[i], " ", rf.TEST_TXT);
-                }
-            }
-        }
     }
-    */
+    // prepare to process test data
+    loadDb(options);
     return 0;
 }
 

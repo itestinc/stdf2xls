@@ -28,7 +28,7 @@ private string[string] devices;
 private string[string] steps;
 private StdfDB stdfdb;
 
-public const(StdfFile[][HeaderInfo]) processStdf(Options options)
+public StdfFile[][HeaderInfo] processStdf(Options options)
 {
     import std.parallelism;
     if (options.noMultithreading)
