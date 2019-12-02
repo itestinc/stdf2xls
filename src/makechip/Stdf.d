@@ -1208,7 +1208,6 @@ class StdfReader
             ubyte b0 = src.getByte();
             ubyte b1 = src.getByte();
             size_t reclen = ((cast(size_t) b0) + (((cast(size_t) b1) << 8L) & 0xFF00L)) & 0xFFFFL;
-            //if (textDump == Yes.textDump) writeln("reclen = ", reclen);
             if (src.remaining() < 2) 
             {
                 writeln("Warining: premature end if STDF file");
@@ -1217,7 +1216,6 @@ class StdfReader
             ubyte rtype = src.getByte();
             ubyte stype = src.getByte();
             Record_t type = RecordType.getRecordType(rtype, stype);
-            //if (textDump == Yes.textDump) writeln("type = ", type, " rtype = ", rtype, " stype = ", stype, " reclen = ", reclen);
             StdfRecord r;
             switch (type.ordinal)
             {
@@ -1248,30 +1246,6 @@ class StdfReader
                 case Record_t.WRR.ordinal: r = new Record!WRR(type, reclen, src); break;
                 default: throw new Exception("Unknown record type: " ~ type.stringof);
             }
-            //if (textDump)
-            //{
-            //    import std.digest;
-            //    //writeln("reclen = ", r.getReclen());
-            //    if (byteDump)
-            //    {
-            //        ubyte[] bs = r.getBytes();
-            //        writeln("", type, " = [");
-            //        int cnt = 0;
-            //        foreach(b; bs)
-            //        {
-            //            write(toHexString([b]), " ");
-            //            if (cnt == 40) 
-            //            {
-            //                writeln("");
-            //                cnt = 0;
-            //            }
-            //            cnt++;
-            //        }
-            //        writeln("]");
-            //    }
-            //    writeln(r.toString());
-            //    stdout.flush();
-            //}
             rs ~= r;
             if (type == Record_t.MRR) break;
         }
@@ -1291,7 +1265,7 @@ class StdfRecord
     abstract override string toString();
 
     abstract ubyte[] getBytes();
-    protected abstract size_t getReclen();
+    public abstract size_t getReclen();
 
     bool isTestRecord()
     {
