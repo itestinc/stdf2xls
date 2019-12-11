@@ -172,6 +172,7 @@ struct StdfFile
     {
         StdfReader stdf = new StdfReader(filename);
         stdf.read();
+        stdf.close();
         records = stdf.getRecords();
         hdr = getHeaderInfo();
     }

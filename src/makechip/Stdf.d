@@ -1196,6 +1196,11 @@ class StdfReader
         src = new BinarySource(filename);
     }
 
+    public void close()
+    {
+        src.close();
+    }
+
     StdfRecord[] getRecords() { return(records); }
 
     void read()
