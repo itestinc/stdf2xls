@@ -106,7 +106,7 @@ int main(string[] args)
         }
     }
     // prepare to process test data
-    loadDb(options);
+    //loadDb(options);
     return 0;
 }
 
