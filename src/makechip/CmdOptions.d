@@ -61,7 +61,6 @@ class Options
     bool byteDump = false;
     bool extractPin = false;
     bool verifyWrittenStdf = false;
-    bool noMultithreading = false;
     bool noIgnoreMiscHeader = false;
     private string[] modify;
     PMRNameType channelType = PMRNameType.AUTO;
@@ -87,7 +86,6 @@ class Options
             "modify|m", "modify a string field in specified record type.\n     Example: -m 'MIR TST_TEMP \"TEMPERATURE :\" \"TEMPERATURE:\"'", &modify,
             "outputDir|o", "write out the STDF to this directory. Specifying this will cause the STDF to be written back out.", &outputDir,
 
-            "no-mt", "force single-threaded operation", &noMultithreading,
             "channel-type|t", "Channel type: AUTO, CHANNEL, PHYSICAL, or LOGICAL. Only use this if you know what you are doing.", &channelType,
             "extract-pin|a", "Extract pin name from test name suffix (default delimiter = '@')", &extractPin,
             "pin-delimiter|p", "Delimiter character that separates pin name from test name (Default = '@')", &delims,
