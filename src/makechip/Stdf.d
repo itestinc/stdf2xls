@@ -1081,9 +1081,9 @@ unittest
     import std.file;
     import std.string;
     import std.parallelism;
-    auto r = dirEntries("stdf", SpanMode.depth);
+    auto rr = dirEntries("stdf", SpanMode.depth);
     string[] files;
-    foreach(s; r) files ~= s;
+    foreach(s; rr) files ~= s;
     foreach(string name; parallel(files, 18))
     {
         StdfReader stdf = new StdfReader(name);

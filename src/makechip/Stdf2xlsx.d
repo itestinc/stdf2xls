@@ -30,16 +30,7 @@ private StdfDB stdfdb;
 
 public StdfFile[][HeaderInfo] processStdf(Options options)
 {
-    import std.parallelism;
-    if (options.noMultithreading)
-    {
-        import std.stdio;
-        foreach(file; options.stdfFiles) processFile(file, options);
-    }
-    else
-    {
-        foreach(file; parallel(options.stdfFiles, 24)) processFile(file, options);
-    }
+    foreach(file; options.stdfFiles) processFile(file, options);
     return stdfFiles;
 }
 
