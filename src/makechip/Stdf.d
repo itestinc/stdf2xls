@@ -1080,12 +1080,17 @@ unittest
     import core.stdc.stdlib;
     import std.file;
     import std.string;
-    foreach(string name; dirEntries("stdf", SpanMode.depth))
+    import std.parallelism;
+    auto r = dirEntries("stdf", SpanMode.depth);
+    string[] files;
+    foreach(s; r) files ~= s;
+    foreach(string name; parallel(files, 18))
     {
         StdfReader stdf = new StdfReader(name);
         stdf.read();
+        stdf.close();
         StdfRecord[] rs = stdf.getRecords();
-        File f = File("x.tmp", "w");
+        File f = File(name ~ ".tmp", "w");
         foreach (StdfRecord r; rs)
         {
             auto type = r.recordType;
@@ -1093,11 +1098,12 @@ unittest
             f.rawWrite(bs);
         }
         f.close();
-        string cmd = "./bdiff x.tmp " ~ name;
+        string cmd = "./bdiff " ~ name ~ ".tmp " ~ name;
         int rv = system(toStringz(cmd));
         if (rv != 0) writeln("FILE = ", name);
         rv.should.equal(0);
-        writeln("getBytes() test passes for ", name);
+        remove(name ~ ".tmp");
+        writeln("write/diff test passes for ", name);
     }
 }
 
