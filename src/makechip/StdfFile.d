@@ -67,7 +67,6 @@
 module makechip.StdfFile;
 import makechip.Stdf;
 import makechip.Descriptors;
-import makechip.util.Collections;
 import makechip.CmdOptions;
 import std.algorithm.iteration;
 import std.conv;

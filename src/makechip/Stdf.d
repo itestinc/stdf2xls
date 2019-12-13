@@ -3,18 +3,16 @@ import std.stdio;
 import std.range;
 import std.array;
 import std.traits;
-import makechip.util.InputSource;
-import makechip.util.Util;
-import makechip.util.Collections;
+import makechip.BinarySource;
 import makechip.Descriptors;
 import makechip.CmdOptions;
+import makechip.Util;
 import std.algorithm;
 import std.conv;
 import makechip.Cpu_t;
 import core.time;
 import std.datetime;
 import std.array;
-import fluent.asserts;
 
 struct  RecordType
 {
@@ -1101,7 +1099,7 @@ unittest
         string cmd = "./bdiff " ~ name ~ ".tmp " ~ name;
         int rv = system(toStringz(cmd));
         if (rv != 0) writeln("FILE = ", name);
-        rv.should.equal(0);
+        assert(rv == 0);
         remove(name ~ ".tmp");
         writeln("write/diff test passes for ", name);
     }

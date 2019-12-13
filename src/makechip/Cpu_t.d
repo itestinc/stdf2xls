@@ -1,9 +1,9 @@
 module makechip.Cpu_t;
-import makechip.util.Util;
+import makechip.Util;
 import std.conv;
 import std.range;
 import std.bitmanip;
-import makechip.util.InputSource;
+import makechip.BinarySource;
 
 enum Cpu_t : const(CPU)
 {

@@ -39,8 +39,9 @@ module makechip.StdfDB;
 import makechip.Stdf;
 import makechip.StdfFile;
 import makechip.Descriptors;
-import makechip.util.Collections;
+import makechip.Util;
 import std.conv;
+import std.stdio;
 import std.typecons;
 import makechip.CmdOptions;
 import makechip.DefaultValueDatabase;
@@ -329,6 +330,7 @@ class StdfDB
     void load(StdfFile stdf)
     {
         uint seq = 0;
+        writeln("file = ", stdf.filename);
         StdfRecord[] rs = stdf.records;
         DeviceResult[] devices;
         DefaultValueDatabase dvd = null;
@@ -373,6 +375,8 @@ class StdfDB
         ubyte maxSite = 0;
         ubyte minHead = 255;
         ubyte maxHead = 0;
+        size_t numHeads;
+        size_t numSites;
         ubyte[ubyte] heads;
         ubyte[ubyte] sites;
         foreach (rec; rs)
@@ -388,14 +392,17 @@ class StdfDB
                 if (prr.HEAD_NUM > maxHead) maxHead = prr.HEAD_NUM;
             }
         }
+        numHeads = maxHead - minHead;
+        if (numHeads == 0) numHeads++;
+        numSites = maxSite = minSite;
+        if (numSites == 0) numSites++;
         import std.stdio;
         import std.string;
         auto dupNums = new MultiMap!(DupNumber_t, Record_t, TestNumber_t, Site_t, Head_t)();
         DeviceResult[][] dr;
-        dr.length = maxSite;
-        for (int i=0; i<dr.length; i++) dr[i].length = maxHead;
-        size_t numSites = sites.length;
-        size_t numHeads = heads.length;
+        dr.length = numSites;
+        for (int i=0; i<dr.length; i++) dr[i] = new DeviceResult[numHeads];
+        stdout.flush();
         ulong time = mir.START_T;
         string serial_number = "";
         PartID pid;
@@ -451,15 +458,15 @@ class StdfDB
                         }
                     }
                     TestID id = TestID.getTestID(Record_t.PTR, pin, ptr.TEST_NUM, testName, dup);
-                    ubyte optFlags = ptr.OPT_FLAG.isEmpty() ? dvd.getDefaultOptFlag(Record_t.PTR, ptr.TEST_NUM, dup) : ptr.OPT_FLAG;
+                    ubyte optFlags = ptr.OPT_FLAG.isEmpty() ? dvd.getDefaultOptFlag(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.OPT_FLAG;
                     ubyte parmFlags = ptr.PARM_FLG;
-                    float loLimit = ptr.LO_LIMIT.isEmpty() ? dvd.getDefaultLoLimit(Record_t.PTR, ptr.TEST_NUM, dup) : ptr.LO_LIMIT;
-                    float hiLimit = ptr.HI_LIMIT.isEmpty() ? dvd.getDefaultHiLimit(Record_t.PTR, ptr.TEST_NUM, dup) : ptr.HI_LIMIT;
+                    float loLimit = ptr.LO_LIMIT.isEmpty() ? dvd.getDefaultLoLimit(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.LO_LIMIT;
+                    float hiLimit = ptr.HI_LIMIT.isEmpty() ? dvd.getDefaultHiLimit(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.HI_LIMIT;
                     float result = ptr.RESULT;
-                    string units = ptr.UNITS.isEmpty() ? dvd.getDefaultUnits(Record_t.PTR, ptr.TEST_NUM, dup) : ptr.UNITS;
-                    byte resScal = ptr.RES_SCAL.isEmpty() ? dvd.getDefaultResScal(Record_t.PTR, ptr.TEST_NUM, dup) : ptr.RES_SCAL;
-                    byte llmScal = ptr.LLM_SCAL.isEmpty() ? dvd.getDefaultLlmScal(Record_t.PTR, ptr.TEST_NUM, dup) : ptr.LLM_SCAL;
-                    byte hlmScal = ptr.HLM_SCAL.isEmpty() ? dvd.getDefaultHlmScal(Record_t.PTR, ptr.TEST_NUM, dup) : ptr.HLM_SCAL;
+                    string units = ptr.UNITS.isEmpty() ? dvd.getDefaultUnits(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.UNITS;
+                    byte resScal = ptr.RES_SCAL.isEmpty() ? dvd.getDefaultResScal(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.RES_SCAL;
+                    byte llmScal = ptr.LLM_SCAL.isEmpty() ? dvd.getDefaultLlmScal(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.LLM_SCAL;
+                    byte hlmScal = ptr.HLM_SCAL.isEmpty() ? dvd.getDefaultHlmScal(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.HLM_SCAL;
                     // scale result, limits, and units:
                     TestRecord tr = new TestRecord(id, ptr.SITE_NUM, ptr.HEAD_NUM, ptr.TEST_FLG, optFlags,
                             parmFlags, loLimit, hiLimit, result, units, resScal, llmScal, hlmScal, seq);
@@ -486,15 +493,17 @@ class StdfDB
                             }
                         }
                     }
-                    ubyte optFlags = mpr.OPT_FLAG.isEmpty() ? dvd.getDefaultOptFlag(Record_t.MPR, mpr.TEST_NUM, dup) : mpr.OPT_FLAG;
+                    ubyte optFlags = mpr.OPT_FLAG.isEmpty() ? dvd.getDefaultOptFlag(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.OPT_FLAG;
                     ubyte parmFlags = mpr.PARM_FLG;
-                    float loLimit = mpr.LO_LIMIT.isEmpty() ? dvd.getDefaultLoLimit(Record_t.MPR, mpr.TEST_NUM, dup) : mpr.LO_LIMIT;
-                    float hiLimit = mpr.HI_LIMIT.isEmpty() ? dvd.getDefaultHiLimit(Record_t.MPR, mpr.TEST_NUM, dup) : mpr.HI_LIMIT;
-                    string units = mpr.UNITS.isEmpty() ? dvd.getDefaultUnits(Record_t.MPR, mpr.TEST_NUM, dup) : mpr.UNITS;
-                    byte resScal = mpr.RES_SCAL.isEmpty() ? dvd.getDefaultResScal(Record_t.MPR, mpr.TEST_NUM, dup) : mpr.RES_SCAL;
-                    byte llmScal = mpr.LLM_SCAL.isEmpty() ? dvd.getDefaultLlmScal(Record_t.MPR, mpr.TEST_NUM, dup) : mpr.LLM_SCAL;
-                    byte hlmScal = mpr.HLM_SCAL.isEmpty() ? dvd.getDefaultHlmScal(Record_t.MPR, mpr.TEST_NUM, dup) : mpr.HLM_SCAL;
-                    U2[] indicies = mpr.RTN_INDX.isEmpty() ? dvd.getDefaultPinIndicies(Record_t.MPR, mpr.TEST_NUM, dup) : mpr.RTN_INDX.getValue();
+                    float loLimit = mpr.LO_LIMIT.isEmpty() ? dvd.getDefaultLoLimit(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.LO_LIMIT;
+                    float hiLimit = mpr.HI_LIMIT.isEmpty() ? dvd.getDefaultHiLimit(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.HI_LIMIT;
+                    string units = mpr.UNITS.isEmpty() ? dvd.getDefaultUnits(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.UNITS;
+                    byte resScal = mpr.RES_SCAL.isEmpty() ? dvd.getDefaultResScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.RES_SCAL;
+                    byte llmScal = mpr.LLM_SCAL.isEmpty() ? dvd.getDefaultLlmScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.LLM_SCAL;
+                    byte hlmScal = mpr.HLM_SCAL.isEmpty() ? dvd.getDefaultHlmScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.HLM_SCAL;
+                    U2[] indicies = mpr.RTN_INDX.isEmpty() ? dvd.getDefaultPinIndicies(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.RTN_INDX.getValue();
+                    writeln("U2.length = ", indicies.length, " rtn_rslt.length = ", mpr.RTN_RSLT.getValue().length);
+                    stdout.flush();
                     foreach(i, rslt; mpr.RTN_RSLT.getValue())
                     {
                         ushort pinIndex = indicies[i];
@@ -515,7 +524,7 @@ class StdfDB
                 case Record_t.DTR.ordinal:
                     auto dtr = cast(Record!DTR) rec;
                     string text = strip(dtr.TEXT_DAT.getValue());
-                    if (text[0..9] == "TEXT_DATA")
+                    if (text.length > 10 && text[0..9] == "TEXT_DATA")
                     {
                         auto toks = text.split(":");
                         if (toks.length < 4 && toks[1] != SERIAL_MARKER)
@@ -615,9 +624,9 @@ class StdfDB
                     serial_number = "";
                     uint head = prr.HEAD_NUM;
                     uint site = prr.SITE_NUM;
-                    if (minSite == 0) site++;
-                    if (minHead == 0) head++;
                     time += ((site * head) * prr.TEST_T) / (numSites * numHeads);
+                    writeln("site = ", site, " minSite = ", minSite, " head = ", head, " minHead = ", minHead);
+                    stdout.flush();
                     dr[site - minSite][head - minHead].devId = pid;
                     dr[site - minSite][head - minHead].site = site;
                     dr[site - minSite][head - minHead].head = head;
@@ -685,6 +694,11 @@ class TestID
     public const uint testNumber;
     public const string testName;
     public const uint dup;
+
+    static this()
+    {
+        map = new MultiMap!(TestID, const Record_t, const string, const uint, const string, const uint)();
+    }
 
     private this(const Record_t type, const string pin, const uint testNumber, const string testName, const uint dup)
     {
