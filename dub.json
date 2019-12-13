@@ -12,12 +12,8 @@
 	"TargetType" : "executable",
 	"mainSourceFile" : "src/main.d",
     "dependencies" : {
-        "fluent-asserts": "0.12.5",
         "xlsxd": "~>2.2.0",
         "printed": "~>0.0.10",
-        "util_mc" : {
-            "path" : "../util_mc"
-        },
     },
     "subPackages": [
         "./xlsxTest/",

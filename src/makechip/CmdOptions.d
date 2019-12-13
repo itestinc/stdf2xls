@@ -1,5 +1,4 @@
 module makechip.CmdOptions;
-import makechip.util.Util;
 import makechip.Stdf;
 import makechip.StdfDB;
 import makechip.Descriptors;

@@ -1,4 +1,4 @@
-import makechip.util.Util;
+//import makechip.util.Util;
 import makechip.CmdOptions;
 import makechip.Stdf;
 import makechip.Descriptors;
@@ -106,7 +106,7 @@ int main(string[] args)
         }
     }
     // prepare to process test data
-    //loadDb(options);
+    loadDb(options);
     return 0;
 }
 

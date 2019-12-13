@@ -15,7 +15,6 @@ module makechip.Stdf2xlsx;
 import makechip.StdfFile;
 import makechip.Stdf;
 import makechip.Descriptors;
-import makechip.util.Collections;
 import std.conv;
 import std.typecons;
 import makechip.CmdOptions;
