@@ -392,13 +392,11 @@ class StdfDB
                 if (prr.HEAD_NUM > maxHead) maxHead = prr.HEAD_NUM;
             }
         }
-        numHeads = maxHead - minHead;
-        if (numHeads == 0) numHeads++;
-        numSites = maxSite = minSite;
-        if (numSites == 0) numSites++;
+        numHeads = 1 + maxHead - minHead;
+        numSites = 1 + maxSite - minSite;
         import std.stdio;
         import std.string;
-        auto dupNums = new MultiMap!(DupNumber_t, Record_t, TestNumber_t, Site_t, Head_t)();
+        auto dupNums = new MultiMap!(DupNumber_t, Record_t, TestNumber_t, TestName_t, Site_t, Head_t)();
         DeviceResult[][] dr;
         dr.length = numSites;
         for (int i=0; i<dr.length; i++) dr[i] = new DeviceResult[numHeads];
@@ -412,9 +410,11 @@ class StdfDB
             {
                 case Record_t.FTR.ordinal:
                     auto ftr = cast(Record!FTR) rec;
-                    uint dup = dupNums.get(uint.max, ftr.recordType, ftr.TEST_NUM, ftr.SITE_NUM, ftr.HEAD_NUM);
+                    TestName_t tname = "";
+                    if (!ftr.TEST_TXT.isEmpty() || ftr.TEST_TXT != "") tname = ftr.TEST_TXT;
+                    uint dup = dupNums.get(uint.max, ftr.recordType, ftr.TEST_NUM, tname, ftr.SITE_NUM, ftr.HEAD_NUM);
                     if (dup == uint.max) dup = 1; else dup++;
-                    dupNums.put(dup, ftr.recordType, ftr.TEST_NUM, ftr.SITE_NUM, ftr.HEAD_NUM);
+                    dupNums.put(dup, ftr.recordType, ftr.TEST_NUM, tname, ftr.SITE_NUM, ftr.HEAD_NUM);
                     if (!dvdDone) dvd.setFTRDefaults(ftr, dup);
                     string testName = ftr.TEST_TXT.isEmpty() ? dvd.getDefaultTestName(Record_t.FTR, ftr.TEST_NUM, dup) : ftr.TEST_TXT;
                     string pin = "";
@@ -439,9 +439,11 @@ class StdfDB
 
                 case Record_t.PTR.ordinal:
                     auto ptr = cast(Record!PTR) rec;
-                    uint dup = dupNums.get(uint.max, ptr.recordType, ptr.TEST_NUM, ptr.SITE_NUM, ptr.HEAD_NUM);
+                    string tname = "";
+                    if (!ptr.TEST_TXT.isEmpty() || ptr.TEST_TXT != "") tname = ptr.TEST_TXT;
+                    uint dup = dupNums.get(uint.max, ptr.recordType, ptr.TEST_NUM, tname, ptr.SITE_NUM, ptr.HEAD_NUM);
                     if (dup == uint.max) dup = 1; else dup++;
-                    dupNums.put(dup, ptr.recordType, ptr.TEST_NUM, ptr.SITE_NUM, ptr.HEAD_NUM);
+                    dupNums.put(dup, ptr.recordType, ptr.TEST_NUM, tname, ptr.SITE_NUM, ptr.HEAD_NUM);
                     if (!dvdDone) dvd.setPTRDefaults(ptr, dup);
                     string testName = ptr.TEST_TXT.isEmpty() ? dvd.getDefaultTestName(Record_t.PTR, ptr.TEST_NUM, dup) : ptr.TEST_TXT;
                     string pin = "";
@@ -477,9 +479,11 @@ class StdfDB
 
                 case Record_t.MPR.ordinal:
                     auto mpr = cast(Record!MPR) rec;
-                    uint dup = dupNums.get(uint.max, rec.recordType, mpr.TEST_NUM, mpr.SITE_NUM, mpr.HEAD_NUM);
+                    string tname = "";
+                    if (!mpr.TEST_TXT.isEmpty() || mpr.TEST_TXT != "") tname = mpr.TEST_TXT;
+                    uint dup = dupNums.get(uint.max, rec.recordType, mpr.TEST_NUM, tname, mpr.SITE_NUM, mpr.HEAD_NUM);
                     if (dup == uint.max) dup = 1; else dup++;
-                    dupNums.put(dup, rec.recordType, mpr.TEST_NUM, mpr.SITE_NUM, mpr.HEAD_NUM);
+                    dupNums.put(dup, rec.recordType, mpr.TEST_NUM, tname, mpr.SITE_NUM, mpr.HEAD_NUM);
                     if (!dvdDone) dvd.setMPRDefaults(mpr, dup);
                     string testName = mpr.TEST_TXT.isEmpty() ? dvd.getDefaultTestName(Record_t.MPR, mpr.TEST_NUM, dup) : mpr.TEST_TXT;
                     if (options.extractPin)
@@ -501,18 +505,18 @@ class StdfDB
                     byte resScal = mpr.RES_SCAL.isEmpty() ? dvd.getDefaultResScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.RES_SCAL;
                     byte llmScal = mpr.LLM_SCAL.isEmpty() ? dvd.getDefaultLlmScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.LLM_SCAL;
                     byte hlmScal = mpr.HLM_SCAL.isEmpty() ? dvd.getDefaultHlmScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.HLM_SCAL;
-                    U2[] indicies = mpr.RTN_INDX.isEmpty() ? dvd.getDefaultPinIndicies(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.RTN_INDX.getValue();
-                    writeln("U2.length = ", indicies.length, " rtn_rslt.length = ", mpr.RTN_RSLT.getValue().length);
+                    U2[] indicies = (mpr.RTN_INDX.isEmpty() || mpr.RTN_INDX.length == 0) ? dvd.getDefaultPinIndicies(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.RTN_INDX.getValue();
                     stdout.flush();
                     foreach(i, rslt; mpr.RTN_RSLT.getValue())
                     {
                         ushort pinIndex = indicies[i];
-                        float result = mpr.RTN_INDX.getValue()[i];
+                        float result = mpr.RTN_RSLT.getValue()[i];
                         string pin = pinData.get(mpr.HEAD_NUM, mpr.SITE_NUM, pinIndex);
                         TestID id = TestID.getTestID(Record_t.MPR, pin, mpr.TEST_NUM, testName, dup);
                         TestRecord tr = new TestRecord(id, mpr.SITE_NUM, mpr.HEAD_NUM, mpr.TEST_FLG, optFlags, parmFlags, 
                                 loLimit, hiLimit, result, units, resScal, llmScal, hlmScal, seq);
                         normalizeValues(tr);
+                        stdout.flush();
                         dr[mpr.SITE_NUM - minSite][mpr.HEAD_NUM - minHead].tests ~= tr;
                         seq++;
                     }
@@ -581,9 +585,9 @@ class StdfDB
                             {
                                 value = valueUnitsOpt;
                             }
-                            uint dup = dupNums.get(uint.max, rec.recordType, to!uint(testNumber), to!ubyte(site), to!ubyte(head));
+                            uint dup = dupNums.get(uint.max, rec.recordType, to!uint(testNumber), testName, to!ubyte(site), to!ubyte(head));
                             if (dup == uint.max) dup = 1; else dup++;
-                            dupNums.put(dup, rec.recordType, to!uint(testNumber), to!ubyte(site), to!ubyte(head));
+                            dupNums.put(dup, rec.recordType, to!uint(testNumber), testName, to!ubyte(site), to!ubyte(head));
                             TestID id = TestID.getTestID(Record_t.DTR, pin, to!uint(testNumber), testName, dup);
                             TestRecord tr = null;
                             if (format == "float")
@@ -608,7 +612,7 @@ class StdfDB
                     }
                     break;
                 case Record_t.PRR.ordinal:
-                    dupNums = new MultiMap!(uint, Record_t, TestNumber_t, Site_t, Head_t)();
+                    dupNums = new MultiMap!(uint, Record_t, TestNumber_t, TestName_t, Site_t, Head_t)();
                     Record!(PRR) prr = cast(Record!(PRR)) rec;
                     if (serial_number == "")
                     {
@@ -625,7 +629,6 @@ class StdfDB
                     uint head = prr.HEAD_NUM;
                     uint site = prr.SITE_NUM;
                     time += ((site * head) * prr.TEST_T) / (numSites * numHeads);
-                    writeln("site = ", site, " minSite = ", minSite, " head = ", head, " minHead = ", minHead);
                     stdout.flush();
                     dr[site - minSite][head - minHead].devId = pid;
                     dr[site - minSite][head - minHead].site = site;
