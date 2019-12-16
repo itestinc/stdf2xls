@@ -120,7 +120,8 @@ class HeaderInfo
         s ~= "  sublot_id = " ~ sublot_id ~ "\n";
         s ~= "  wafer_id = " ~ wafer_id ~ "\n";
         s ~= "  ignoreMiscItems = " ~ to!string(ignoreMiscItems) ~ "\n";
-        s ~= to!string(headerItems) ~ "\n";
+        s ~= "  " ~ to!string(headerItems) ~ "\n";
+        s ~= "  hashcode = " ~ to!string(toHash()) ~ "\n";
         return s;
     }
 
