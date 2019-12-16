@@ -507,6 +507,8 @@ class StdfDB
                     byte hlmScal = mpr.HLM_SCAL.isEmpty() ? dvd.getDefaultHlmScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.HLM_SCAL;
                     U2[] indicies = (mpr.RTN_INDX.isEmpty() || mpr.RTN_INDX.length == 0) ? dvd.getDefaultPinIndicies(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.RTN_INDX.getValue();
                     stdout.flush();
+                    //writeln("testname = ", mpr.TEST_TXT, " testnumber = ", mpr.TEST_NUM, " rsltLen = ", mpr.RTN_RSLT.length, " indxLen = ", indicies.length);
+                    stdout.flush();
                     foreach(i, rslt; mpr.RTN_RSLT.getValue())
                     {
                         ushort pinIndex = indicies[i];
@@ -531,14 +533,14 @@ class StdfDB
                     if (text.length > 10 && text[0..9] == "TEXT_DATA")
                     {
                         auto toks = text.split(":");
-                        if (toks.length < 4 && toks[1] != SERIAL_MARKER)
+                        if (toks.length < 4 && strip(toks[1]) != SERIAL_MARKER)
                         {
                             if (options.verbosityLevel > 0)
                             {
                                 writeln("Warning: invalid TEXT_DATA format: ", text);
                             }
                         }
-                        else if (toks[1] == SERIAL_MARKER)
+                        else if (strip(toks[1]) == SERIAL_MARKER)
                         {
                             serial_number = strip(toks[2]);
                             pid = PartID(strip(toks[2]));
