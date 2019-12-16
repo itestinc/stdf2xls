@@ -29,7 +29,10 @@ private StdfDB stdfdb;
 
 public StdfFile[][HeaderInfo] processStdf(Options options)
 {
-    foreach(file; options.stdfFiles) processFile(file, options);
+    foreach(file; options.stdfFiles) 
+    {
+        processFile(file, options);
+    }
     return stdfFiles;
 }
 
@@ -37,10 +40,24 @@ public void loadDb(Options options)
 {
     if (stdfdb is null) stdfdb = new StdfDB(options);
     // build test results lists here
+    import std.stdio;
+    uint i = 0;
     foreach (hdr; stdfFiles.keys)
     {
         StdfFile[] f = stdfFiles[hdr];
-        foreach (file; f) stdfdb.load(file);
+        foreach (file; f) 
+        {
+            i++;
+            stdfdb.load(file);
+            writeln("i = ", i);
+        }
+    }
+    writeln("Number of unique headers: ", stdfdb.deviceMap.length);
+    foreach (key; stdfdb.deviceMap.keys)
+    {
+        writeln(key.toString());
+        writeln("device: ", key.devName);
+        writeln("number of devices: ", stdfdb.deviceMap[key].length);
     }
     //import std.algorithm.sorting;
     //sort!((a, b) => cmp(a, b) < 0)(numbers);

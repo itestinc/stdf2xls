@@ -319,7 +319,7 @@ class StdfDB
 {
     private StdfPinData[HeaderInfo] pinDataMap;
     private DefaultValueDatabase[HeaderInfo] dvdMap;
-    private DeviceResult[][HeaderInfo] deviceMap;
+    DeviceResult[][HeaderInfo] deviceMap;
     private Options options;
 
     this(Options options)
@@ -509,6 +509,12 @@ class StdfDB
                     stdout.flush();
                     //writeln("testname = ", mpr.TEST_TXT, " testnumber = ", mpr.TEST_NUM, " rsltLen = ", mpr.RTN_RSLT.length, " indxLen = ", indicies.length);
                     stdout.flush();
+                    if (indicies.length != mpr.RTN_RSLT.length)
+                    {
+                        writeln("ERROR: RTN_INDX array in MPR missing or does not match length of RTN_RSLT");
+                        writeln("TEST NUMBER = ", mpr.TEST_NUM);
+                        writeln("TEST NAME = ", testName);
+                    }
                     foreach(i, rslt; mpr.RTN_RSLT.getValue())
                     {
                         ushort pinIndex = indicies[i];

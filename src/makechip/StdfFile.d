@@ -110,6 +110,20 @@ class HeaderInfo
         return hi;
     } 
 
+    override public string toString()
+    {
+        string s = "HeaderInfo:\n";
+        s ~= "  devName = " ~ devName ~ "\n";
+        s ~= "  step = " ~ step ~ "\n";
+        s ~= "  temperature = " ~ temperature ~ "\n";
+        s ~= "  lot_id = " ~ lot_id ~ "\n";
+        s ~= "  sublot_id = " ~ sublot_id ~ "\n";
+        s ~= "  wafer_id = " ~ wafer_id ~ "\n";
+        s ~= "  ignoreMiscItems = " ~ to!string(ignoreMiscItems) ~ "\n";
+        s ~= to!string(headerItems) ~ "\n";
+        return s;
+    }
+
     override public bool opEquals()(Object o) const @safe pure nothrow
     {
         if (o is null) return false;
