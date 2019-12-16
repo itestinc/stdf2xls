@@ -76,7 +76,6 @@ class Options
     {
         success = true;
         modifiers = null;
-        writeln("args.length = ", args.length);
         auto rslt = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.passThrough,
@@ -91,7 +90,6 @@ class Options
             "verbose|v", "Verbosity level. Default is 0 which means print nothing", &verbosityLevel,
             "verify|V", "Verify written STDF; only useful if --outputDir is specified. For testing purposes only.", &verifyWrittenStdf,
             "noIgnoreMiscHeader", "Don't ignore custom user header items when comparing headers from different STDF files", &noIgnoreMiscHeader);
-        writeln("args.length = ", args.length);
         if (delims.length == 0) delims ~= '@';
         stdfFiles.length = args.length-1;
         for (int i=1; i<args.length; i++) stdfFiles[i-1] = args[i];
@@ -101,7 +99,6 @@ class Options
             success = false;
             return;
         }
-        writeln("modify.length = ", modify.length);
         foreach(m; modify)
         {
             auto st = new StringTokenizer(m);
