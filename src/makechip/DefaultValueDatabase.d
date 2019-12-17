@@ -264,7 +264,6 @@ public class DefaultValueDatabase
         {
             NdefaultUnits.put(mpr.UNITS, mpr.recordType, mpr.TEST_NUM, dup);
         }
-        import std.conv;
         if (!mpr.RTN_INDX.isEmpty() && mpr.RTN_INDX.length != 0 && defaultPinIndicies.get(none, mpr.recordType, mpr.TEST_NUM, tname, dup) == none)
         {
             defaultPinIndicies.put(mpr.RTN_INDX.getValue(), mpr.recordType, mpr.TEST_NUM, tname, dup);

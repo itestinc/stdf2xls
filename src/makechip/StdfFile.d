@@ -125,8 +125,9 @@ class HeaderInfo
         return s;
     }
 
-    override public bool opEquals()(Object o) const @safe pure nothrow
+    override public bool opEquals(Object o) 
     {
+        import std.stdio;
         if (o is null) return false;
         if (typeid(o) != typeid(this)) return false;
         HeaderInfo h = cast(HeaderInfo) o;

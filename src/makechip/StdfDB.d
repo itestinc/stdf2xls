@@ -318,7 +318,6 @@ class StdfPinData
 class StdfDB
 {
     private StdfPinData[HeaderInfo] pinDataMap;
-    private DefaultValueDatabase[HeaderInfo] dvdMap;
     DeviceResult[][HeaderInfo] deviceMap;
     private Options options;
 
@@ -334,13 +333,7 @@ class StdfDB
         StdfRecord[] rs = stdf.records;
         DeviceResult[] devices;
         DefaultValueDatabase dvd = null;
-        bool dvdDone = false;
-        if (stdf.hdr in dvdMap) dvdDone = true;
-        else
-        {
-            dvd = new DefaultValueDatabase();
-            dvdMap[stdf.hdr] = dvd;
-        }
+        dvd = new DefaultValueDatabase();
         // 1. Get the MIR
         import std.algorithm.iteration;
         auto r = rs.filter!(a => a.recordType == Record_t.MIR);
@@ -404,6 +397,7 @@ class StdfDB
         ulong time = mir.START_T;
         string serial_number = "";
         PartID pid;
+        bool dvdDone = false;
         foreach (rec; rs)
         {
             switch (rec.recordType.ordinal)
@@ -511,6 +505,7 @@ class StdfDB
                     stdout.flush();
                     if (indicies.length != mpr.RTN_RSLT.length)
                     {
+                        writeln("indicies.length = ", indicies.length, " RTN_RSLT.length = ", mpr.RTN_RSLT.length);
                         writeln("ERROR: RTN_INDX array in MPR missing or does not match length of RTN_RSLT");
                         writeln("TEST NUMBER = ", mpr.TEST_NUM);
                         writeln("TEST NAME = ", testName);
@@ -636,6 +631,7 @@ class StdfDB
                     serial_number = "";
                     uint head = prr.HEAD_NUM;
                     uint site = prr.SITE_NUM;
+                    if (prr.HARD_BIN == 1) dvdDone = true;
                     time += ((site * head) * prr.TEST_T) / (numSites * numHeads);
                     stdout.flush();
                     dr[site - minSite][head - minHead].devId = pid;
