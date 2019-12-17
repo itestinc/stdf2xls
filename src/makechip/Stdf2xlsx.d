@@ -38,26 +38,30 @@ public StdfFile[][HeaderInfo] processStdf(Options options)
 
 public void loadDb(Options options)
 {
+    import std.stdio;
     if (stdfdb is null) stdfdb = new StdfDB(options);
     // build test results lists here
-    import std.stdio;
-    uint i = 0;
     foreach (hdr; stdfFiles.keys)
     {
         StdfFile[] f = stdfFiles[hdr];
-        foreach (file; f) 
-        {
-            i++;
-            stdfdb.load(file);
-            writeln("i = ", i);
-        }
-    }
-    writeln("Number of unique headers: ", stdfdb.deviceMap.length);
-    foreach (key; stdfdb.deviceMap.keys)
-    {
-        writeln(key.toString());
         writeln("device: ", key.devName);
         writeln("number of devices: ", stdfdb.deviceMap[key].length);
+        writeln("number of files with this header = ", f.length);
+        write(key.toString());
+        writeln("");
+        foreach (file; f) stdfdb.load(file);
+    }
+    writeln("Number of unique headers: ", stdfdb.deviceMap.length);
+    HeaderInfo lastKey = null;
+    writeln("stdfFiles.keys.length = ", stdfFiles.keys.length, " stdfdb.deviceMap.keys.length = ", stdfdb.deviceMap.keys.length);
+    foreach (key; stdfdb.deviceMap.keys)
+    {
+        if (lastKey !is null)
+        {
+            if (lastKey == key) writeln("Key is equal to previous key");
+            else writeln("key is NOT equal to previous key");
+        }
+        lastKey = key;
     }
     //import std.algorithm.sorting;
     //sort!((a, b) => cmp(a, b) < 0)(numbers);
@@ -65,6 +69,7 @@ public void loadDb(Options options)
 
 private void processFile(string file, Options options)
 {
+    import std.stdio;
     auto sfile = StdfFile(file, options);
     sfile.load();
     if (sfile.hdr !in stdfFiles)
@@ -77,6 +82,7 @@ private void processFile(string file, Options options)
     {
         StdfFile[] s = stdfFiles[sfile.hdr];
         s ~= sfile;
+        stdfFiles[sfile.hdr] = s;
     }
 }
 
