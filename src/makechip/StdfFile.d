@@ -253,7 +253,7 @@ struct StdfFile
                         else if (tok0 == "LOT #") lot = tok1;
                         else if (tok0 == "SUBLOT #") sblot = tok1;
                         else if (tok0 == "WAFER #") wafer = tok1;
-                        else if (tok0 == "DEVICE_NUMBER") device = tok1;
+                        else if (tok0 == "DEVICE_NUMBER" || tok0 == "DEVICE NUMBER") device = tok1;
                         else miscFields[tok0] = tok1;
                     }
                 }

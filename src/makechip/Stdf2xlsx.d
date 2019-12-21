@@ -44,25 +44,17 @@ public void loadDb(Options options)
     foreach (hdr; stdfFiles.keys)
     {
         StdfFile[] f = stdfFiles[hdr];
-        writeln("device: ", key.devName);
-        writeln("number of devices: ", stdfdb.deviceMap[key].length);
-        writeln("number of files with this header = ", f.length);
-        write(key.toString());
-        writeln("");
         foreach (file; f) stdfdb.load(file);
-    }
-    writeln("Number of unique headers: ", stdfdb.deviceMap.length);
-    HeaderInfo lastKey = null;
-    writeln("stdfFiles.keys.length = ", stdfFiles.keys.length, " stdfdb.deviceMap.keys.length = ", stdfdb.deviceMap.keys.length);
-    foreach (key; stdfdb.deviceMap.keys)
-    {
-        if (lastKey !is null)
+        if (options.verbosityLevel > 10)
         {
-            if (lastKey == key) writeln("Key is equal to previous key");
-            else writeln("key is NOT equal to previous key");
+            writeln("device: ", hdr.devName);
+            writeln("number of devices: ", stdfdb.deviceMap[hdr].length);
+            writeln("number of files with this header = ", f.length);
+            write(hdr.toString());
+            writeln("");
         }
-        lastKey = key;
     }
+    if (options.verbosityLevel > 2) writeln("Number of unique headers: ", stdfdb.deviceMap.length);
     //import std.algorithm.sorting;
     //sort!((a, b) => cmp(a, b) < 0)(numbers);
 }
