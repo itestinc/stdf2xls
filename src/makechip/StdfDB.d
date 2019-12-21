@@ -329,7 +329,7 @@ class StdfDB
     void load(StdfFile stdf)
     {
         uint seq = 0;
-        writeln("file = ", stdf.filename);
+        if (options.verbosityLevel > 10) writeln("file = ", stdf.filename);
         StdfRecord[] rs = stdf.records;
         DeviceResult[] devices;
         DefaultValueDatabase dvd = null;
