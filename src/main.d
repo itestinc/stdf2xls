@@ -1,9 +1,8 @@
-//import makechip.util.Util;
 import makechip.CmdOptions;
 import makechip.Stdf;
 import makechip.Descriptors;
 import makechip.Cpu_t;
-import makechip.Stdf2xlsx;
+import makechip.Stdf2xls;
 import std.conv;
 import std.stdio;
 import std.traits;
@@ -13,7 +12,7 @@ import makechip.StdfFile;
 
 int main(string[] args)
 {
-    Options options = new Options(args);
+    CmdOptions options = new CmdOptions(args);
     import std.path;
     import std.digest;
     import std.file;
@@ -107,6 +106,10 @@ int main(string[] args)
     }
     // prepare to process test data
     loadDb(options);
+    if (options.summarize) summarize();
+    if (options.genSpreadsheet) genSpreadsheet(options);
+    if (options.genWafermap) genWafermap(options);
+    if (options.genHistogram) genHistogram(options);
     return 0;
 }
 
