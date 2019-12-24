@@ -64,11 +64,19 @@ struct PartID
 {
     bool ws;
     SN id;
+    private bool numericSN;
+
+    ref PartID setNumeric(bool numeric)
+    {
+        numericSN = numeric;
+        return this;
+    }
 
     this(string sn)
     {
         ws = false;
         id.sn = sn;
+        numericSN = false;
     }
 
     this(int x, int y)
@@ -99,6 +107,38 @@ struct PartID
         }
         return id.sn;
     }
+
+    int opCmp(ref const PartID sd) const
+    {
+        if (ws)
+        {
+            if (id.xy.x != sd.id.xy.x) return id.xy.x - sd.id.xy.x;
+            return id.xy.y - sd.id.xy.y;
+        }
+        if (numericSN)
+        {
+            int sn1;
+            int sn2;
+            try
+            {
+                sn1 = to!int(id.sn);
+                sn2 = to!int(sd.id.sn);
+            }
+            catch (Exception e) { throw new Exception("ERROR: non-numeric serial number: " ~ id.sn ~ " or " ~ sd.id.sn); }
+            return sn1 - sn2;
+        }
+        return id.sn < sd.id.sn;
+    }
+
+    bool opEquals()(auto ref const PartID s) const
+    {
+        if (ws)
+        {
+            return id.xy.x == s.id.xy.x && id.xy.y == s.id.xy.y;
+        }
+        return id.sn == s.id.sn;
+    }
+    
 }
 
 union DTRValue
@@ -319,9 +359,9 @@ class StdfDB
 {
     private StdfPinData[HeaderInfo] pinDataMap;
     DeviceResult[][HeaderInfo] deviceMap;
-    private Options options;
+    private CmdOptions options;
 
-    this(Options options)
+    this(CmdOptions options)
     {
         this.options = options;
     }

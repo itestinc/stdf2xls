@@ -72,7 +72,6 @@ import std.algorithm.iteration;
 import std.conv;
 import std.string;
 import std.typecons;
-import makechip.CmdOptions;
 import makechip.DefaultValueDatabase;
 
 class HeaderInfo
@@ -177,7 +176,7 @@ struct StdfFile
       Options needed:
       noIgnoreMiscHeader;
      */
-    this(string filename, Options options)
+    this(string filename, CmdOptions options)
     {
         this.filename = filename;
         this.ignoreMiscHeaderItems = !options.noIgnoreMiscHeader; 

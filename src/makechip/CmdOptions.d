@@ -52,15 +52,56 @@ class Modifier
     }
 }
 
+enum Sort_t
+{
+    SN_UP_TIME_UP_NO_DUPS,
+    SN_DOWN_TIME_UP_NO_DUPS,
+    SN_UP_TIME_DOWN_NO_DUPS,
+    SN_DOWN_TIME_DOWN_NO_DUPS,
+    SNN_UP_TIME_UP_NO_DUPS,
+    SNN_DOWN_TIME_UP_NO_DUPS,
+    SNN_UP_TIME_DOWN_NO_DUPS,
+    SNN_DOWN_TIME_DOWN_NO_DUPS,
+    TIME_UP_SN_UP_NO_DUPS,
+    TIME_UP_SN_DOWN_NO_DUPS,
+    TIME_DOWN_SN_UP_NO_DUPS,
+    TIME_DOWN_SN_DOWN_NO_DUPS,
+    TIME_UP_SNN_UP_NO_DUPS,
+    TIME_UP_SNN_DOWN_NO_DUPS,
+    TIME_DOWN_SNN_UP_NO_DUPS,
+    TIME_DOWN_SNN_DOWN_NO_DUPS,
+    SN_UP_TIME_UP,
+    SN_DOWN_TIME_UP,
+    SN_UP_TIME_DOWN,
+    SN_DOWN_TIME_DOWN,
+    SNN_UP_TIME_UP,
+    SNN_DOWN_TIME_UP,
+    SNN_UP_TIME_DOWN,
+    SNN_DOWN_TIME_DOWN,
+    TIME_UP_SN_UP,
+    TIME_UP_SN_DOWN,
+    TIME_DOWN_SN_UP,
+    TIME_DOWN_SN_DOWN,
+    TIME_UP_SNN_UP,
+    TIME_UP_SNN_DOWN,
+    TIME_DOWN_SNN_UP,
+    TIME_DOWN_SNN_DOWN
+}
+
 import std.regex;
 import makechip.StdfFile;
-class Options
+class CmdOptions
 {
     bool textDump = false;
     bool byteDump = false;
     bool extractPin = false;
     bool verifyWrittenStdf = false;
     bool noIgnoreMiscHeader = false;
+    bool summarize = false;
+    bool genSpreadsheet = true;
+    bool genWafermap = false;
+    bool genHistogram = false;
+    Sort_t sortType = Sort_t.SN_UP_TIME_UP; 
     private string[] modify;
     PMRNameType channelType = PMRNameType.AUTO;
     int verbosityLevel = 0;
@@ -79,16 +120,20 @@ class Options
         auto rslt = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.passThrough,
-            "dumptext|d", "dump the STDF in text form", &textDump,
+            "extract-pin|a", "Extract pin name from test name suffix (default delimiter = '@')", &extractPin,
             "dumpBytes|b", "dump the STDF in ascii byte form", &byteDump,
+            "dumptext|d", "dump the STDF in text form", &textDump,
+            "genHistograms|h", "Generate histogram(s)", &genHistogram,
             "modify|m", "modify a string field in specified record type.\n     Example: -m 'MIR TST_TEMP \"TEMPERATURE :\" \"TEMPERATURE:\"'", &modify,
             "outputDir|o", "write out the STDF to this directory. Specifying this will cause the STDF to be written back out.", &outputDir,
-
-            "channel-type|t", "Channel type: AUTO, CHANNEL, PHYSICAL, or LOGICAL. Only use this if you know what you are doing.", &channelType,
-            "extract-pin|a", "Extract pin name from test name suffix (default delimiter = '@')", &extractPin,
             "pin-delimiter|p", "Delimiter character that separates pin name from test name (Default = '@')", &delims,
+            "summarize|s", "Summarize file contents", &summarize,
+            "genSpreadsheets|S", "Generate spreadsheet(s)", &genSpreadsheet,
+            "channel-type|t", "Channel type: AUTO, CHANNEL, PHYSICAL, or LOGICAL. Only use this if you know what you are doing.", &channelType,
             "verbose|v", "Verbosity level. Default is 0 which means print nothing", &verbosityLevel,
             "verify|V", "Verify written STDF; only useful if --outputDir is specified. For testing purposes only.", &verifyWrittenStdf,
+            "getWafermaps|w", "Generate wafer map(s)", &genWafermap,
+            "sortType", "Sort devices by alphanumeric serial number, then by time. See the manual for valid sort types", &sortType,
             "noIgnoreMiscHeader", "Don't ignore custom user header items when comparing headers from different STDF files", &noIgnoreMiscHeader);
         if (delims.length == 0) delims ~= '@';
         stdfFiles.length = args.length-1;

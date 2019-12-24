@@ -11,7 +11,7 @@
   6. Generate wafermaps
 
  */
-module makechip.Stdf2xlsx;
+module makechip.Stdf2xls;
 import makechip.StdfFile;
 import makechip.Stdf;
 import makechip.Descriptors;
@@ -21,13 +21,17 @@ import makechip.CmdOptions;
 import makechip.DefaultValueDatabase;
 import makechip.StdfFile;
 import makechip.StdfDB;
+import std.stdio;
+import makechip.Spreadsheet;
+import makechip.Wafermap;
+import makechip.Histogram;
 
 private StdfFile[][HeaderInfo] stdfFiles;
 private string[string] devices;
 private string[string] steps;
 private StdfDB stdfdb;
 
-public StdfFile[][HeaderInfo] processStdf(Options options)
+public StdfFile[][HeaderInfo] processStdf(CmdOptions options)
 {
     foreach(file; options.stdfFiles) 
     {
@@ -36,9 +40,8 @@ public StdfFile[][HeaderInfo] processStdf(Options options)
     return stdfFiles;
 }
 
-public void loadDb(Options options)
+public void loadDb(CmdOptions options)
 {
-    import std.stdio;
     if (stdfdb is null) stdfdb = new StdfDB(options);
     // build test results lists here
     foreach (hdr; stdfFiles.keys)
@@ -55,13 +58,36 @@ public void loadDb(Options options)
         }
     }
     if (options.verbosityLevel > 2) writeln("Number of unique headers: ", stdfdb.deviceMap.length);
-    //import std.algorithm.sorting;
-    //sort!((a, b) => cmp(a, b) < 0)(numbers);
 }
 
-private void processFile(string file, Options options)
+public void genSpreadsheet(CmdOptions options)
 {
-    import std.stdio;
+    makechip.Spreadsheet.genSpreadsheet(options, stdfdb);
+}
+
+public void genWafermap(CmdOptions options)
+{
+    makechip.Wafermap.genWafermap(options, stdfdb);
+}
+
+public void genHistogram(CmdOptions options)
+{
+    makechip.Histogram.genHistogram(options, stdfdb);
+}
+
+public void summarize()
+{
+    foreach(hdr; stdfdb.deviceMap.keys)
+    {
+        DeviceResult[] dr = stdfdb.deviceMap[hdr];
+        string dev = dr.length == 1 ? "device" : "devices";
+        writeln("", dr.length, " ", dev, " for HEADER:");
+        writeln(hdr.toString());
+    }
+}
+
+private void processFile(string file, CmdOptions options)
+{
     auto sfile = StdfFile(file, options);
     sfile.load();
     if (sfile.hdr !in stdfFiles)
