@@ -124,7 +124,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb)
                 devices ~= prevDevice;
                 prevDevice = dr[i];
             }
-            if (devices[$-1].devId != prevDevice) devices ~= prevDevice;
+            if (devices[$-1].devId != prevDevice.devId) devices ~= prevDevice;
         }
    } 
 }
