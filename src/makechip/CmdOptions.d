@@ -101,10 +101,11 @@ class CmdOptions
     bool genSpreadsheet = true;
     bool genWafermap = false;
     bool genHistogram = false;
+    bool flowAnalysis = false;
     Sort_t sortType = Sort_t.SN_UP_TIME_UP; 
     private string[] modify;
     PMRNameType channelType = PMRNameType.AUTO;
-    int verbosityLevel = 0;
+    int verbosityLevel = 1;
     string outputDir = "";
 
     string[] stdfFiles;
@@ -130,10 +131,11 @@ class CmdOptions
             "summarize|s", "Summarize file contents", &summarize,
             "genSpreadsheets|S", "Generate spreadsheet(s)", &genSpreadsheet,
             "channel-type|t", "Channel type: AUTO, CHANNEL, PHYSICAL, or LOGICAL. Only use this if you know what you are doing.", &channelType,
-            "verbose|v", "Verbosity level. Default is 0 which means print nothing", &verbosityLevel,
+            "verbose|v", "Verbosity level. Default is 1 which means print only warnings.  0 means don't print anything", &verbosityLevel,
             "verify|V", "Verify written STDF; only useful if --outputDir is specified. For testing purposes only.", &verifyWrittenStdf,
             "getWafermaps|w", "Generate wafer map(s)", &genWafermap,
             "sortType", "Sort devices by alphanumeric serial number, then by time. See the manual for valid sort types", &sortType,
+            "flowAnalysis|f", "Perform flow analysis - do this if devices have alternate paths through the test flow", &flowAnalysis,
             "noIgnoreMiscHeader", "Don't ignore custom user header items when comparing headers from different STDF files", &noIgnoreMiscHeader);
         if (delims.length == 0) delims ~= '@';
         stdfFiles.length = args.length-1;
