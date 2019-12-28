@@ -126,6 +126,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb)
             }
             if (devices[$-1].devId != prevDevice.devId) devices ~= prevDevice;
         }
+        TestRecord[][] normList = new TestRecord[][devices.length];
         if (options.flowAnalysis)
         {
             size_t maxLen = 0;
@@ -146,8 +147,20 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb)
             {
                 scan(j, devices[maxLoc].tests[j].id, devices[maxLoc].tests[j].type, devices, newTests);
             }
+            // Now compress the expanded test list so identical tests are in the same row
+            for (size_t j=0; j<newTests[maxLoc].tests[j].length; j++)
+            {
+                if (newTests[maxLoc].tests[j] is null) continue; 
+                scan2(j);
+            }
         }
     } 
+}
+
+private void scan2(size_t tnum, TestRecord[][] newTests, TestRecord[][] normList)
+{
+    bool[] checked = new bool[devices.length];        
+
 }
 
 private void scan(size_t tnum, const TestID id, const TestType type, DeviceResult[] devices, TestRecord[][] newTests)
