@@ -148,10 +148,37 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb)
                 scan(j, devices[maxLoc].tests[j].id, devices[maxLoc].tests[j].type, devices, newTests);
             }
             // Now compress the expanded test list so identical tests are in the same row
-            for (size_t j=0; j<newTests[maxLoc].tests[j].length; j++)
+            // 1. First scan all newTests for tests that are not in newTests[maxLoc] and mark them with uflag.
+            for (size_t k=0; k<newTests.length; k++)
             {
-                if (newTests[maxLoc].tests[j] is null) continue; 
-                scan2(j);
+                if (k == maxLoc) continue;
+                for (size_t l=0; l<newTests[k].length; l++)
+                {
+                    if (newTests[k][l] is null) continue;
+                    bool found;
+                    for (size_t m=0; m<newTests[maxLoc].length; m++)
+                    {
+                        if (newTests[maxLoc][m].id == newTests[k][l].id && newTests[maxLoc][m].type == newTests[k][l].type)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (notFound) newTests[k][l].uflag = true;
+                }
+            }
+            // Now create a dummy composite list that has all unique tests and no nulls:
+            TestRecord[] compTests = new TestRecord[];
+            for (size_t m=0; m<newTests[maxLoc].length; m++)
+            {
+
+
+
+                for (size_t j=0; j<newTests[maxLoc].tests[j].length; j++)
+                {
+                    if (newTests[maxLoc].tests[j] is null) continue; 
+                    scan2(j);
+                }
             }
         }
     } 

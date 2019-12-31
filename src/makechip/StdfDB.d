@@ -168,6 +168,7 @@ class TestRecord
     const ubyte testFlags;
     const ubyte optFlags;
     const ubyte parmFlags;
+    bool uflag;
     float loLimit;
     float hiLimit;
     DTRValue result;
