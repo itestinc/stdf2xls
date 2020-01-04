@@ -3,6 +3,7 @@ import makechip.Stdf;
 import makechip.Descriptors;
 import makechip.Cpu_t;
 import makechip.Stdf2xls;
+import makechip.Config;
 import std.conv;
 import std.stdio;
 import std.traits;
@@ -16,6 +17,9 @@ int main(string[] args)
     import std.path;
     import std.digest;
     import std.file;
+    Config config = new Config();
+    config.load();
+    if (options.generateRC) config.write();
     StdfFile[][HeaderInfo] stdfs = processStdf(options);
     // print, write, and modify here - options.textDump, options.byteDump, options.verifyWrittenStdf, option.outputDir
     foreach (hdr; stdfs.keys)
@@ -107,9 +111,9 @@ int main(string[] args)
     // prepare to process test data
     loadDb(options);
     if (options.summarize) summarize();
-    if (options.genSpreadsheet) genSpreadsheet(options);
-    if (options.genWafermap) genWafermap(options);
-    if (options.genHistogram) genHistogram(options);
+    if (options.genSpreadsheet) genSpreadsheet(options, config);
+    if (options.genWafermap) genWafermap(options, config);
+    if (options.genHistogram) genHistogram(options, config);
     return 0;
 }
 
@@ -324,3 +328,4 @@ void modify(StdfRecord rec, Modifier m)
         default: throw new Exception("This bug can't happen: " ~ m.fieldName);
     }
 }
+

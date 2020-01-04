@@ -15,6 +15,7 @@ module makechip.Stdf2xls;
 import makechip.StdfFile;
 import makechip.Stdf;
 import makechip.Descriptors;
+import makechip.Config;
 import std.conv;
 import std.typecons;
 import makechip.CmdOptions;
@@ -60,19 +61,19 @@ public void loadDb(CmdOptions options)
     if (options.verbosityLevel > 2) writeln("Number of unique headers: ", stdfdb.deviceMap.length);
 }
 
-public void genSpreadsheet(CmdOptions options)
+public void genSpreadsheet(CmdOptions options, Config config)
 {
-    makechip.Spreadsheet.genSpreadsheet(options, stdfdb);
+    makechip.Spreadsheet.genSpreadsheet(options, stdfdb, config);
 }
 
-public void genWafermap(CmdOptions options)
+public void genWafermap(CmdOptions options, Config config)
 {
-    makechip.Wafermap.genWafermap(options, stdfdb);
+    makechip.Wafermap.genWafermap(options, stdfdb, config);
 }
 
-public void genHistogram(CmdOptions options)
+public void genHistogram(CmdOptions options, Config config)
 {
-    makechip.Histogram.genHistogram(options, stdfdb);
+    makechip.Histogram.genHistogram(options, stdfdb, config);
 }
 
 public void summarize()
@@ -103,129 +104,4 @@ private void processFile(string file, CmdOptions options)
         stdfFiles[sfile.hdr] = s;
     }
 }
-
-/*
-struct HeaderInfo { string step; string temperature; string lot_id; string sublot_id; string wafer_id; string devName; string[string] headerItems; }
-union SN { string sn; Point xy; }
-//private immutable string SERIAL_MARKER = "S/N";
-struct PartID
-{
-    bool ws;
-    SN id;
-
-    this(string sn)
-    {
-        ws = false;
-        id.sn = sn;
-    }
-
-    this(int x, int y)
-    {
-        ws = true;
-        id.xy.x = x;
-        id.xy.y = y;
-    }
-
-    void set(string sn)
-    {
-        id.sn = sn;
-        ws = false;
-    }
-
-    void set(int x, int y)
-    {
-        id.xy.x = x;
-        id.xy.y = y;
-        ws = true;
-    }
-
-    string getID()
-    {
-        if (ws)
-        {
-            return to!string(id.xy.x) ~ " : " ~ to!string(id.xy.y);
-        }
-        return id.sn;
-    }
-}
-class TestRecord
-{
-    const TestType type;
-    const TestID id;
-    const ubyte site;
-    const ubyte head;
-    const ubyte testFlags;
-    const ubyte optFlags;
-    const ubyte parmFlags;
-    float loLimit;
-    float hiLimit;
-    DTRValue result;
-    string units;
-    byte resScal;
-    byte llmScal;
-    byte hlmScal;
-    const uint seqNum;
-}
-struct DeviceResult
-{
-    PartID devId;
-    uint site;
-    uint head;
-    ulong tstamp;
-    HeaderInfo hdr;
-    TestRecord[] tests;
-
-}
-
-struct StdfFile
-{
-    StdfPinData pinData;
-    HeaderInfo hdr;
-    DefaultValueDatabase dvd;
-    DeviceResult[] devices;
-}
-
-        if (options.saveStdf)
-        {   
-            string outname = options.outputDir ~ filename;
-            File f = File(outname, "w");
-            foreach (rec; rs) 
-            {   
-                ubyte[] bs = rec.getBytes();
-                f.rawWrite(bs);
-            }   
-            f.close();
-            if (options.verifyWrittenStdf)
-            {   
-                File f1 = File(filename, "r");
-                File f2 = File(outname, "r");
-                ubyte[] bs1;
-                ubyte[] bs2;
-                bs1.length = f1.size();
-                bs2.length = f2.size();
-                f1.rawRead(bs1);
-                f2.rawRead(bs2);
-                bool pass = true;
-                size_t mismatches = 0L; 
-                for (size_t j=0; j<f1.size() && j<f2.size(); j++)
-                {   
-                    if (bs1[j] != bs2[j])
-                    {   
-                        writeln("diff at index ", j, ": ", toHexString([bs1[j]]), " vs ", toHexString([bs2[j]]));
-                    pass = false;
-                    mismatches++;
-                }   
-                if (mismatches > 20) break;
-                }   
-                if (pass)
-                {   
-                    writeln("Saved file matches input file");
-                }   
-            }   
-        }   
-
-
-
-*/
-
 
