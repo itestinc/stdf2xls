@@ -88,6 +88,14 @@ enum Sort_t
     TIME_DOWN_SNN_DOWN
 }
 
+enum BinCategory_t
+{
+    NONE,
+    SITE,
+    LOT,
+    TEMP
+};
+
 import std.regex;
 import makechip.StdfFile;
 class CmdOptions
@@ -101,12 +109,18 @@ class CmdOptions
     bool genSpreadsheet = true;
     bool genWafermap = false;
     bool genHistogram = false;
-    bool flowAnalysis = false;
+    bool rotate = false;
+    bool generateRC = false;
+    bool allow16k = false;
     Sort_t sortType = Sort_t.SN_UP_TIME_UP; 
     private string[] modify;
     PMRNameType channelType = PMRNameType.AUTO;
     int verbosityLevel = 1;
     string outputDir = "";
+    string sfile = "${device}_${lot}.xlsx";
+    string hfile = "${device}_historgrams.pdf";
+    string wfile = "${device}_${lot}_${wafer}";
+    BinCategory_t category = BinCategory_t.NONE;
 
     string[] stdfFiles;
     Modifier[] modifiers;
@@ -124,18 +138,28 @@ class CmdOptions
             "extract-pin|a", "Extract pin name from test name suffix (default delimiter = '@')", &extractPin,
             "dumpBytes|b", "dump the STDF in ascii byte form", &byteDump,
             "dumptext|d", "dump the STDF in text form", &textDump,
-            "genHistograms|h", "Generate histogram(s)", &genHistogram,
             "modify|m", "modify a string field in specified record type.\n     Example: -m 'MIR TST_TEMP \"TEMPERATURE :\" \"TEMPERATURE:\"'", &modify,
             "outputDir|o", "write out the STDF to this directory. Specifying this will cause the STDF to be written back out.", &outputDir,
             "pin-delimiter|p", "Delimiter character that separates pin name from test name (Default = '@')", &delims,
-            "summarize|s", "Summarize file contents", &summarize,
-            "genSpreadsheets|S", "Generate spreadsheet(s)", &genSpreadsheet,
+            "digest|D", "Summarize file contents", &summarize,
+
+            "genSpreadsheets|s", "Generate spreadsheet(s)", &genSpreadsheet,
+            "so|S", "Spreadsheet output filename(s); name may contain variables for device, and/or lot\nDefault = ${device}_${lot}.xlsx", &sfile,
+            "rotate|r", "Transpose spreadsheet so there is one device per column instead of one device per row", &rotate,
+            "sortType", "Sort devices by alphanumeric serial number, then by time. See the manual for valid sort types", &sortType,
+            "16kcol|c", "Allow up to 16000 columns - default is 1000 columns", &allow16k,
+
+            "genWafermaps|w", "Generate wafer map(s)", &genWafermap,
+            "wo|W", "Wafermap output filename(s); name may contain variables for device, wafer, and/or lot\nDefault = ${device}_${lot}_${wafer}.{pdf,txt}", &wfile,
+
+            "genHistograms|h", "Generate histogram(s)", &genHistogram,
+            "ho|H", "Histogram output filename(s); name may contain variables for device, step, lot, and/or testID\nDefault = ${device}_histograms.pdf", &hfile,
+            "binCategory", "Specify if bins should be divided by SITE, LOT, TEMPerature or NONE. Default = NONE\nNote: if --ho contains ${lot} then dividing bins by lot does not make sense", &category,
+
+            "generateRCFile|g", "Generate a default \".stdf2xlsxrc\" file", &generateRC,
             "channel-type|t", "Channel type: AUTO, CHANNEL, PHYSICAL, or LOGICAL. Only use this if you know what you are doing.", &channelType,
             "verbose|v", "Verbosity level. Default is 1 which means print only warnings.  0 means don't print anything", &verbosityLevel,
             "verify|V", "Verify written STDF; only useful if --outputDir is specified. For testing purposes only.", &verifyWrittenStdf,
-            "getWafermaps|w", "Generate wafer map(s)", &genWafermap,
-            "sortType", "Sort devices by alphanumeric serial number, then by time. See the manual for valid sort types", &sortType,
-            "flowAnalysis|f", "Perform flow analysis - do this if devices have alternate paths through the test flow", &flowAnalysis,
             "noIgnoreMiscHeader", "Don't ignore custom user header items when comparing headers from different STDF files", &noIgnoreMiscHeader);
         if (delims.length == 0) delims ~= '@';
         stdfFiles.length = args.length-1;

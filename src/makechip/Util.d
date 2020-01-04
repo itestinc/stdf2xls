@@ -309,7 +309,6 @@ unittest
     writeln("LinkedMap Test #2 passes");
 }
 import std.algorithm;
-@safe
 class MultiMap(V, K...) if (K.length > 1)
 {
     private MultiMap!(V, K[1..$])[K[0]] map;
@@ -356,7 +355,6 @@ class MultiMap(V, K...) if (K.length > 1)
 
 }
 
-@safe
 class MultiMap(V, K...) if (K.length == 1)
 {
     private V[K[0]] map;
