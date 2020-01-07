@@ -111,7 +111,8 @@ class CmdOptions
     bool genHistogram = false;
     bool rotate = false;
     bool generateRC = false;
-    bool allow16k = false;
+    bool limit1k = false;
+    bool dynamicLimits = false;
     Sort_t sortType = Sort_t.SN_UP_TIME_UP; 
     private string[] modify;
     PMRNameType channelType = PMRNameType.AUTO;
@@ -147,7 +148,8 @@ class CmdOptions
             "so|S", "Spreadsheet output filename(s); name may contain variables for device, and/or lot\nDefault = ${device}_${lot}.xlsx", &sfile,
             "rotate|r", "Transpose spreadsheet so there is one device per column instead of one device per row", &rotate,
             "sortType", "Sort devices by alphanumeric serial number, then by time. See the manual for valid sort types", &sortType,
-            "16kcol|c", "Allow up to 16000 columns - default is 1000 columns", &allow16k,
+            "1kcol|c", "limit to 1000 columns for libreoffice - default is 16360 columns", &limit1k,
+            "dynamicLimits|Y", "check for and show dynamic limits", &dynamicLimits,
 
             "genWafermaps|w", "Generate wafer map(s)", &genWafermap,
             "wo|W", "Wafermap output filename(s); name may contain variables for device, wafer, and/or lot\nDefault = ${device}_${lot}_${wafer}.{pdf,txt}", &wfile,

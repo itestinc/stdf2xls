@@ -32,6 +32,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
             if (wb.filename == "")
             {
                 wb = newWorkbook(fname);
+                initFormats(wb, options, config);
                 wbMap.put(wb, dev, lot);
             }
         }
@@ -44,6 +45,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
             if (wb.filename == "")
             {
                 wb = newWorkbook(fname);
+                initFormats(wb, options, config);
                 wbMap.put(wb, dev, lot);
             }
         }
@@ -56,6 +58,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
             if (wb.filename == "")
             {
                 wb = newWorkbook(fname);
+                initFormats(wb, options, config);
                 wbMap.put(wb, dev, lot);
             }
         }
@@ -65,6 +68,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
             if (wb.filename == "")
             {
                 wb = newWorkbook(sfile);
+                initFormats(wb, options, config);
                 wbMap.put(wb, "", "");
             }
         }
