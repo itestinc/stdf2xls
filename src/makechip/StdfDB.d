@@ -156,6 +156,8 @@ enum TestType
     FLOAT,
     HEX_INT,
     DEC_INT,
+    DYNAMIC_LOLIMIT,
+    DYNAMIC_HILIMIT,
     STRING
 }
 
@@ -171,6 +173,8 @@ class TestRecord
     bool uflag;
     float loLimit;
     float hiLimit;
+    bool dynamicHiLimit;
+    bool dynamicLoLimit;
     DTRValue result;
     string units;
     byte resScal;
@@ -361,10 +365,14 @@ class StdfDB
     private StdfPinData[HeaderInfo] pinDataMap;
     DeviceResult[][HeaderInfo] deviceMap;
     private CmdOptions options;
+    private MultiMap!(float, HeaderInfo, const TestID) loLims;
+    private MultiMap!(float, HeaderInfo, const TestID) hiLims;
 
     this(CmdOptions options)
     {
         this.options = options;
+        loLims = new MultiMap!(float, HeaderInfo, const TestID)();
+        hiLims = new MultiMap!(float, HeaderInfo, const TestID)();
     }
 
     void load(StdfFile stdf)
@@ -508,6 +516,30 @@ class StdfDB
                     TestRecord tr = new TestRecord(id, ptr.SITE_NUM, ptr.HEAD_NUM, ptr.TEST_FLG, optFlags,
                             parmFlags, loLimit, hiLimit, result, units, resScal, llmScal, hlmScal, seq);
                     normalizeValues(tr);
+                    float llim = loLims.get(-float.min, stdf.hdr, id);
+                    if (llim == -float.min)
+                    {
+                        loLims.put(loLimit, stdf.hdr, id);
+                    }
+                    else
+                    {
+                        import std.math;
+                        float a = fabs(loLimit);
+                        float b = fabs(llim);
+                        if ((fabs(a - b) / b) > 0.001) tr.dynamicLoLimit = true;
+                    }
+                    float hlim = hiLims.get(-float.min, stdf.hdr, id);
+                    if (hlim == -float.min)
+                    {
+                        hiLims.put(hiLimit, stdf.hdr, id);
+                    }
+                    else
+                    {
+                        import std.math;
+                        float a = fabs(hiLimit);
+                        float b = fabs(hlim);
+                        if ((fabs(a - b) / b) > 0.001) tr.dynamicHiLimit = true;
+                    }
                     dr[ptr.SITE_NUM - minSite][ptr.HEAD_NUM - minHead].tests ~= tr;
                     seq++;
                     break;
