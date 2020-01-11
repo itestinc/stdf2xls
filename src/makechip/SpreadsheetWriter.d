@@ -285,40 +285,141 @@ private void writeFTSheet(CmdOptions options, Workbook wb, uint[const TestID] ro
 
 }
 
-private worksheet[] createSheetsWafer(CmdOptions options, Config config, Workbook wb, uint[const TestID] rowOrColMap, HeaderInfo hdr, DeviceResult[] devices)
+import std.typecons;
+private Worksheet[] createSheetsWafer(CmdOptions options, Config config, Workbook wb, uint[const TestID] rowOrColMap, HeaderInfo hdr, DeviceResult[] devices)
 {
     const size_t numTests = rowOrColMap.length;
     const size_t maxCols = options.limit1k ? 1000 : 16360;
-    const size_t numSheets = (numTests % maxCols == 0) ? numTests / maxCols : (numTests + 1) / macCols;
-    worksheet[] ws;
+    const size_t numSheets = (numTests % maxCols == 0) ? numTests / maxCols : (numTests + 1) / maxCols;
+    Worksheet[] ws;
     for (size_t i=0; i<numSheets; i++)
     {
-        worksheet w = wb.addWorkSheet(title);
+        string title = getTitle(hdr, i);
+        Worksheet w = wb.addWorksheet(title);
         ws ~= w;
-        makePageHeader(title, wafersort.yes, rotated.no, numCols, continued.no, config.logoPath);
+        setLogo(config, w);
+        setLegend(config, w);
+        setPageHeader(config, w, title);
+        setDeviceHeader(config, w, hdr, Yes.wafersort, No.rotated);
+        setTableHeaders(config, w, Yes.wafersort, No.rotated);
+        setData(config, w, i, Yes.wafersort, No.rotated, devices);
     }
+    return null;
 }
 
-private worksheet[] createSheetsWaferRotated(CmdOptions options, Config config, Workbook wb, uint[const TestID] rowOrColMap, HeaderInfo hdr, DeviceResult[] devices)
+private Worksheet[] createSheetsWaferRotated(CmdOptions options, Config config, Workbook wb, uint[const TestID] rowOrColMap, HeaderInfo hdr, DeviceResult[] devices)
 {
     const size_t numDevices = devices.length;
     const size_t maxCols = options.limit1k ? 1000 : 16360;
     const size_t numSheets = (numDevices % maxCols == 0) ? numDevices / maxCols : (numDevices + 1) / maxCols;
+    Worksheet[] ws;
+    for (size_t i=0; i<numSheets; i++)
+    {
+        string title = getTitle(hdr, i);
+        Worksheet w = wb.addWorksheet(title);
+        ws ~= w;
+        setLogo(config, w);
+        setLegend(config, w);
+        setPageHeader(config, w, title);
+        setDeviceHeader(config, w, hdr, Yes.wafersort, Yes.rotated);
+        setTableHeaders(config, w, Yes.wafersort, Yes.rotated);
+        setData(config, w, i, Yes.wafersort, Yes.rotated, devices);
+    }
+    return ws;
 }
 
-private worksheet[] createSheetsFT(CmdOptions options, Config config, Workbook wb, uint[const TestID] rowOrColMap, HeaderInfo hdr, DeviceResult[] devices)
+private Worksheet[] createSheetsFT(CmdOptions options, Config config, Workbook wb, uint[const TestID] rowOrColMap, HeaderInfo hdr, DeviceResult[] devices)
 {
     const size_t numTests = rowOrColMap.length;
     const size_t maxCols = options.limit1k ? 1000 : 16360;
-    const size_t numSheets = (numTests % maxCols == 0) ? numTests / maxCols : (numTests + 1) / macCols;
-
+    const size_t numSheets = (numTests % maxCols == 0) ? numTests / maxCols : (numTests + 1) / maxCols;
+    Worksheet[] ws;
+    for (size_t i=0; i<numSheets; i++)
+    {
+        string title = getTitle(hdr, i);
+        Worksheet w = wb.addWorksheet(title);
+        ws ~= w;
+        setLogo(config, w);
+        setLegend(config, w);
+        setPageHeader(config, w, title);
+        setDeviceHeader(config, w, hdr, No.wafersort, No.rotated);
+        setTableHeaders(config, w, No.wafersort, No.rotated);
+        setData(config, w, i, No.wafersort, No.rotated, devices);
+    }
+    return ws;
 }
 
-private worksheet[] createSheetsFTRotated(CmdOptions options, Config config, Workbook wb, uint[const TestID] rowOrColMap, HeaderInfo hdr, DeviceResult[] devices)
+private Worksheet[] createSheetsFTRotated(CmdOptions options, Config config, Workbook wb, uint[const TestID] rowOrColMap, HeaderInfo hdr, DeviceResult[] devices)
 {
     const size_t numDevices = devices.length;
     const size_t maxCols = options.limit1k ? 1000 : 16360;
     const size_t numSheets = (numDevices % maxCols == 0) ? numDevices / maxCols : (numDevices + 1) / maxCols;
+    Worksheet[] ws;
+    for (size_t i=0; i<numSheets; i++)
+    {
+        string title = getTitle(hdr, i);
+        Worksheet w = wb.addWorksheet(title);
+        ws ~= w;
+        setLogo(config, w);
+        setLegend(config, w);
+        setPageHeader(config, w, title);
+        setDeviceHeader(config, w, hdr, No.wafersort, Yes.rotated);
+        setTableHeaders(config, w, No.wafersort, Yes.rotated);
+        setData(config, w, i, No.wafersort, Yes.rotated, devices);
+    }
+    return ws;
+}
+
+import std.conv;
+private string getTitle(HeaderInfo hdr, size_t page)
+{
+    string title;
+    if (hdr.isWafersort())
+    {
+        title = hdr.devName ~ " Lot " ~ hdr.lot_id ~ " Wafer " ~ hdr.wafer_id ~ " Page " ~ to!string(page);
+    }
+    else
+    {
+        string name;
+        if (hdr.lot_id == "" && hdr.step == "") name = "";
+        else if (hdr.lot_id == "") name = "Step " ~ hdr.step;
+        else if (hdr.step == "") name = "Lot " ~ hdr.lot_id;
+        else name = "Lot " ~ hdr.lot_id ~ " Step " ~ hdr.step;
+        title = hdr.devName ~ (hdr.devName != "" ? " " : "") ~ name ~ " Page " ~ to!string(page);
+    }
+    return title;
+}
+
+private void setLogo(Config config, Worksheet w)
+{
 
 }
+
+private void setLegend(Config config, Worksheet w)
+{
+
+}
+
+private void setPageHeader(Config config, Worksheet w, string title)
+{
+
+}
+
+private void setDeviceHeader(Config config, Worksheet w, HeaderInfo hdr, Flag!"wafersort" wafersort, Flag!"rotated" rotated)
+{
+
+}
+
+private void setTableHeaders(Config config, Worksheet w, Flag!"wafersort" wafersort, Flag!"rotated" rotated)
+{
+
+}
+
+private void setData(Config config, Worksheet w, size_t sheetNum, Flag!"wafersort" wafersort, Flag!"rotated" rotated, devices)
+{
+
+}
+
+
+
 

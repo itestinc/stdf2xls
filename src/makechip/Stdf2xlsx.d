@@ -59,6 +59,104 @@ public void loadDb(CmdOptions options)
         }
     }
     if (options.verbosityLevel > 2) writeln("Number of unique headers: ", stdfdb.deviceMap.length);
+    if (!options.noDynamicLimits)
+    {
+        MultiMap!(bool, HeaderInfo, const TestID) dynLoLims = new MultiMap!(bool, HeaderInfo, const TestID)();
+        MultiMap!(bool, HeaderInfo, const TestID) dynHiLims = new MultiMap!(bool, HeaderInfo, const TestID)();
+        MultiMap!(bool, HeaderInfo, const TestID) loLims = new MultiMap!(bool, HeaderInfo, const TestID)();
+        MultiMap!(bool, HeaderInfo, const TestID) hiLims = new MultiMap!(bool, HeaderInfo, const TestID)();
+        import sts.math;
+        foreach (hdr; stdfdb.deviceMap.keys)
+        {
+            DeviceResult[] dr = stdfdb.deviceMap[hdr];
+            foreach (dev; dr)
+            {
+                foreach (test; dev.tests)
+                {
+                    const TestID id = test.id;
+                    if (id.type == Record_t.MPR || id.type == Record_t.PTR)
+                    {
+                        if (!loLims.contains(hdr, id)) 
+                        {
+                            loLims.put(test.loLimit, hdr, id);
+                        }
+                        else
+                        {
+                            float ll = fabs(loLims.get(-999999.0, hdr, id));
+                            float ll2 = fabs(test.loLimit);
+                            if (ll > (1.001 * ll2) || ll < (0.999 * ll2))
+                            {
+                                if (!dynLoLims.contains(hdr, id)) dynLoLims.put(true, hdr, id);
+                            }
+                        }
+                        if (!hiLims.contains(hdr, id)) 
+                        {
+                            hiLims.put(test.loLimit, hdr, id);
+                        }
+                        else
+                        {
+                            float hl = fabs(hiLims.get(-999999.0, hdr, id));
+                            float hl2 = fabs(test.hiLimit);
+                            if (hl > (1.001 * hl2) || hl < (0.999 * hl2))
+                            {
+                                if (!dynHiLims.contains(hdr, id)) dynHiLims.put(true, hdr, id);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // now insert lo and hi limit markers in the test record lists
+        foreach (hdr; stdfdb.deviceMap.keys)
+        {
+            DeviceResult[] dr = stdfdb.deviceMap[hdr];
+            foreach (dev; dr)
+            {
+                TestID lastid = null;
+                TestRecord lastTest = null;
+                bool foundFirst = false;
+                foreach (test; dev.tests)
+                {
+                    const TestID id = test.id;
+                    if (id.type == Record_t.MPR)
+                    {
+                        if (id.sameMPRTest(lastid) continue;
+                        if (dynLoLimits.contains(hdr, id) && !foundFirst)
+                        {
+                            if (options.verbosityLevel > 1) writeln("Warning: dynamic low limit found: ", id);
+                            test.dynamicLoLimit = true;
+                            lastid = cast(TestID) id;
+                            foundFirst = true;
+                        }
+                        if (foundFirst)
+                        {
+                            if (dynHiLimits.contains(hdr, id))
+                            {
+                                if (options.verbosityLevel > 1) writeln("Warning: dynamic high limit found: ", id);
+                                lastTest.dynamicHiLimit = true;
+                                lastid = cast(TestID) id;
+                                found first = false;
+                            }
+                        }
+                        lastTest = test;
+                    }
+                    else if (id.type == Record_t.PTR)
+                    {
+                        if (dynLoLimits.contains(hdr, id)) 
+                        {
+                            if (options.verbosityLevel > 1) writeln("Warning: dynamic low limit found: ", id);
+                            test.dynamicLoLimit = true;
+                        }
+                        if (dynHiLimits.contains(hdr, id)) 
+                        {
+                            if (options.verbosityLevel > 1) writeln("Warning: dynamic high limit found: ", id);
+                            test.dynamicHiLimit = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 public void genSpreadsheet(CmdOptions options, Config config)
