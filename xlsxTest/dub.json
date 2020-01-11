@@ -3,10 +3,10 @@
 		"eric"
 	],
 	"copyright": "Copyright © 2019, eric",
+	"dependencies": {
+		"xlsxd": "~>2.2.0"
+	},
 	"description": "Test for xlsxd",
 	"license": "GPL 3.0",
-	"name": "xlsxtest",
-    "dependencies" : {
-        "xlsxd": "~>2.2.0"
-    }
+	"name": "xlsxtest"
 }

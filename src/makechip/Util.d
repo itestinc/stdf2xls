@@ -338,6 +338,16 @@ class MultiMap(V, K...) if (K.length > 1)
         return defaultValue;
     }   
 
+    public bool contains(K k)
+    {
+        if (k[0] in map)
+        {
+            auto m = map[k[0]];
+            return m.contains(k[1..$]);
+        }
+        return false;
+    }
+
     @property @trusted
     public size_t size()
     {   
@@ -368,6 +378,11 @@ class MultiMap(V, K...) if (K.length == 1)
     {   
         return map.get(k[0], defaultValue);
     }   
+
+    public bool contains(K k)
+    {
+        return k[0] in map;
+    }
 
     public size_t size()
     {   

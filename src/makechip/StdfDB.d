@@ -365,14 +365,10 @@ class StdfDB
     private StdfPinData[HeaderInfo] pinDataMap;
     DeviceResult[][HeaderInfo] deviceMap;
     private CmdOptions options;
-    private MultiMap!(float, HeaderInfo, const TestID) loLims;
-    private MultiMap!(float, HeaderInfo, const TestID) hiLims;
 
     this(CmdOptions options)
     {
         this.options = options;
-        loLims = new MultiMap!(float, HeaderInfo, const TestID)();
-        hiLims = new MultiMap!(float, HeaderInfo, const TestID)();
     }
 
     void load(StdfFile stdf)
@@ -516,30 +512,6 @@ class StdfDB
                     TestRecord tr = new TestRecord(id, ptr.SITE_NUM, ptr.HEAD_NUM, ptr.TEST_FLG, optFlags,
                             parmFlags, loLimit, hiLimit, result, units, resScal, llmScal, hlmScal, seq);
                     normalizeValues(tr);
-                    float llim = loLims.get(-float.min, stdf.hdr, id);
-                    if (llim == -float.min)
-                    {
-                        loLims.put(loLimit, stdf.hdr, id);
-                    }
-                    else
-                    {
-                        import std.math;
-                        float a = fabs(loLimit);
-                        float b = fabs(llim);
-                        if ((fabs(a - b) / b) > 0.001) tr.dynamicLoLimit = true;
-                    }
-                    float hlim = hiLims.get(-float.min, stdf.hdr, id);
-                    if (hlim == -float.min)
-                    {
-                        hiLims.put(hiLimit, stdf.hdr, id);
-                    }
-                    else
-                    {
-                        import std.math;
-                        float a = fabs(hiLimit);
-                        float b = fabs(hlim);
-                        if ((fabs(a - b) / b) > 0.001) tr.dynamicHiLimit = true;
-                    }
                     dr[ptr.SITE_NUM - minSite][ptr.HEAD_NUM - minHead].tests ~= tr;
                     seq++;
                     break;
@@ -574,7 +546,6 @@ class StdfDB
                     byte hlmScal = mpr.HLM_SCAL.isEmpty() ? dvd.getDefaultHlmScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.HLM_SCAL;
                     U2[] indicies = (mpr.RTN_INDX.isEmpty() || mpr.RTN_INDX.length == 0) ? dvd.getDefaultPinIndicies(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.RTN_INDX.getValue();
                     stdout.flush();
-                    //writeln("testname = ", mpr.TEST_TXT, " testnumber = ", mpr.TEST_NUM, " rsltLen = ", mpr.RTN_RSLT.length, " indxLen = ", indicies.length);
                     stdout.flush();
                     if (indicies.length != mpr.RTN_RSLT.length)
                     {
@@ -787,6 +758,15 @@ class TestID
         this.testNumber = testNumber;
         this.testName = testName;
         this.dup = dup;
+    }
+
+    public bool sameMPRTest(TestID id)
+    {
+        if (type == id.type && type == Record_t.MPR && testNumber == id.testNumber && testName == id.testName && dup == id.dup)
+        {
+            return true;
+        }
+        return false;
     }
 
     public static TestID getTestID(const Record_t type, const string pin, const uint testNumber, const string testName, const uint dup)

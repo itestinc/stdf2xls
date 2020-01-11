@@ -2,27 +2,24 @@ import std.stdio;
 import libxlsxd.workbook;
 import libxlsxd.worksheet;
 import libxlsxd.format;
+import libxlsxd.xlsxwrap;
+import arsd.image;
+import arsd.color;
+
+// The sts_logo is 1200 pixels X 463 pixels.
+// With X and Y scale == 1.0 the logo comes out as 420 X 148 in the spreadsheet
 
 void main()
 {
+    immutable size_t fourCols = 210;
+    immutable size_t sevenRows = 138;
     auto wb = newWorkbook("x.xlsx");
     auto ws = wb.addWorksheet("PAGE 1");
-    Format fmt1 = wb.addFormat();
-    fmt1.setBold();
-    Format fmt2 = wb.addFormat();
-    fmt2.setDiagType(2);
-    fmt2.setDiagBorder(1);
-    fmt2.setDiagColor(8);
-    fmt2.setTextWrap();
-    fmt2.setAlign(1);
-    fmt2.setBgColor(0x0099AA);
-
-
-    size_t w1 = ws.writeAndGetWidth(1, 1, "AAA", fmt1);
-    size_t w2 = ws.writeAndGetWidth(2, 1, "AAAAA", fmt1);
-    size_t w3 = ws.writeAndGetWidth(3, 1, "AAAAAAA", fmt1);
-    writeln("w1 = ", w1, " w2 = ", w2, " w3 = ", w3);
-    ws.setRow(2, 30);
-    ws.write(2, 2, "        AA BB", fmt2);
+    MemoryImage mi = MemoryImage.fromImage("sts_logo.png");
+    writeln("Width = ", mi.width(), " Height = ", mi.height());
     ws.setTabColor(0xFF4400);
+    lxw_image_options options;
+    options.x_scale = 1.0;
+    options.y_scale = 1.0;
+    ws.insertImageOpt(cast(uint) 0, cast(ushort) 0,  "sts_logo.png", &options);
 }
