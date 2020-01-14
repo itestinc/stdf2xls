@@ -26,6 +26,7 @@ import std.stdio;
 import makechip.Spreadsheet;
 import makechip.Wafermap;
 import makechip.Histogram;
+import makechip.Util;
 
 private StdfFile[][HeaderInfo] stdfFiles;
 private string[string] devices;
@@ -63,9 +64,9 @@ public void loadDb(CmdOptions options)
     {
         MultiMap!(bool, HeaderInfo, const TestID) dynLoLims = new MultiMap!(bool, HeaderInfo, const TestID)();
         MultiMap!(bool, HeaderInfo, const TestID) dynHiLims = new MultiMap!(bool, HeaderInfo, const TestID)();
-        MultiMap!(bool, HeaderInfo, const TestID) loLims = new MultiMap!(bool, HeaderInfo, const TestID)();
-        MultiMap!(bool, HeaderInfo, const TestID) hiLims = new MultiMap!(bool, HeaderInfo, const TestID)();
-        import sts.math;
+        MultiMap!(float, HeaderInfo, const TestID) loLims = new MultiMap!(float, HeaderInfo, const TestID)();
+        MultiMap!(float, HeaderInfo, const TestID) hiLims = new MultiMap!(float, HeaderInfo, const TestID)();
+        import std.math;
         foreach (hdr; stdfdb.deviceMap.keys)
         {
             DeviceResult[] dr = stdfdb.deviceMap[hdr];
@@ -120,8 +121,8 @@ public void loadDb(CmdOptions options)
                     const TestID id = test.id;
                     if (id.type == Record_t.MPR)
                     {
-                        if (id.sameMPRTest(lastid) continue;
-                        if (dynLoLimits.contains(hdr, id) && !foundFirst)
+                        if (id.sameMPRTest(cast(const TestID) lastid)) continue;
+                        if (dynLoLims.contains(hdr, id) && !foundFirst)
                         {
                             if (options.verbosityLevel > 1) writeln("Warning: dynamic low limit found: ", id);
                             test.dynamicLoLimit = true;
@@ -130,24 +131,24 @@ public void loadDb(CmdOptions options)
                         }
                         if (foundFirst)
                         {
-                            if (dynHiLimits.contains(hdr, id))
+                            if (dynHiLims.contains(hdr, id))
                             {
                                 if (options.verbosityLevel > 1) writeln("Warning: dynamic high limit found: ", id);
                                 lastTest.dynamicHiLimit = true;
                                 lastid = cast(TestID) id;
-                                found first = false;
+                                foundFirst = false;
                             }
                         }
                         lastTest = test;
                     }
                     else if (id.type == Record_t.PTR)
                     {
-                        if (dynLoLimits.contains(hdr, id)) 
+                        if (dynLoLims.contains(hdr, id)) 
                         {
                             if (options.verbosityLevel > 1) writeln("Warning: dynamic low limit found: ", id);
                             test.dynamicLoLimit = true;
                         }
-                        if (dynHiLimits.contains(hdr, id)) 
+                        if (dynHiLims.contains(hdr, id)) 
                         {
                             if (options.verbosityLevel > 1) writeln("Warning: dynamic high limit found: ", id);
                             test.dynamicHiLimit = true;

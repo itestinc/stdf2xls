@@ -760,7 +760,7 @@ class TestID
         this.dup = dup;
     }
 
-    public bool sameMPRTest(TestID id)
+    public bool sameMPRTest(const TestID id) const
     {
         if (type == id.type && type == Record_t.MPR && testNumber == id.testNumber && testName == id.testName && dup == id.dup)
         {
