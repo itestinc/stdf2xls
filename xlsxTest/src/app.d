@@ -15,11 +15,21 @@ void main()
     immutable size_t sevenRows = 138;
     auto wb = newWorkbook("x.xlsx");
     auto ws = wb.addWorksheet("PAGE 1");
-    MemoryImage mi = MemoryImage.fromImage("sts_logo.png");
+    MemoryImage mi = MemoryImage.fromImage("itest_logo.png");
     writeln("Width = ", mi.width(), " Height = ", mi.height());
     ws.setTabColor(0xFF4400);
     lxw_image_options options;
-    options.x_scale = 1.0;
-    options.y_scale = 1.0;
-    ws.insertImageOpt(cast(uint) 0, cast(ushort) 0,  "sts_logo.png", &options);
+    double ss_width = mi.width() * 0.35;
+    double ss_height = mi.height() * 0.321;
+
+    options.x_scale = (4.0 * 70.0) / ss_width;
+    options.y_scale = (7.0 * 20.0) / ss_height;
+    ws.insertImageOpt(cast(uint) 0, cast(ushort) 0,  "itest_logo.png", &options);
+
+    for (size_t x=0; x<mi.width(); x++)
+    {
+        for (size_t y=0; y<mi.height(); y++)
+        {
+            Color c = mi.getPixel(x, y);
+    
 }

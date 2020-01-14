@@ -33,9 +33,17 @@ class Config
     static immutable string ss_page_title_bg_color          = "ss.page.title.bg_color";
     static immutable string ss_page_title_text_color        = "ss.page.title.text_color";
     static immutable string ss_logo_file_path               = "ss.logo.file_path";
+    static immutable string ss_logo_x_scale                 = "ss.logo.x_scale";
+    static immutable string ss_logo_y_scale                 = "ss.logo.y_scale";
 
     public this()
     {
+    }
+
+    public string getLogoPath()
+    {
+        string path = cfgMap.get("", ss_logo_file_path);
+        return path;
     }
 
     public int getColor(string colorName)
@@ -114,6 +122,8 @@ class Config
         cfgMap[ss_page_title_bg_color] = "508ED3";
         cfgMap[ss_page_title_text_color] = "FFFFFF";
         cfgMap[ss_logo_file_path] = "";
+        cfgMap[ss_logo_x_scale] = "0.0";
+        cfgMap[ss_logo_y_scale] = "0.0";
 
         string rc = std.path.expandTilde("~/stdf2xlsxrc");
         if (rc.exists)

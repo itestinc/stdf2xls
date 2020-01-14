@@ -390,9 +390,19 @@ private string getTitle(HeaderInfo hdr, size_t page)
     return title;
 }
 
+// Note scaling relies on the image having a resolution of 11.811 pixels / mm
 private void setLogo(Config config, Worksheet w)
 {
-
+    import arsd.image;
+    import arsd.color;
+    string logoPath = config.getLogoPath();
+    if (logoPath == "") // use ITest logo
+    {
+    }
+    else
+    {
+        MemoryImage logoMem = MemoryImage.fromImage(logoPath);
+    }
 }
 
 private void setLegend(Config config, Worksheet w)
