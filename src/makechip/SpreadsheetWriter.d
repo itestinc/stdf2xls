@@ -2,6 +2,7 @@ module makechip.SpreadsheetWriter;
 import libxlsxd.workbook;
 import libxlsxd.worksheet;
 import libxlsxd.format;
+import libxlsxd.xlsxwrap;
 import makechip.StdfFile;
 import makechip.StdfDB;
 import makechip.Config;
@@ -398,6 +399,13 @@ private void setLogo(Config config, Worksheet w)
     string logoPath = config.getLogoPath();
     if (logoPath == "") // use ITest logo
     {
+        import makechip.logo;
+        lxw_image_options options;
+        double ss_width = 993 * 0.350;
+        double ss_height = 768 * 0.324;
+        options.x_scale = (4.0 * 70.0) / ss_width;
+        options.y_scale = (7.0 * 20.0) / ss_height;
+        w.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, makechip.logo.img.dup.ptr, 30811L, &options);
     }
     else
     {
@@ -425,7 +433,7 @@ private void setTableHeaders(Config config, Worksheet w, Flag!"wafersort" wafers
 
 }
 
-private void setData(Config config, Worksheet w, size_t sheetNum, Flag!"wafersort" wafersort, Flag!"rotated" rotated, devices)
+private void setData(Config config, Worksheet w, size_t sheetNum, Flag!"wafersort" wafersort, Flag!"rotated" rotated, DeviceResult[] devices)
 {
 
 }
