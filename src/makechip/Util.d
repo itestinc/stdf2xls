@@ -381,7 +381,8 @@ class MultiMap(V, K...) if (K.length == 1)
 
     public bool contains(K k)
     {
-        return (k[0] in map);
+        auto r = k[0] in map;
+        return r !is null;
     }
 
     public size_t size()
