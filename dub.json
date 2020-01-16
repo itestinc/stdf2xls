@@ -9,10 +9,37 @@
         }
     },
 	"description" : "Convert STDF data files to xlsx spreadhseet format",
+    "importPaths": [
+        "src/"
+    ],  
+    "lflags-posix": [
+        "-L$PACKAGE_DIR/src/xlsxd/libxlsxwriter/build/"
+    ],  
+    "lflags-windows": [
+        "/LIBPATH:$PACKAGE_DIR\\install_dir\\libxlsxwriter\\lib\\x64\\Release",
+        "/LIBPATH:$PACKAGE_DIR\\install_dir\\zlib\\lib"
+    ],  
+    "libs-posix": [
+        "xlsxwriter"
+    ],  
+    "libs-windows": [
+        "msvcrt",
+        "xlsxwriter",
+        "zlibstatic"
+    ],  
+    "preBuildCommands-posix": [
+        "make -C $PACKAGE_DIR/src/xlsxd/libxlsxwriter"
+    ],  
+    "preBuildCommands-windows": [
+        "$PACKAGE_DIR\\windepbuild.bat",
+        "cd $PACKAGE_DIR && dmd -run sizetdisable.d"
+    ],  
+    "sourcePaths": [
+        "src/"
+    ],  
 	"TargetType" : "executable",
 	"mainSourceFile" : "src/main.d",
     "dependencies" : {
-        "xlsxd": "~>2.2.0",
         "printed": "~>0.0.10",
     },
     "subPackages": [
