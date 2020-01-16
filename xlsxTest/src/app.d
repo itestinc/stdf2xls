@@ -22,6 +22,8 @@ void main()
     double ss_height = 768 * 0.324;
     options.x_scale = (4.0 * 70.0) / ss_width;
     options.y_scale = (7.0 * 20.0) / ss_height;
+    ws.mergeRange(0, 0, 7, 3, null);
+    options.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
     ws.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, logo.img.dup.ptr, 30811L, &options);
 
     
