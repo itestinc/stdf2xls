@@ -15,16 +15,19 @@ void main()
     immutable size_t sevenRows = 138;
     auto wb = newWorkbook("x.xlsx");
     auto ws = wb.addWorksheet("PAGE 1");
-    import logo;
+    //import logo;
     ws.setTabColor(0xFF4400);
+    MemoryImage image = MemoryImage.fromImage("itest_logo.png");
     lxw_image_options options;
-    double ss_width = 993 * 0.350;
-    double ss_height = 768 * 0.324;
+    writeln("width = ", image.width(), " height = ", image.height());
+    double ss_width = image.width() * 0.350;
+    double ss_height = image.height() * 0.324;
     options.x_scale = (4.0 * 70.0) / ss_width;
     options.y_scale = (7.0 * 20.0) / ss_height;
     ws.mergeRange(0, 0, 7, 3, null);
     options.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
-    ws.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, logo.img.dup.ptr, 30811L, &options);
+    ws.insertImageOpt(cast(uint) 0, cast(ushort) 0, "itest_logo.png", &options);
+    //ws.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, logo.img.dup.ptr, 30811L, &options);
 
     
     /*
