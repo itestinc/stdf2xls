@@ -490,6 +490,7 @@ int32_t lxw_format_get_xf_index(lxw_format *format);
 lxw_font *lxw_format_get_font_key(lxw_format *format);
 lxw_border *lxw_format_get_border_key(lxw_format *format);
 lxw_fill *lxw_format_get_fill_key(lxw_format *format);
+
 /**
  * @brief Set the font used in the cell.
  *

@@ -738,9 +738,9 @@ _drawing_write_two_cell_anchor(lxw_drawing *self, uint32_t index,
 
     LXW_INIT_ATTRIBUTES();
 
-    if (drawing_object->edit_as == LXW_OBJECT_MOVE_DONT_SIZE)
+    if (drawing_object->anchor == LXW_OBJECT_MOVE_DONT_SIZE)
         LXW_PUSH_ATTRIBUTES_STR("editAs", "oneCell");
-    else if (drawing_object->edit_as == LXW_OBJECT_DONT_MOVE_DONT_SIZE)
+    else if (drawing_object->anchor == LXW_OBJECT_DONT_MOVE_DONT_SIZE)
         LXW_PUSH_ATTRIBUTES_STR("editAs", "absolute");
 
     lxw_xml_start_tag(self->file, "xdr:twoCellAnchor", &attributes);
@@ -748,11 +748,11 @@ _drawing_write_two_cell_anchor(lxw_drawing *self, uint32_t index,
     _drawing_write_from(self, &drawing_object->from);
     _drawing_write_to(self, &drawing_object->to);
 
-    if (drawing_object->anchor_type == LXW_ANCHOR_TYPE_CHART) {
+    if (drawing_object->type == LXW_DRAWING_CHART) {
         /* Write the xdr:graphicFrame element for charts. */
         _drawing_write_graphic_frame(self, index, drawing_object->rel_index);
     }
-    else if (drawing_object->anchor_type == LXW_ANCHOR_TYPE_IMAGE) {
+    else if (drawing_object->type == LXW_DRAWING_IMAGE) {
         /* Write the xdr:pic element. */
         _drawing_write_pic(self, index, drawing_object);
     }

@@ -1,5 +1,6 @@
 module makechip.Config;
 import libxlsxd.format;
+import std.conv;
 
 class Config
 {
@@ -24,8 +25,18 @@ class Config
     static immutable string ss_header_name_text_color       = "ss.header.name.text_color";
     static immutable string ss_header_value_bg_color        = "ss.header.value.bg_color";
     static immutable string ss_header_value_text_color      = "ss.header.value.text_color";
-    static immutable string ss_table_header_bg_color        = "ss.table.header.bg_color";
-    static immutable string ss_table_header_text_color      = "ss.table.header.text_color";
+
+    static immutable string ss_testid_header_bg_color       = "ss.testid.header.bg_color";
+    static immutable string ss_testid_header_text_color     = "ss.testid.header.text_color";
+    static immutable string ss_deviceid_header_bg_color     = "ss.deviceid.header.bg_color";
+    static immutable string ss_deviceid_header_text_color   = "ss.deviceid.header.text_color";
+    static immutable string ss_unitstemp_header_bg_color    = "ss.unitstemp.header.bg_color";
+    static immutable string ss_unitstemp_header_text_color  = "ss.unitstemp.header.text_color";
+    static immutable string ss_units_header_bg_color        = "ss.units.header.bg_color";
+    static immutable string ss_units_header_text_color      = "ss.units.header.text_color";
+    static immutable string ss_temp_header_bg_color         = "ss.temp.header.bg_color";
+    static immutable string ss_temp_header_text_color       = "ss.temp.header.text_color";
+
     static immutable string ss_test_header_bg_color         = "ss.test.header.bg_color";
     static immutable string ss_test_header_text_color       = "ss.test.header.text_color";
     static immutable string ss_result_header_bg_color       = "ss.result.header.bg_color";
@@ -48,7 +59,6 @@ class Config
 
     public int getColor(string colorName)
     {
-        import std.conv;
         string c = cfgMap.get("NONE", colorName);
         if (c == "NONE") return -1;
         int x = to!int(c, 16);
@@ -56,9 +66,22 @@ class Config
         return x;
     }
 
+    public double getLogoXScale()
+    {
+        string x = cfgMap.get("", ss_logo_x_scale);
+        if (x == "") return 0.0;
+        return to!double(x);
+    }
+
+    public double getLogoYScale()
+    {
+        string y = cfgMap.get("", ss_logo_y_scale);
+        if (y == "") return 0.0;
+        return to!double(y);
+    }
+
     public void setBGColor(Format f, string colorName)
     {
-        import std.conv;
         string c = cfgMap.get("NONE", colorName);
         if (c == "NONE") return;
         int x = to!int(c);
@@ -68,7 +91,6 @@ class Config
 
     public void setFGColor(Format f, string colorName)
     {
-        import std.conv;
         string c = cfgMap.get("NONE", colorName);
         if (c == "NONE") return;
         int x = to!int(c);
@@ -78,7 +100,6 @@ class Config
 
     public void setFontColor(Format f, string colorName)
     {
-        import std.conv;
         string c = cfgMap.get("NONE", colorName);
         if (c == "NONE") return;
         int x = to!int(c);
@@ -113,8 +134,18 @@ class Config
         cfgMap[ss_header_name_text_color] = "000000";
         cfgMap[ss_header_value_bg_color] = "F6F9D4";
         cfgMap[ss_header_value_text_color] = "000000";
-        cfgMap[ss_table_header_bg_color] = "DEE6EF";
-        cfgMap[ss_table_header_text_color] = "000000";
+
+        cfgMap[ss_testid_header_bg_color] = "DEE6EF";
+        cfgMap[ss_testid_header_text_color] = "000000";
+        cfgMap[ss_deviceid_header_bg_color] = "DEE6EF";
+        cfgMap[ss_deviceid_header_text_color] = "000000";
+        cfgMap[ss_unitstemp_header_bg_color] = "DEE6EF";
+        cfgMap[ss_unitstemp_header_text_color] = "000000";
+        cfgMap[ss_units_header_bg_color] = "DEE6EF";
+        cfgMap[ss_units_header_text_color] = "000000";
+        cfgMap[ss_temp_header_bg_color] = "DEE6EF";
+        cfgMap[ss_temp_header_text_color] = "000000";
+
         cfgMap[ss_test_header_bg_color] = "FFE994";
         cfgMap[ss_test_header_text_color] = "000000";
         cfgMap[ss_result_header_bg_color] = "FFFFA6";

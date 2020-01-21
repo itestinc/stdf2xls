@@ -1,8 +1,0 @@
-/home/eric/.dub/packages/xlsxd-2.2.0/xlsxd/libxlsxwriter/build/CMakeFiles/install/strip.dir
-/home/eric/.dub/packages/xlsxd-2.2.0/xlsxd/libxlsxwriter/build/CMakeFiles/install/local.dir
-/home/eric/.dub/packages/xlsxd-2.2.0/xlsxd/libxlsxwriter/build/CMakeFiles/test.dir
-/home/eric/.dub/packages/xlsxd-2.2.0/xlsxd/libxlsxwriter/build/CMakeFiles/xlsxwriter.dir
-/home/eric/.dub/packages/xlsxd-2.2.0/xlsxd/libxlsxwriter/build/CMakeFiles/edit_cache.dir
-/home/eric/.dub/packages/xlsxd-2.2.0/xlsxd/libxlsxwriter/build/CMakeFiles/rebuild_cache.dir
-/home/eric/.dub/packages/xlsxd-2.2.0/xlsxd/libxlsxwriter/build/CMakeFiles/install.dir
-/home/eric/.dub/packages/xlsxd-2.2.0/xlsxd/libxlsxwriter/build/CMakeFiles/list_install_components.dir
