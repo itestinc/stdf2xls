@@ -118,20 +118,6 @@ lxw_format_free(lxw_format *format)
 }
 
 /*
- * Check a user input color.
- */
-/*
-lxw_color_t
-lxw_format_check_color(lxw_color_t color)
-{
-    if (color == LXW_COLOR_UNSET)
-        return color;
-    else
-        return color & LXW_COLOR_MASK;
-}
-*/
-
-/*
  * Check a user input border.
  */
 STATIC uint8_t

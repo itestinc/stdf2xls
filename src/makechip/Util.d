@@ -220,7 +220,7 @@ class LinkedMap(K, V)
         return missingValue;
     }
 
-    @property size_t size()
+    @property size_t length()
     {
         return map.length;
     }
@@ -262,8 +262,7 @@ class LinkedMap(K, V)
 
     @property auto keys()
     {
-        K[] ks = keylist.dup;
-        return ks;
+        return keylist;
     }
 
     @property auto values()

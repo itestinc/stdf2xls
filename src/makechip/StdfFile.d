@@ -76,7 +76,7 @@ import makechip.DefaultValueDatabase;
 
 class HeaderInfo
 {
-    const bool ignoreMiscItems;
+    private const bool ignoreMiscItems;
     const string step;
     const string temperature;
     const string lot_id;
