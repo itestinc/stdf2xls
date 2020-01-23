@@ -183,6 +183,21 @@ class TestRecord
     const uint seqNum;
 
     /**
+        CTOR for dynamic limit header
+    */
+    this(const TestID id, const TestType type)
+    {
+        this.type = type;
+        this.id = id;
+        this.site = site; 
+        this.head = head; 
+        this.testFlags = testFlags;
+        this.optFlags = optFlags;
+        this.parmFlags = parmFlags;
+        this.seqNum = 0;
+    }
+
+    /**
       CTOR for Functional Test
      */
     this(TestID id, ubyte site, ubyte head, ubyte testFlags, uint seqNum)
@@ -192,10 +207,10 @@ class TestRecord
         this.site = site;
         this.head = head;
         this.testFlags = testFlags;
-        this.seqNum = seqNum;
         this.optFlags = 0;
         this.parmFlags = 0;
         this.result.f = float.nan;
+        this.seqNum = seqNum;
     }
 
     /**
