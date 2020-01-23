@@ -609,17 +609,45 @@ private void setTestNameHeaders(Config config, Worksheet w, Flag!"rotated" rotat
     }
 }
 
-private void setDeviceNameHeader(Config config, Worksheet w, Flag!"rotated" rotated, DeviceResult[] devices)
+private void setDeviceNameHeader(Config config, Worksheet w, Flag!"wafersort" wafersort, Flag!"rotated" rotated, ushort rowOrCol, ulong tmin, DeviceResult device)
 {
+    if (rotated)
+    {
+        w.writeString(7, rowOrCol, device.devId.getID(), deviceidHdrFmt);
+        w.writeNumber(8, rowOrCol, device.tstamp - tmin, deviceidHdrFmt);
+        w.writeNumber(9, rowOrCol, device.hwbin, deviceidHdrFmt);
+        w.writeNumber(10, rowOrCol, device.swbin, deviceidHdrFmt);
+        w.writeNumber(11, rowOrCol, device.site, deviceidHdrFmt);
+    }
+    else
+    {
 
+    }
 }
 
 
 private void setData(Config config, Worksheet w, size_t sheetNum, Flag!"wafersort" wafersort, Flag!"rotated" rotated, DeviceResult[] devices)
 {
-    foreach(device; devices)
+    // Find the smallest timestamp:
+    ulong tmin = ulong.max;
+    foreach (device; devices)
     {
-        //setDeviceNameHeader
+        if (device.tstamp < tmin) tmin = device.tstamp;
+    }
+    ushort rowOrCol = rotated ? 13 : 26;
+    if (rotated)
+    {
+        foreach(device; devices)
+        {
+            setDeviceNameHeader(config, w, wafersort, rotated, rowOrCol, tmin, device);
+        }
+    }
+    else
+    {
+        foreach(device; devices)
+        {
+            setDeviceNameHeader(config, w, wafersort, rotated, rowOrCol, tmin, device);
+        }
     }
 }
 

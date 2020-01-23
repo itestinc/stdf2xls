@@ -13,7 +13,7 @@
         "src/"
     ],  
     "lflags-posix": [
-        "-L$PACKAGE_DIR/src/xlsxd/libxlsxwriter/build/"
+        "-L$PACKAGE_DIR/src/libxlsxwriter/build/"
     ],  
     "lflags-windows": [
         "/LIBPATH:$PACKAGE_DIR\\install_dir\\libxlsxwriter\\lib\\x64\\Release",
@@ -28,7 +28,7 @@
         "zlibstatic"
     ],  
     "preBuildCommands-posix": [
-        "make -C $PACKAGE_DIR/src/xlsxd/libxlsxwriter"
+        "make -C $PACKAGE_DIR/src/libxlsxwriter"
     ],  
     "preBuildCommands-windows": [
         "$PACKAGE_DIR\\windepbuild.bat",
