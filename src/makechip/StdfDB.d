@@ -342,6 +342,9 @@ struct DeviceResult
     PartID devId;
     uint site;
     uint head;
+    uint hwbin;
+    uint swbin;
+    bool goodDevice;
     ulong tstamp;
     TestRecord[] tests;
 
@@ -388,6 +391,7 @@ class StdfDB
 
     void load(StdfFile stdf)
     {
+        uint[] passingHWBins;
         uint seq = 0;
         if (options.verbosityLevel > 10) writeln("file = ", stdf.filename);
         StdfRecord[] rs = stdf.records;
@@ -697,8 +701,14 @@ class StdfDB
                     dr[site - minSite][head - minHead].site = site;
                     dr[site - minSite][head - minHead].head = head;
                     dr[site - minSite][head - minHead].tstamp = time;
+                    dr[site - minSite][head - minHead].hwbin = prr.HARD_BIN;
+                    dr[site - minSite][head - minHead].swbin = prr.SOFT_BIN;
                     devices ~= dr[site - minSite][head - minHead];
                     seq = 0;
+                    break;
+                case Record_t.HBR.ordinal:
+                    Record!(HBR) hbr = cast(Record!(HBR)) rec;
+                    if (hbr.HBIN_PF == 'P' || hbr.HBIN_PF == 'p') passingHWBins ~= hbr.HBIN_NUM;
                     break;
                 default:
             }
