@@ -72,7 +72,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
                 wbMap.put(wb, "", "");
             }
         }
-        uint[const TestID] rowOrColMap;
+        LinkedMap!(const TestID, uint) rowOrColMap = new LinkedMap!(const TestID, uint);
         DeviceResult[] dr = stdfdb.deviceMap[key];
         bool removeDups = false;
         switch (options.sortType) with (Sort_t)
@@ -256,9 +256,36 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
                 }
             }
         }
+        // If there are dynamicLimits, then insert test headers for the upper and lower limits where appropriate
+        TestRecord[] newCompTests;
+        if (!options.noDynamicLimits)
+        {
+            foreach(test; compTests)
+            {
+                if (test.dynamicLoLimit)
+                {
+                    auto type = TestType.DYNAMIC_LOLIMIT;
+                    auto nid = TestID.getTestID(test.id.type, "LO LIMIT", test.id.testNumber, test.id.testName ~ " LO LIMIT", test.id.dup);
+                    TestRecord r = new TestRecord(nid, type);
+                    newCompTests ~= r;
+                }
+                compTests ~= test;
+                if (test.dynamicHiLimit)
+                {
+                    auto type = TestType.DYNAMIC_HILIMIT;
+                    auto nid = TestID.getTestID(test.id.type, "HI LIMIT", test.id.testNumber, test.id.testName ~ " HI LIMIT", test.id.dup);
+                    TestRecord r = new TestRecord(nid, type);
+                    newCompTests ~= r;
+                }
+            }
+        }
+        else
+        {
+            newCompTests = compTests;
+        }
         // now build a row map that maps test ID to spreadsheet row:
         uint rc = 0;
-        foreach(test; compTests)
+        foreach(test; newCompTests)
         {
             rowOrColMap[test.id] = rc;
             rc++;

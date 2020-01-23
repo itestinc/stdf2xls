@@ -199,8 +199,8 @@ class Queue(T)
 
 class LinkedMap(K, V)
 {
-    K[] keylist;
-    V[K] map;
+    private K[] keylist;
+    private V[K] map;
 
     void put(K key, V value)
     {

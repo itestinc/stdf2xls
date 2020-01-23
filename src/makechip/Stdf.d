@@ -1296,6 +1296,8 @@ class StdfRecord
     }
 }
 
+StdfRecord r;
+
 class Record(T) : StdfRecord if (is(T == ATR) || is(T == BPS) || is(T == DTR) || 
                                  is(T == FAR) || is(T == FTR) || is(T == HBR) || 
                                  is(T == MIR) || is(T == MPR) || is(T == MRR) || 
