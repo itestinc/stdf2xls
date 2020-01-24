@@ -319,16 +319,15 @@ private Worksheet[] createSheetsRotated(CmdOptions options, Config config, Workb
         setDeviceHeader(config, w, hdr, Yes.rotated);
         setTableHeaders(config, w, Yes.wafersort, Yes.rotated);
         setTestNameHeaders(config, w, Yes.rotated, rowOrColMap);
-        //setDeviceNameHeaders(config, w, Yes.rotated, devices);
-        setData(config, w, i, Yes.wafersort, Yes.rotated, devices);
+        setData(config, w, i, Yes.wafersort, rowOrColMap, devices);
     }
     return ws;
 }
 
 private Worksheet[] createSheets(CmdOptions options, Config config, Workbook wb, LinkedMap!(const TestID, uint) rowOrColMap, HeaderInfo hdr, DeviceResult[] devices)
 {
-    const size_t numTests = rowOrColMap.length;
-    const size_t maxCols = options.limit1k ? 1000 : 16360;
+    const size_t numTests  = rowOrColMap.length;
+    const size_t maxCols   = options.limit1k ? 1000 : 16360;
     const size_t numSheets = (numTests % maxCols == 0) ? numTests / maxCols : (numTests + 1) / maxCols;
     Worksheet[] ws;
     for (size_t i=0; i<numSheets; i++)
@@ -342,8 +341,7 @@ private Worksheet[] createSheets(CmdOptions options, Config config, Workbook wb,
         setDeviceHeader(config, w, hdr, No.rotated);
         setTableHeaders(config, w, No.wafersort, No.rotated);
         setTestNameHeaders(config, w, No.rotated, rowOrColMap);
-        //setDeviceNameHeaders(config, w, No.rotated, devices);
-        setData(config, w, i, No.wafersort, No.rotated, devices);
+        setData(config, w, i, maxCols, No.wafersort, rowOrColMap, devices);
     }
     return ws;
 }
@@ -618,15 +616,23 @@ private void setDeviceNameHeader(Config config, Worksheet w, Flag!"wafersort" wa
         w.writeNumber(9, rowOrCol, device.hwbin, deviceidHdrFmt);
         w.writeNumber(10, rowOrCol, device.swbin, deviceidHdrFmt);
         w.writeNumber(11, rowOrCol, device.site, deviceidHdrFmt);
+        if (device.goodDevice) w.writeString(12, rowOrCol, "PASS", deviceidHdrFmt);
+        else w.writeString(12, rowOrCol, "FAIL", failFmt);
     }
     else
     {
-
+        w.writeString(rowOrCol, 0, device.devId.getID(), deviceidHdrFmt);
+        w.writeNumber(rowOrCol, 1, device.tstamp - tmin, deviceidHdrFmt);
+        w.writeNumber(rowOrCol, 2, device.hwbin, deviceidHdrFmt);
+        w.writeNumber(rowOrCol, 3, device.swbin, deviceidHdrFmt);
+        w.writeNumber(rowOrCol, 4, device.site, deviceidHdrFmt);
+        if (device.goodDevice) w.writeString(rowOrCol, 5, "PASS", deviceidHdrFmt);
+        else w.writeString(rowOrCol, 5, "FAIL", failFmt);
     }
 }
 
-
-private void setData(Config config, Worksheet w, size_t sheetNum, Flag!"wafersort" wafersort, Flag!"rotated" rotated, DeviceResult[] devices)
+// This is for not-rotated spreadsheets
+private void setData(Config config, Worksheet w, size_t sheetNum, const size_t maxCols, Flag!"wafersort" wafersort, LinkedMap!(const TestID, uint) rowOrColMap, DeviceResult[] devices)
 {
     // Find the smallest timestamp:
     ulong tmin = ulong.max;
@@ -634,20 +640,32 @@ private void setData(Config config, Worksheet w, size_t sheetNum, Flag!"wafersor
     {
         if (device.tstamp < tmin) tmin = device.tstamp;
     }
-    ushort rowOrCol = rotated ? 13 : 26;
-    if (rotated)
+    ushort rowOrCol = 26;
+    // do not exceed maxCols
+    foreach(device; devices)
     {
-        foreach(device; devices)
+        setDeviceNameHeader(config, w, wafersort, No.rotated, rowOrCol, tmin, device);
+        for (int i=0; i<device.tests.length; i++)
         {
-            setDeviceNameHeader(config, w, wafersort, rotated, rowOrCol, tmin, device);
+            TestRecord tr = device.tests[i];
+            uint seqNum = rowOrColMap[tr.id];
         }
     }
-    else
+}
+
+// This is for rotated spreadsheets
+private void setData(Config config, Worksheet w, size_t sheetNum, Flag!"wafersort" wafersort, LinkedMap!(const TestID, uint) rowOrColMap, DeviceResult[] devices)
+{
+    // Find the smallest timestamp:
+    ulong tmin = ulong.max;
+    foreach (device; devices)
     {
-        foreach(device; devices)
-        {
-            setDeviceNameHeader(config, w, wafersort, rotated, rowOrCol, tmin, device);
-        }
+        if (device.tstamp < tmin) tmin = device.tstamp;
+    }
+    ushort rowOrCol = 13;
+    foreach(device; devices)
+    {
+        setDeviceNameHeader(config, w, wafersort, Yes.rotated, rowOrCol, tmin, device);
     }
 }
 
