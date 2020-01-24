@@ -391,7 +391,7 @@ class StdfDB
 
     void load(StdfFile stdf)
     {
-        uint[] passingHWBins;
+        ushort[] passingHWBins;
         uint seq = 0;
         if (options.verbosityLevel > 10) writeln("file = ", stdf.filename);
         StdfRecord[] rs = stdf.records;
@@ -711,6 +711,18 @@ class StdfDB
                     if (hbr.HBIN_PF == 'P' || hbr.HBIN_PF == 'p') passingHWBins ~= hbr.HBIN_NUM;
                     break;
                 default:
+            }
+        }
+        foreach (device; devices)
+        {
+            device.goodDevice = false;
+            foreach(passBin; passingHWBins)
+            {
+                if (passBin == device.hwbin)
+                {
+                    device.goodDevice = true;
+                    break;
+                }
             }
         }
         if (stdf.hdr !in deviceMap)
