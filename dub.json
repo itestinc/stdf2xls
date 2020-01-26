@@ -13,29 +13,14 @@
         "src/"
     ],  
     "lflags-posix": [
-        "-L$PACKAGE_DIR/src/libxlsxwriter/src/"
-    ],  
-    "lflags-windows": [
-        "/LIBPATH:$PACKAGE_DIR\\install_dir\\libxlsxwriter\\lib\\x64\\Release",
-        "/LIBPATH:$PACKAGE_DIR\\install_dir\\zlib\\lib"
+        "-Lsrc/libxlsxwriter/src"
     ],  
     "libs-posix": [
         "xlsxwriter"
     ],  
-    "libs-windows": [
-        "msvcrt",
-        "xlsxwriter",
-        "zlibstatic"
-    ],  
     "preBuildCommands-posix": [
-        "make -C $PACKAGE_DIR/src/libxlsxwriter"
-    ],  
-    "preBuildCommands-windows": [
-        "$PACKAGE_DIR\\windepbuild.bat",
-        "cd $PACKAGE_DIR && dmd -run sizetdisable.d"
-    ],  
-    "sourcePaths": [
-        "src/"
+        "make -C $PACKAGE_DIR/src/libxlsxwriter",
+        "rm src/libxlsxwriter/src/libxlsxwriter.so" 
     ],  
 	"TargetType" : "executable",
 	"mainSourceFile" : "src/main.d",
