@@ -1,6 +1,7 @@
 module makechip.Config;
 import libxlsxd.format;
 import std.conv;
+import std.stdio;
 
 class Config
 {
@@ -25,6 +26,9 @@ class Config
     static immutable string ss_header_name_text_color       = "ss.header.name.text_color";
     static immutable string ss_header_value_bg_color        = "ss.header.value.bg_color";
     static immutable string ss_header_value_text_color      = "ss.header.value.text_color";
+    static immutable string ss_dynamic_limit_bg_color       = "ss.dynamic_limit.bg_color";
+    static immutable string ss_dynamic_limit_text_color     = "ss.dynamic_limit.text_color";
+
 
     static immutable string ss_testid_header_bg_color       = "ss.testid.header.bg_color";
     static immutable string ss_testid_header_text_color     = "ss.testid.header.text_color";
@@ -59,7 +63,7 @@ class Config
 
     public int getColor(string colorName)
     {
-        string c = cfgMap.get("NONE", colorName);
+        string c = cfgMap.get(colorName, "NONE");
         if (c == "NONE") return -1;
         int x = to!int(c, 16);
         if (x == 0) x = 0x1000000;
@@ -82,27 +86,28 @@ class Config
 
     public void setBGColor(Format f, string colorName)
     {
-        string c = cfgMap.get("NONE", colorName);
+        string c = cfgMap.get(colorName, "NONE");
+        string d = cfgMap[colorName];
         if (c == "NONE") return;
-        int x = to!int(c);
+        int x = to!int(c, 16);
         if (x == 0) x = 0x1000000;
         f.setBgColor(x);
     }
 
     public void setFGColor(Format f, string colorName)
     {
-        string c = cfgMap.get("NONE", colorName);
+        string c = cfgMap.get(colorName, "NONE");
         if (c == "NONE") return;
-        int x = to!int(c);
+        int x = to!int(c, 16);
         if (x == 0) x = 0x1000000;
         f.setFgColor(x);
     }
 
     public void setFontColor(Format f, string colorName)
     {
-        string c = cfgMap.get("NONE", colorName);
+        string c = cfgMap.get(colorName, "NONE");
         if (c == "NONE") return;
-        int x = to!int(c);
+        int x = to!int(c, 16);
         if (x == 0) x = 0x1000000;
         f.setFontColor(x);
     }
@@ -134,6 +139,8 @@ class Config
         cfgMap[ss_header_name_text_color] = "000000";
         cfgMap[ss_header_value_bg_color] = "F6F9D4";
         cfgMap[ss_header_value_text_color] = "000000";
+        cfgMap[ss_dynamic_limit_bg_color] = "FFFF00";
+        cfgMap[ss_dynamic_limit_text_color] = "000000";
 
         cfgMap[ss_testid_header_bg_color] = "DEE6EF";
         cfgMap[ss_testid_header_text_color] = "000000";
@@ -156,7 +163,7 @@ class Config
         cfgMap[ss_logo_x_scale] = "0.0";
         cfgMap[ss_logo_y_scale] = "0.0";
 
-        string rc = std.path.expandTilde("~/stdf2xlsxrc");
+        string rc = std.path.expandTilde("~/.stdf2xlsxrc");
         if (rc.exists)
         {
             auto f = File(rc, "r");
@@ -167,7 +174,10 @@ class Config
                 if (l[0] == '#') continue;
                 string[] x = cast(string[]) split(l);
                 if (x.length == 1) cfgMap[x[0]] = "";
-                else cfgMap[x[0]] = x[1];
+                else 
+                {
+                    cfgMap[x[0]] = x[1];
+                }
             }
             f.close();
         }

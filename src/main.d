@@ -109,7 +109,7 @@ int main(string[] args)
         }
     }
     // prepare to process test data
-    loadDb(options);
+    if (options.summarize || options.genSpreadsheet || options.genWafermap || options.genHistogram) loadDb(options);
     if (options.summarize) summarize();
     if (options.genSpreadsheet) genSpreadsheet(options, config);
     if (options.genWafermap) genWafermap(options, config);
