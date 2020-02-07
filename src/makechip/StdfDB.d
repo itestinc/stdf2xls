@@ -167,7 +167,7 @@ class TestRecord
     const TestID id;
     const ubyte site;
     const ubyte head;
-    const ubyte testFlags;
+    ubyte testFlags;
     const ubyte optFlags;
     const ubyte parmFlags;
     bool uflag;
@@ -582,7 +582,32 @@ class StdfDB
                         TestRecord tr = new TestRecord(id, mpr.SITE_NUM, mpr.HEAD_NUM, mpr.TEST_FLG, optFlags, parmFlags, 
                                 loLimit, hiLimit, result, units, resScal, llmScal, hlmScal, seq);
                         normalizeValues(tr);
-                        stdout.flush();
+                        if ((tr.parmFlags & 64) == 64)
+                        {
+                            if (tr.result.f >= tr.loLimit) tr.testFlags &= 0x7F;
+                            else tr.testFlags |= 0x80;
+                        }
+                        else
+                        {
+                            if (tr.result.f > tr.loLimit) tr.testFlags &= 0x7F;
+                            else tr.testFlags |= 0x80;
+                        }
+                        if ((tr.parmFlags & 128) == 128)
+                        {
+                            if (!(tr.testFlags & 0x80))
+                            {
+                                if (tr.result.f <= tr.hiLimit) tr.testFlags &= 0x7F;
+                                else tr.testFlags |= 0x80;
+                            }
+                        }
+                        else
+                        {
+                            if (!(tr.testFlags & 0x80))
+                            {
+                                if (tr.result.f < tr.hiLimit) tr.testFlags &= 0x7F;
+                                else tr.testFlags |= 0x80;
+                            }
+                        }
                         dr[mpr.SITE_NUM - minSite][mpr.HEAD_NUM - minHead].tests ~= tr;
                         seq++;
                     }

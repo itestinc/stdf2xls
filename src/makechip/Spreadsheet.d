@@ -203,6 +203,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         }
         // First expand the test list so they are essentially equal length (assuming they are passing devices)
         TestRecord[][] newTests = new TestRecord[][devices.length];
+        writeln("maxLoc = ", maxLoc, " devices.length = ", devices.length); stdout.flush();
         for (size_t j=0; j<devices[maxLoc].tests.length; j++)
         {
             scan(j, devices[maxLoc].tests[j].id, devices[maxLoc].tests[j].type, devices, newTests);
