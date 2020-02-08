@@ -106,7 +106,7 @@ class CmdOptions
     bool verifyWrittenStdf = false;
     bool noIgnoreMiscHeader = false;
     bool summarize = false;
-    bool genSpreadsheet = true;
+    bool genSpreadsheet = false;
     bool genWafermap = false;
     bool genHistogram = false;
     bool rotate = false;
@@ -116,11 +116,11 @@ class CmdOptions
     Sort_t sortType = Sort_t.SN_UP_TIME_UP; 
     private string[] modify;
     PMRNameType channelType = PMRNameType.AUTO;
-    int verbosityLevel = 1;
+    uint verbosityLevel = 1;
     string outputDir = "";
-    string sfile = "${device}_${lot}.xlsx";
-    string hfile = "${device}_historgrams.pdf";
-    string wfile = "${device}_${lot}_${wafer}";
+    string sfile = "<device>_<lot>.xlsx";
+    string hfile = "<device>_historgrams.pdf";
+    string wfile = "<device>_<lot>_<wafer>";
     BinCategory_t category = BinCategory_t.NONE;
 
     string[] stdfFiles;

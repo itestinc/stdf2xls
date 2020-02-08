@@ -57,7 +57,7 @@ class Config
 
     public string getLogoPath()
     {
-        string path = cfgMap.get("", ss_logo_file_path);
+        string path = cfgMap.get(ss_logo_file_path, "");
         return path;
     }
 
@@ -87,7 +87,7 @@ class Config
     public void setBGColor(Format f, string colorName)
     {
         string c = cfgMap.get(colorName, "NONE");
-        string d = cfgMap[colorName];
+        writeln("colorName = ", colorName, " color = ", c);
         if (c == "NONE") return;
         int x = to!int(c, 16);
         if (x == 0) x = 0x1000000;
@@ -176,10 +176,19 @@ class Config
                 if (x.length == 1) cfgMap[x[0]] = "";
                 else 
                 {
-                    cfgMap[x[0]] = x[1];
+                    writeln("x[0] = ", x[0], " x[1] = ", x[1]);
+                    cfgMap[x[0].idup] = x[1].idup;
+                    string cc = cfgMap.get(ss_page_title_bg_color, "-");
+                    writeln("cc = ", cc);
+                    cc = cfgMap.get(ss_unitstemp_header_bg_color, "-");
+                    writeln("dd = ", cc);
                 }
             }
             f.close();
+        }
+        if (ss_page_title_bg_color == "ss.page.title.bg_color")
+        {
+            writeln("ss_page_title_bg_color = ", cfgMap[ss_page_title_bg_color]);
         }
     }
 

@@ -19,6 +19,7 @@ int main(string[] args)
     import std.file;
     Config config = new Config();
     config.load();
+    writeln("bg color = ", config.getColor(Config.ss_page_title_bg_color));
     if (options.generateRC) config.write();
     StdfFile[][HeaderInfo] stdfs = processStdf(options);
     // print, write, and modify here - options.textDump, options.byteDump, options.verifyWrittenStdf, option.outputDir
