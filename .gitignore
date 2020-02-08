@@ -15,4 +15,5 @@ src/makechip/a
 stdf2xls
 stdf2xls-test-library
 x.tmp
-
+*.a
+.~lock*

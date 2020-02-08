@@ -103,7 +103,7 @@ class HeaderInfo
         string[const string] hi;
         foreach (key; headerItems)
         {
-            string value = headerItems[key];
+            string value = headerItems.get(key, "");
             hi[key] = value;
         }
         return hi;

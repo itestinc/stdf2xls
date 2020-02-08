@@ -7,6 +7,7 @@ import makechip.StdfFile;
 import makechip.StdfDB;
 import makechip.Config;
 import makechip.CmdOptions;
+import std.stdio;
 
 static Format legendTitleFmt;           // ss.title.bg_color ss.legend.title.text_color
 static Format failFmt;                  // ss.fail.bg_color ss.legend.fail.text_color
@@ -31,12 +32,18 @@ static Format testNumberHdrFmt;         // ss.test.header.bg_color ss.test.heade
 static Format testNameHdrFmt;           // ss.test.header.bg_color ss.test.header.text_color
 static Format testLimitHdrFmt;          // ss.test.header.bg_color ss.test.header.text_color
 static Format rsltHdrFmt;               // ss.result.header.bg_color ss.result.header.text_color
+static Format dylimFmt;                 // ss.dynamic_limit.bg_color ss.dynamic_limit.text_color
+static Format floatFmt;                 // ss.legend.pass.bg_color ss.legend.pass.text_color
+static Format intFmt;                   // ss.legend.pass.bg_color ss.legend.pass.text_color
+static Format floatFailFmt;             // ss.fail.bg_color ss.legend.fail.text_color
+static Format intFailFmt;               // ss.fail.bg_color ss.legend.fail.text_color
 
 immutable size_t defaultRowHeight = 20;
 immutable size_t defaultColWidth = 70;
 
 public void initFormats(Workbook wb, CmdOptions options, Config config)
 {
+    if (options.verbosityLevel > 9) writeln("initFormats()");
     import libxlsxd.xlsxwrap;
     legendTitleFmt = wb.addFormat();
     legendTitleFmt.setFontName("Arial");
@@ -257,98 +264,126 @@ public void initFormats(Workbook wb, CmdOptions options, Config config)
     rsltHdrFmt.setBorderColor(0x1000000);
     rsltHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
 
+    dylimFmt = wb.addFormat();
+    dylimFmt.setFontName("Arial");
+    dylimFmt.setFontSize(8.0);
+    config.setBGColor(dylimFmt, Config.ss_dynamic_limit_bg_color);
+    config.setFontColor(dylimFmt, Config.ss_dynamic_limit_text_color);
+    dylimFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    dylimFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    dylimFmt.setBorderColor(0x1000000);
+    dylimFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+
+    floatFmt = wb.addFormat();
+    floatFmt.setFontName("Arial");
+    floatFmt.setFontSize(8.0);
+    config.setBGColor(floatFmt, Config.ss_pass_bg_color);
+    config.setFontColor(floatFmt, Config.ss_pass_text_color);
+    floatFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    floatFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    floatFmt.setBorderColor(0x1000000);
+    floatFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    floatFmt.setNumFormat("0.000");
+
+    intFmt = wb.addFormat();
+    intFmt.setFontName("Arial");
+    intFmt.setFontSize(8.0);
+    config.setBGColor(intFmt, Config.ss_pass_bg_color);
+    config.setFontColor(intFmt, Config.ss_pass_text_color);
+    intFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    intFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    intFmt.setBorderColor(0x1000000);
+    intFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    intFmt.setNumFormat("General");
+
+    floatFailFmt = wb.addFormat();
+    floatFailFmt.setFontName("Arial");
+    floatFailFmt.setFontSize(8.0);
+    config.setBGColor(floatFailFmt, Config.ss_fail_bg_color);
+    config.setFontColor(floatFailFmt, Config.ss_fail_text_color);
+    floatFailFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    floatFailFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    floatFailFmt.setBorderColor(0x1000000);
+    floatFailFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    floatFailFmt.setNumFormat("0.000");
+
+    intFailFmt = wb.addFormat();
+    intFailFmt.setFontName("Arial");
+    intFailFmt.setFontSize(8.0);
+    config.setBGColor(intFailFmt, Config.ss_fail_bg_color);
+    config.setFontColor(intFailFmt, Config.ss_fail_text_color);
+    intFailFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    intFailFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    intFailFmt.setBorderColor(0x1000000);
+    intFailFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    intFailFmt.setNumFormat("General");
+
 }
 
 public void writeSheet(CmdOptions options, Workbook wb, LinkedMap!(const TestID, uint) rowOrColMap, HeaderInfo hdr, DeviceResult[] devices, Config config)
 {
-    if (hdr.isWafersort()) 
+    if (options.verbosityLevel > 9) 
     {
-        if (options.rotate) writeWaferSheetRotate(options, wb, rowOrColMap, hdr, devices, config);
-        else writeWaferSheet(options, wb, rowOrColMap, hdr, devices, config);
+        writeln("writeSheet()");
+        writeln("rowOrColMap.length = ", rowOrColMap.length);
     }
-    else
-    {
-        if (options.rotate) writeFTSheetRotate(options, wb, rowOrColMap, hdr, devices, config);
-        else writeFTSheet(options, wb, rowOrColMap, hdr, devices, config);
-    }
-}
-
-private void writeWaferSheetRotate(CmdOptions options, Workbook wb, LinkedMap!(const TestID, uint) rowOrColMap, HeaderInfo hdr, DeviceResult[] devices, Config config)
-{
-    const size_t numDevices = devices.length;
-    const size_t maxCols = options.limit1k ? 1000 : 16360;
-}
-
-private void writeWaferSheet(CmdOptions options, Workbook wb, LinkedMap!(const TestID, uint) rowOrColMap, HeaderInfo hdr, DeviceResult[] devices, Config config)
-{
-    const size_t numTests = rowOrColMap.length;
-    const size_t maxCols = options.limit1k ? 1000 : 16360;
-    
-}
-
-private void writeFTSheetRotate(CmdOptions options, Workbook wb, LinkedMap!(const TestID, uint) rowOrColMap, HeaderInfo hdr, DeviceResult[] devices, Config config)
-{
-    const size_t numDevices = devices.length;
-    const size_t maxCols = options.limit1k ? 1000 : 16360;
-
-}
-
-private void writeFTSheet(CmdOptions options, Workbook wb, LinkedMap!(const TestID, uint) rowOrColMap, HeaderInfo hdr, DeviceResult[] devices, Config config)
-{
-    const size_t numTests = rowOrColMap.length;
-    const size_t maxCols = options.limit1k ? 1000 : 16360;
-
+    if (options.rotate) createSheetsRotated(options, config, wb, rowOrColMap, hdr, devices);
+    else createSheets(options, config, wb, rowOrColMap, hdr, devices);
 }
 
 import makechip.Util;
 import std.typecons;
 private Worksheet[] createSheetsRotated(CmdOptions options, Config config, Workbook wb, LinkedMap!(const TestID, uint) rowOrColMap, HeaderInfo hdr, DeviceResult[] devices)
 {
+    if (options.verbosityLevel > 9) writeln("createSheetsRotated()");
     const size_t numDevices = devices.length;
     const size_t maxCols = options.limit1k ? 1000 : 16360;
-    const size_t numSheets = (numDevices % maxCols == 0) ? numDevices / maxCols : (numDevices + 1) / maxCols;
+    const size_t numSheets = (numDevices % maxCols == 0) ? numDevices / maxCols : 1 + (numDevices / maxCols);
     Worksheet[] ws;
     for (size_t i=0; i<numSheets; i++)
     {
-        string title = getTitle(hdr, i);
+        string title = getTitle(options, hdr, i);
         Worksheet w = wb.addWorksheet(title);
         ws ~= w;
-        setLogo(config, w);
-        setLegend(config, w, Yes.rotated);
-        setPageHeader(config, w, title, numDevices > maxCols - 4 ? maxCols - 4 : numDevices, Yes.rotated);
-        setDeviceHeader(config, w, hdr, Yes.rotated);
-        setTableHeaders(config, w, Yes.wafersort, Yes.rotated);
-        setTestNameHeaders(config, w, Yes.rotated, rowOrColMap);
-        setData(config, w, i, Yes.wafersort, rowOrColMap, devices);
+        setLogo(options, config, w);
+        setLegend(options, config, w, Yes.rotated);
+        setPageHeader(options, config, w, title, numDevices > maxCols - 4 ? maxCols - 4 : numDevices, Yes.rotated);
+        setDeviceHeader(options, config, w, hdr, Yes.rotated);
+        setTableHeaders(options, config, w, Yes.wafersort, Yes.rotated);
+        setTestNameHeaders(options, config, w, Yes.rotated, rowOrColMap);
+        setData(options, config, w, i, Yes.wafersort, rowOrColMap, devices);
     }
     return ws;
 }
 
 private Worksheet[] createSheets(CmdOptions options, Config config, Workbook wb, LinkedMap!(const TestID, uint) rowOrColMap, HeaderInfo hdr, DeviceResult[] devices)
 {
+    if (options.verbosityLevel > 9) writeln("createSheets()");
     const size_t numTests  = rowOrColMap.length;
     const size_t maxCols   = options.limit1k ? 1000 : 16360;
-    const size_t numSheets = (numTests % maxCols == 0) ? numTests / maxCols : (numTests + 1) / maxCols;
+    const size_t numSheets = (numTests % maxCols == 0) ? numTests / maxCols : 1 + (numTests / maxCols);
+    if (options.verbosityLevel > 9) writeln("numSheets = ", numSheets, " numTests = ", numTests, " maxCols = ", maxCols);
     Worksheet[] ws;
     for (size_t i=0; i<numSheets; i++)
     {
-        string title = getTitle(hdr, i);
+        string title = getTitle(options, hdr, i);
         Worksheet w = wb.addWorksheet(title);
         ws ~= w;
-        setLogo(config, w);
-        setLegend(config, w, No.rotated);
-        setPageHeader(config, w, title, numTests > maxCols - 4 ? maxCols - 4 : numTests, No.rotated);
-        setDeviceHeader(config, w, hdr, No.rotated);
-        setTableHeaders(config, w, No.wafersort, No.rotated);
-        setTestNameHeaders(config, w, No.rotated, rowOrColMap);
-        setData(config, w, i, maxCols, No.wafersort, rowOrColMap, devices);
+        setLogo(options, config, w);
+        setLegend(options, config, w, No.rotated);
+        setPageHeader(options, config, w, title, numTests > maxCols - 4 ? maxCols - 4 : numTests, No.rotated);
+        setDeviceHeader(options, config, w, hdr, No.rotated);
+        setTableHeaders(options, config, w, No.wafersort, No.rotated);
+        setTestNameHeaders(options, config, w, No.rotated, rowOrColMap);
+        setData(options, config, w, i, maxCols, No.wafersort, rowOrColMap, devices);
     }
     return ws;
 }
 
 import std.conv;
-private string getTitle(HeaderInfo hdr, size_t page)
+private string getTitle(CmdOptions options, HeaderInfo hdr, size_t page)
 {
+    if (options.verbosityLevel > 9) writeln("getTitle()");
     string title;
     if (hdr.isWafersort())
     {
@@ -367,23 +402,24 @@ private string getTitle(HeaderInfo hdr, size_t page)
 }
 
 // Note scaling relies on the image having a resolution of 11.811 pixels / mm
-private void setLogo(Config config, Worksheet w)
+private void setLogo(CmdOptions options, Config config, Worksheet w)
 {
+    if (options.verbosityLevel > 9) writeln("setLogo()");
     import arsd.image;
     import arsd.color;
     string logoPath = config.getLogoPath();
-    lxw_image_options options;
-    options.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
-    w.mergeRange(0, 0, 7, 3, null);
+    lxw_image_options opts;
+    opts.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
+    w.mergeRange(0, 0, 6, 2, null);
     if (logoPath == "") // use ITest logo
     {
         import makechip.logo;
-        MemoryImage image = MemoryImage.fromImage(logoPath);
-        double ss_width = image.width() * 0.350;
-        double ss_height = image.height() * 0.324;
-        options.x_scale = (4.0 * defaultColWidth) / ss_width;
-        options.y_scale = (7.0 * defaultRowHeight) / ss_height;
-        w.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, makechip.logo.img.dup.ptr, makechip.logo.img.length, &options);
+        double ss_width = 449 * 0.350;
+        double ss_height = 245 * 0.324;
+        opts.x_scale = (3.0 * 70.0) / ss_width;
+        opts.y_scale = (7.0 * 20.0) / ss_height;
+        opts.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
+        w.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, makechip.logo.img.dup.ptr, makechip.logo.img.length, &opts);
     }
     else
     {
@@ -394,37 +430,67 @@ private void setLogo(Config config, Worksheet w)
         {
             double ss_width = image.width() * 0.350;
             double ss_height = image.height() * 0.324;
-            options.x_scale = (4.0 * defaultColWidth) / ss_width;
-            options.y_scale = (7.0 * defaultRowHeight) / ss_height;
-            w.insertImageOpt(cast(uint) 0, cast(ushort) 0, logoPath, &options);
+            opts.x_scale = (3.0 * defaultColWidth) / ss_width;
+            opts.y_scale = (7.0 * defaultRowHeight) / ss_height;
+            w.insertImageOpt(cast(uint) 0, cast(ushort) 0, logoPath, &opts);
         }
         else
         {
-            options.x_scale = xscl;
-            options.y_scale = yscl;
-            w.insertImageOpt(cast(uint) 0, cast(ushort) 0, logoPath, &options);
+            opts.x_scale = xscl;
+            opts.y_scale = yscl;
+            w.insertImageOpt(cast(uint) 0, cast(ushort) 0, logoPath, &opts);
         }
     }
 }
 
-private void setLegend(Config config, Worksheet w, Flag!"rotated" rotated)
+private void setLegend(CmdOptions options, Config config, Worksheet w, Flag!"rotated" rotated)
 {
-    w.writeString(0, 3, "Legend:", legendTitleFmt);
-    w.writeString(1, 3, "FAIL", failFmt);
-    w.writeString(2, 3, "Unreliable", unreliableFmt);
-    w.writeString(3, 3, "Timeout", timeoutFmt);
-    w.writeString(4, 3, "Alarm", alarmFmt);
-    w.writeString(5, 3, "Abort", abortFmt);
-    w.writeString(6, 3, "Invalid", invalidFmt);
+    if (options.verbosityLevel > 9) writeln("setLegend()");
+    if (rotated)
+    {
+        w.writeString(0, 3, "Legend:", legendTitleFmt);
+        w.writeString(1, 3, "FAIL", failFmt);
+        w.writeString(2, 3, "Unreliable", unreliableFmt);
+        w.writeString(3, 3, "Timeout", timeoutFmt);
+        w.writeString(4, 3, "Alarm", alarmFmt);
+        w.writeString(5, 3, "Abort", abortFmt);
+        w.writeString(6, 3, "Invalid", invalidFmt);
+    }
+    else
+    {
+        w.mergeRange(0, 3, 0, 5, null);
+        w.mergeRange(1, 3, 1, 5, null);
+        w.mergeRange(2, 3, 2, 5, null);
+        w.mergeRange(3, 3, 3, 5, null);
+        w.mergeRange(4, 3, 4, 5, null);
+        w.mergeRange(5, 3, 5, 5, null);
+        w.mergeRange(6, 3, 6, 5, null);
+        w.writeString(0, 3, "Legend:", legendTitleFmt);
+        w.writeString(1, 3, "FAIL", failFmt);
+        w.writeString(2, 3, "Unreliable", unreliableFmt);
+        w.writeString(3, 3, "Timeout", timeoutFmt);
+        w.writeString(4, 3, "Alarm", alarmFmt);
+        w.writeString(5, 3, "Abort", abortFmt);
+        w.writeString(6, 3, "Invalid", invalidFmt);
+    }
 }
 
-private void setPageHeader(Config config, Worksheet w, string title, size_t dataCols, Flag!"rotated" rotated)
+private void setPageHeader(CmdOptions options, Config config, Worksheet w, string title, size_t dataCols, Flag!"rotated" rotated)
 {
-    w.mergeRange(0, cast(ushort) 4, 7, cast(ushort) (4+dataCols), title, pageTitleFmt);
+    if (options.verbosityLevel > 9) writeln("setPageHeader()");
+    if (rotated)
+    {
+        w.mergeRange(0, cast(ushort) 6, 6, cast(ushort) (6+dataCols), title, pageTitleFmt);
+    }
+    else
+    {
+        w.mergeRange(0, cast(ushort) 4, 6, cast(ushort) (12+dataCols), title, pageTitleFmt);
+    }
 }
 
-private void setDeviceHeader(Config config, Worksheet w, HeaderInfo hdr, Flag!"rotated" rotated)
+private void setDeviceHeader(CmdOptions options, Config config, Worksheet w, HeaderInfo hdr, Flag!"rotated" rotated)
 {
+    if (options.verbosityLevel > 9) writeln("setDeviceHeader()");
     if (rotated)
     {
         int r = 7;
@@ -534,8 +600,9 @@ private void setDeviceHeader(Config config, Worksheet w, HeaderInfo hdr, Flag!"r
 //static Format unitstempHdrFmt;          // ss.unitstemp.header.bg_color ss.unitstemp.header.text_color
 //static Format unitsHdrFmt;              // ss.units.header.bg_color ss.units.header.text_color
 //static Format tempHdrFmt;               // ss.temp.header.bg_color ss.temp.header.text_color
-private void setTableHeaders(Config config, Worksheet w, Flag!"wafersort" wafersort, Flag!"rotated" rotated)
+private void setTableHeaders(CmdOptions options, Config config, Worksheet w, Flag!"wafersort" wafersort, Flag!"rotated" rotated)
 {
+    if (options.verbosityLevel > 9) writeln("setTableHeaders()");
     if (rotated)
     {
         // test id header
@@ -576,8 +643,9 @@ private void setTableHeaders(Config config, Worksheet w, Flag!"wafersort" wafers
     }
 }
 
-private void setTestNameHeaders(Config config, Worksheet w, Flag!"rotated" rotated, LinkedMap!(const TestID, uint) tests)
+private void setTestNameHeaders(CmdOptions options, Config config, Worksheet w, Flag!"rotated" rotated, LinkedMap!(const TestID, uint) tests)
 {
+    if (options.verbosityLevel > 9) writeln("setTestNameHeaders()");
     const TestID[] ids = tests.keys();
     if (rotated)
     {
@@ -607,17 +675,18 @@ private void setTestNameHeaders(Config config, Worksheet w, Flag!"rotated" rotat
     }
 }
 
-private void setDeviceNameHeader(Config config, Worksheet w, Flag!"wafersort" wafersort, Flag!"rotated" rotated, ushort rowOrCol, ulong tmin, DeviceResult device)
+private void setDeviceNameHeader(CmdOptions options, Config config, Worksheet w, Flag!"wafersort" wafersort, Flag!"rotated" rotated, uint rowOrCol, ulong tmin, DeviceResult device)
 {
+    if (options.verbosityLevel > 9) writeln("setDeviceNameHeaders()");
     if (rotated)
     {
-        w.writeString(7, rowOrCol, device.devId.getID(), deviceidHdrFmt);
-        w.writeNumber(8, rowOrCol, device.tstamp - tmin, deviceidHdrFmt);
-        w.writeNumber(9, rowOrCol, device.hwbin, deviceidHdrFmt);
-        w.writeNumber(10, rowOrCol, device.swbin, deviceidHdrFmt);
-        w.writeNumber(11, rowOrCol, device.site, deviceidHdrFmt);
-        if (device.goodDevice) w.writeString(12, rowOrCol, "PASS", deviceidHdrFmt);
-        else w.writeString(12, rowOrCol, "FAIL", failFmt);
+        w.writeString(7, cast(ushort) rowOrCol, device.devId.getID(), deviceidHdrFmt);
+        w.writeNumber(8, cast(ushort) rowOrCol, device.tstamp - tmin, deviceidHdrFmt);
+        w.writeNumber(9, cast(ushort) rowOrCol, device.hwbin, deviceidHdrFmt);
+        w.writeNumber(10, cast(ushort) rowOrCol, device.swbin, deviceidHdrFmt);
+        w.writeNumber(11, cast(ushort) rowOrCol, device.site, deviceidHdrFmt);
+        if (device.goodDevice) w.writeString(12, cast(ushort) rowOrCol, "PASS", deviceidHdrFmt);
+        else w.writeString(12, cast(ushort) rowOrCol, "FAIL", failFmt);
     }
     else
     {
@@ -632,40 +701,109 @@ private void setDeviceNameHeader(Config config, Worksheet w, Flag!"wafersort" wa
 }
 
 // This is for not-rotated spreadsheets
-private void setData(Config config, Worksheet w, size_t sheetNum, const size_t maxCols, Flag!"wafersort" wafersort, LinkedMap!(const TestID, uint) rowOrColMap, DeviceResult[] devices)
+private void setData(CmdOptions options, Config config, Worksheet w, size_t sheetNum, const size_t maxCols, Flag!"wafersort" wafersort, LinkedMap!(const TestID, uint) rowOrColMap, DeviceResult[] devices)
 {
+    if (options.verbosityLevel > 9) writeln("setData(1)");
     // Find the smallest timestamp:
     ulong tmin = ulong.max;
     foreach (device; devices)
     {
         if (device.tstamp < tmin) tmin = device.tstamp;
     }
-    ushort rowOrCol = 26;
     // do not exceed maxCols
+    uint row = 26;
     foreach(device; devices)
     {
-        setDeviceNameHeader(config, w, wafersort, No.rotated, rowOrCol, tmin, device);
+        setDeviceNameHeader(options, config, w, wafersort, No.rotated, row, tmin, device);
         for (int i=0; i<device.tests.length; i++)
         {
             TestRecord tr = device.tests[i];
             uint seqNum = rowOrColMap[tr.id];
+            ushort col = cast(ushort) (seqNum + 7);
+            switch (tr.type) with(TestType)
+            {
+            case FUNCTIONAL:
+                if ((tr.testFlags & 0x80) == 0x80) w.writeString(row, col, "FAIL", failFmt);
+                else w.writeString(row, col, "PASS", passFmt);
+                break;
+            case PARAMETRIC: goto case;
+            case FLOAT:
+                if ((tr.testFlags & 0x80) == 0x80) w.writeNumber(row, col, tr.result.f, floatFailFmt);
+                else w.writeNumber(row, col, tr.result.f, floatFmt);
+                break;
+            case HEX_INT:
+                string value = to!string(tr.result.u);
+                if ((tr.testFlags & 0x80) == 0x80) w.writeFormula(row, col, "=DEC2HEX(" ~ value ~ "; 8)", intFailFmt);
+                else w.writeFormula(row, col, "=DEC2HEX(" ~ value ~ "; 8)", intFmt);
+                break;
+            case DEC_INT:
+                if ((tr.testFlags & 0x80) == 0x80) w.writeNumber(row, col, tr.result.l, intFailFmt);
+                else w.writeNumber(row, col, tr.result.l, intFmt);
+                break;
+            case DYNAMIC_LOLIMIT: goto case;
+            case DYNAMIC_HILIMIT:
+                w.writeNumber(row, col, tr.result.f, dylimFmt);
+                break;
+            default: // STRING
+                if ((tr.testFlags & 0x80) == 0x80) w.writeString(row, col, tr.result.s, failFmt);
+                else w.writeString(row, col, tr.result.s, passFmt);
+                break;
+            }
         }
+        row++;
     }
 }
 
 // This is for rotated spreadsheets
-private void setData(Config config, Worksheet w, size_t sheetNum, Flag!"wafersort" wafersort, LinkedMap!(const TestID, uint) rowOrColMap, DeviceResult[] devices)
+private void setData(CmdOptions options, Config config, Worksheet w, size_t sheetNum, Flag!"wafersort" wafersort, LinkedMap!(const TestID, uint) rowOrColMap, DeviceResult[] devices)
 {
+    if (options.verbosityLevel > 9) writeln("setData(2)");
     // Find the smallest timestamp:
     ulong tmin = ulong.max;
     foreach (device; devices)
     {
         if (device.tstamp < tmin) tmin = device.tstamp;
     }
-    ushort rowOrCol = 13;
+    ushort col = 13;
     foreach(device; devices)
     {
-        setDeviceNameHeader(config, w, wafersort, Yes.rotated, rowOrCol, tmin, device);
+        setDeviceNameHeader(options, config, w, wafersort, Yes.rotated, col, tmin, device);
+        for (int i=0; i<device.tests.length; i++)
+        {
+            TestRecord tr = device.tests[i];
+            uint seqNum = rowOrColMap[tr.id];
+            ushort row = cast(ushort) (seqNum + 15);
+            switch (tr.type) with(TestType)
+            {
+            case FUNCTIONAL:
+                if ((tr.testFlags & 0x80) == 0x80) w.writeString(row, col, "FAIL", failFmt);
+                else w.writeString(row, col, "PASS", passFmt);
+                break;
+            case PARAMETRIC: goto case;
+            case FLOAT:
+                if ((tr.testFlags & 0x80) == 0x80) w.writeNumber(row, col, tr.result.f, floatFailFmt);
+                else w.writeNumber(row, col, tr.result.f, floatFmt);
+                break;
+            case HEX_INT:
+                string value = to!string(tr.result.u);
+                if ((tr.testFlags & 0x80) == 0x80) w.writeFormula(row, col, "=DEC2HEX(" ~ value ~ "; 8)", intFailFmt);
+                else w.writeFormula(row, col, "=DEC2HEX(" ~ value ~ "; 8)", intFmt);
+                break;
+            case DEC_INT:
+                if ((tr.testFlags & 0x80) == 0x80) w.writeNumber(row, col, tr.result.l, intFailFmt);
+                else w.writeNumber(row, col, tr.result.l, intFmt);
+                break;
+            case DYNAMIC_LOLIMIT: goto case;
+            case DYNAMIC_HILIMIT:
+                w.writeNumber(row, col, tr.result.f, dylimFmt);
+                break;
+            default: // STRING
+                if ((tr.testFlags & 0x80) == 0x80) w.writeString(row, col, tr.result.s, failFmt);
+                else w.writeString(row, col, tr.result.s, passFmt);
+                break;
+            }
+        }
+        col++;
     }
 }
 

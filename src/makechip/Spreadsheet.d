@@ -16,8 +16,8 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
     import std.algorithm.sorting;
     import std.algorithm;
     string sfile = options.sfile;
-    const bool separateFileForDevice = canFind(sfile, "${device}");
-    const bool separateFileForLot = canFind(sfile, "${lot}");
+    const bool separateFileForDevice = canFind(sfile, "<device>");
+    const bool separateFileForLot = canFind(sfile, "<lot>");
     MultiMap!(Workbook, string, string) wbMap = new MultiMap!(Workbook, string, string)();
     foreach (key; stdfdb.deviceMap.keys)
     {
@@ -27,7 +27,9 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         {
             string lot = key.lot_id;
             string dev = key.devName;
-            string fname = tr(sfile, "${lot}", lot).tr("${device}", dev);
+            string fname = replace(sfile, "<lot>", lot).replace("<device>", dev);
+            writeln("AA sfile = ", sfile, " lot = ", lot, " device = ", dev);
+            writeln("AA fname = ", fname);
             wb = wbMap.get(dummyWb, dev, lot);
             if (wb.filename == "")
             {
@@ -40,7 +42,8 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         {
             string lot = "";
             string dev = key.devName;
-            string fname = tr(sfile, "${device}", dev);
+            string fname = replace(sfile, "<device>", dev);
+            writeln("BB fname = ", fname);
             wb = wbMap.get(dummyWb, dev, lot);
             if (wb.filename == "")
             {
@@ -53,7 +56,8 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         {
             string lot = key.lot_id;
             string dev = "";
-            string fname = tr(sfile, "${lot}", lot);
+            string fname = replace(sfile, "<lot>", lot);
+            writeln("CC fname = ", fname);
             wb = wbMap.get(dummyWb, dev, lot);
             if (wb.filename == "")
             {
@@ -65,6 +69,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         else
         {
             wb = wbMap.get(dummyWb, "", "");
+            writeln("DD sfile = ", sfile);
             if (wb.filename == "")
             {
                 wb = newWorkbook(sfile);
@@ -176,22 +181,27 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
             default: throw new Exception("Unsupported sort type");
         }
         DeviceResult[] devices;
+        writeln("dr.length = ", dr.length);
         if (removeDups)
         {
-            DeviceResult prevDevice = dr[0];
+            DeviceResult prevDevice;
             int i;
-            for (i=1; i<dr.length; i++)
+            for (i=0; i<dr.length; i++)
             {
+                writeln("dr[", i, "].devId = ", dr[i].devId, " prevDevice.devId = ", prevDevice.devId);
                 if (dr[i].devId == prevDevice.devId) continue;
                 devices ~= prevDevice;
                 prevDevice = dr[i];
             }
             if (devices[$-1].devId != prevDevice.devId) devices ~= prevDevice;
         }
+        else devices = dr;
         TestRecord[][] normList = new TestRecord[][devices.length];
         size_t maxLen = 0;
         size_t maxLoc = 0;
         size_t i = 0;
+        writeln("devices.length = ", devices.length);
+        if (devices.length == 0) return;
         foreach (d; devices)
         {
             if (d.tests.length > maxLen)
@@ -259,6 +269,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         }
         // If there are dynamicLimits, then insert test headers for the upper and lower limits where appropriate
         TestRecord[] newCompTests;
+        writeln("compTests.length = ", compTests.length);
         if (!options.noDynamicLimits)
         {
             foreach(test; compTests)
@@ -270,7 +281,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
                     TestRecord r = new TestRecord(nid, type);
                     newCompTests ~= r;
                 }
-                compTests ~= test;
+                newCompTests ~= test;
                 if (test.dynamicHiLimit)
                 {
                     auto type = TestType.DYNAMIC_HILIMIT;
@@ -292,6 +303,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
             rc++;
         }
         for (size_t n=0; n<devices.length; n++) devices[n].tests = newTests[n];
+        writeln("filename = ", wb.filename);
         writeSheet(options, wb, rowOrColMap, key, devices, config);
     } 
 }
