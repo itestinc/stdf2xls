@@ -842,7 +842,7 @@ class TestID
         return tid;
     }
 
-    override public string toString()
+    override public string toString() const pure
     {
         if (type == Record_t.FTR || pin == "")
         {
@@ -870,6 +870,7 @@ private void normalizeValues(TestRecord tr)
     float hl = scaleValue(tr.hiLimit, scale);
     string units = scaleUnits(tr.units, scale);
     float value = getScaledResult(tr, scale);
+    writeln("id = ", tr.id.toString(), " scale = ", scale, " ll = ", ll, " hl = ", hl, " rslt = ", value);
     tr.loLimit = ll;
     tr.hiLimit = hl;
     tr.units = units;
@@ -879,7 +880,7 @@ private void normalizeValues(TestRecord tr)
 private float getScaledResult(TestRecord tr, int scale)
 {
     if (tr.result.f == float.nan) return(tr.result.f);
-    if (tr.units == "") return tr.result.f;
+    //if (tr.units == "") return tr.result.f;
     return scaleValue(tr.result.f, scale);
 }
 

@@ -31,7 +31,7 @@ struct  RecordType
         this.description = description;
     }
 
-    string toString()
+    string toString() const pure
     {
         return description;
     }
@@ -75,12 +75,12 @@ struct  RecordType
         throw new Exception("Unknown record type");
     }
 
-    bool opEquals(const RecordType rt) const
+    bool opEquals(const RecordType rt) const pure
     {
         return ordinal == rt.ordinal;
     }
 
-    bool opEquals(ref const RecordType rt)
+    bool opEquals(ref const RecordType rt) const pure
     {
         return ordinal == rt.ordinal;
     }
