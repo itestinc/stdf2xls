@@ -25,9 +25,9 @@ struct WorkbookImpl {
 
 	alias workBook this;
 
-	~this() {
-		this.workBook.close();
-	}
+//	~this() {
+//		this.workBook.close();
+//	}
 }
 
 struct WorkbookOpen {
