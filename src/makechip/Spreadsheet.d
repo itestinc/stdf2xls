@@ -28,8 +28,6 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
             string lot = key.lot_id;
             string dev = key.devName;
             string fname = replace(sfile, "<lot>", lot).replace("<device>", dev);
-            writeln("AA sfile = ", sfile, " lot = ", lot, " device = ", dev);
-            writeln("AA fname = ", fname);
             wb = wbMap.get(dummyWb, dev, lot);
             if (wb.filename == "")
             {
@@ -43,7 +41,6 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
             string lot = "";
             string dev = key.devName;
             string fname = replace(sfile, "<device>", dev);
-            writeln("BB fname = ", fname);
             wb = wbMap.get(dummyWb, dev, lot);
             if (wb.filename == "")
             {
@@ -57,7 +54,6 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
             string lot = key.lot_id;
             string dev = "";
             string fname = replace(sfile, "<lot>", lot);
-            writeln("CC fname = ", fname);
             wb = wbMap.get(dummyWb, dev, lot);
             if (wb.filename == "")
             {
@@ -69,7 +65,6 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         else
         {
             wb = wbMap.get(dummyWb, "", "");
-            writeln("DD sfile = ", sfile);
             if (wb.filename == "")
             {
                 wb = newWorkbook(sfile);
@@ -181,14 +176,12 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
             default: throw new Exception("Unsupported sort type");
         }
         DeviceResult[] devices;
-        writeln("dr.length = ", dr.length);
         if (removeDups)
         {
             DeviceResult prevDevice;
             int i;
             for (i=0; i<dr.length; i++)
             {
-                writeln("dr[", i, "].devId = ", dr[i].devId, " prevDevice.devId = ", prevDevice.devId);
                 if (dr[i].devId == prevDevice.devId) continue;
                 devices ~= prevDevice;
                 prevDevice = dr[i];
@@ -200,7 +193,6 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         size_t maxLen = 0;
         size_t maxLoc = 0;
         size_t i = 0;
-        writeln("devices.length = ", devices.length);
         if (devices.length == 0) return;
         foreach (d; devices)
         {
@@ -241,19 +233,19 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         TestRecord[] compTests;
         for (size_t m=0; m<newTests[maxLoc].length; m++)
         {
-            compTests ~= newTests[maxLoc][m];
+            //compTests ~= newTests[maxLoc][m];
             for (size_t n=0; n<newTests.length; n++)
             {
                 for (size_t o=m; o<newTests[n].length; o++)
                 {
-                    if (newTests[n][o] !is null && newTests[n][o].uflag) 
+                    if (newTests[n][o] !is null && !newTests[n][o].uflag) 
                     {
                         bool found = false;
                         for (size_t p=0; p<compTests.length; p++)
                         {
                             if (newTests[n][o].id == compTests[p].id && newTests[n][o].type == compTests[p].type)
                             {
-                                newTests[n][o].uflag = false;
+                                newTests[n][o].uflag = true;
                                 found = true;
                             }
                         }
@@ -305,6 +297,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         for (size_t n=0; n<devices.length; n++) devices[n].tests = newTests[n];
         writeln("filename = ", wb.filename);
         writeSheet(options, wb, rowOrColMap, key, devices, config);
+        wb.close();
     } 
 }
 
@@ -315,6 +308,7 @@ private void scan(size_t tnum, const TestID id, const TestType type, DeviceResul
     TestType nextType;
     for (size_t i=0; i<devices.length; i++)
     {
+        if (tnum >= devices[i].tests.length) continue;
         if (devices[i].tests[tnum].id != id || devices[i].tests[tnum].type != type)
         {
             diff = true;

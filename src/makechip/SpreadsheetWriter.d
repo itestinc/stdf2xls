@@ -72,10 +72,14 @@ public void initFormats(Workbook wb, CmdOptions options, Config config)
     testRsltHdrFmt = wb.addFormat();
     testRsltHdrFmt.setFontName("Arial");
     testRsltHdrFmt.setFontSize(8.0);
-    config.setBGColor(testRsltHdrFmt, Config.ss_pass_bg_color);
-    config.setFontColor(testRsltHdrFmt, Config.ss_pass_text_color);
-    testRsltHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    testRsltHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_TOP);
+    config.setBGColor(testRsltHdrFmt, Config.ss_deviceid_header_bg_color);
+    config.setFontColor(testRsltHdrFmt, Config.ss_deviceid_header_text_color);
+    if (!options.rotate) testRsltHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_LEFT);
+    else 
+    {
+        testRsltHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+        testRsltHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_TOP);
+    }
     testRsltHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
     testRsltHdrFmt.setBorderColor(0x1000000);
     testRsltHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
@@ -85,8 +89,12 @@ public void initFormats(Workbook wb, CmdOptions options, Config config)
     testFailHdrFmt.setFontSize(8.0);
     config.setBGColor(testFailHdrFmt, Config.ss_fail_bg_color);
     config.setFontColor(testFailHdrFmt, Config.ss_fail_text_color);
-    testFailHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    testFailHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_TOP);
+    if (!options.rotate) testFailHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_LEFT);
+    else 
+    {
+        testFailHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+        testFailHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_TOP);
+    }
     testFailHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
     testFailHdrFmt.setBorderColor(0x1000000);
     testFailHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
@@ -166,6 +174,7 @@ public void initFormats(Workbook wb, CmdOptions options, Config config)
     headerNameFmt = wb.addFormat();
     headerNameFmt.setFontName("Arial");
     headerNameFmt.setFontSize(8.0);
+    headerNameFmt.setBold();
     config.setBGColor(headerNameFmt, Config.ss_header_name_bg_color);
     config.setFontColor(headerNameFmt, Config.ss_header_name_text_color);
     headerNameFmt.setAlign(lxw_format_alignments.LXW_ALIGN_RIGHT);
@@ -235,6 +244,7 @@ public void initFormats(Workbook wb, CmdOptions options, Config config)
     testNameHdrFmt = wb.addFormat();
     testNameHdrFmt.setFontName("Arial");
     testNameHdrFmt.setFontSize(8.0);
+    if (!options.rotate) testNameHdrFmt.setTextWrap();
     config.setBGColor(testNameHdrFmt, Config.ss_test_header_bg_color);
     config.setFontColor(testNameHdrFmt, Config.ss_test_header_text_color);
     testNameHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -375,6 +385,7 @@ private Worksheet[] createSheetsRotated(CmdOptions options, Config config, Workb
     for (size_t i=0; i<numSheets; i++)
     {
         string title = getTitle(options, hdr, i);
+        if (title.length > 31) title = title[0..31];
         Worksheet w = wb.addWorksheet(title);
         ws ~= w;
         setLogo(options, config, w);
@@ -477,6 +488,10 @@ private void setLogo(CmdOptions options, Config config, Worksheet w)
     {
         w.setColumn(cast(ushort) 0, cast(ushort) 11, 10.0);
     }
+    else
+    {
+        w.setColumn(cast(ushort) 0, cast(ushort) 2, 10.0);
+    }
 }
 
 private void setLegend(CmdOptions options, Config config, Worksheet w, Flag!"rotated" rotated)
@@ -513,7 +528,7 @@ private void setPageHeader(CmdOptions options, Config config, Worksheet w, strin
     }
     else
     {
-        w.mergeRange(0, cast(ushort) 6, 6, cast(ushort) (1+dataCols), title, pageTitleFmt);
+        w.mergeRange(0, cast(ushort) 6, 6, cast(ushort) (6+dataCols), title, pageTitleFmt);
     }
 }
 
@@ -584,50 +599,55 @@ private void setDeviceHeader(CmdOptions options, Config config, Worksheet w, Hea
     }
     else
     {
+        for (uint r=7; r<24; r++)
+        {
+            w.mergeRange(r, 0, r, cast(ushort) 1, "", headerNameFmt);
+            w.mergeRange(r, cast(ushort) 2, r, cast(ushort) 5, "", headerValueFmt);
+        }
         int r = 7;
         if (hdr.step != "")
         {
             w.mergeRange(r, 0, r, 1, "STEP #:", headerNameFmt);
-            w.mergeRange(r, 2, r, 4, hdr.step, headerValueFmt);
+            w.mergeRange(r, 2, r, 5, hdr.step, headerValueFmt);
             r++;
         }
         if (hdr.temperature != "")
         {
             w.mergeRange(r, 0, r, 1, "Temperature:", headerNameFmt);
-            w.mergeRange(r, 2, r, 4, hdr.temperature, headerValueFmt);
+            w.mergeRange(r, 2, r, 5, hdr.temperature, headerValueFmt);
             r++;
         }
         if (hdr.lot_id != "")
         {
             w.mergeRange(r, 0, r, 1, "Lot #:", headerNameFmt);
-            w.mergeRange(r, 2, r, 4, hdr.lot_id, headerValueFmt);
+            w.mergeRange(r, 2, r, 5, hdr.lot_id, headerValueFmt);
             r++;
         }
         if (hdr.sublot_id != "")
         {
             w.mergeRange(r, 0, r, 1, "SubLot #:", headerNameFmt);
-            w.mergeRange(r, 2, r, 4, hdr.sublot_id, headerValueFmt);
+            w.mergeRange(r, 2, r, 5, hdr.sublot_id, headerValueFmt);
             r++;
         }
         if (hdr.wafer_id != "")
         {
             w.mergeRange(r, 0, r, 1, "Wafer #:", headerNameFmt);
-            w.mergeRange(r, 2, r, 4, hdr.wafer_id, headerValueFmt);
+            w.mergeRange(r, 2, r, 5, hdr.wafer_id, headerValueFmt);
             r++;
         }
         if (hdr.devName != "")
         {
             w.mergeRange(r, 0, r, 1, "Device:", headerNameFmt);
-            w.mergeRange(r, 2, r, 4, hdr.devName, headerValueFmt);
+            w.mergeRange(r, 2, r, 5, hdr.devName, headerValueFmt);
             r++;
         }
         auto map = hdr.getHeaderItems();
         foreach (key; map)
         {
             w.mergeRange(r, 0, r, 1, key, headerNameFmt);
-            w.mergeRange(r, 2, r, 4, map[key], headerValueFmt);
+            w.mergeRange(r, 2, r, 5, map[key], headerValueFmt);
             r++;
-            if (r > 24) break;
+            if (r > 23) break;
         }
     }
 }
@@ -652,10 +672,10 @@ private void setTableHeaders(CmdOptions options, Config config, Worksheet w, Fla
         w.writeString(13, 12, "Units", testidHdrFmt);
         // device id header
         if (wafersort) w.writeString(7, 12, "X, Y", deviceidHdrFmt); else w.writeString(7, 12, "S/N", deviceidHdrFmt);
-        w.writeString(8, 12, "HW Bin", deviceidHdrFmt);
-        w.writeString(9, 12, "SW Bin", deviceidHdrFmt);
-        w.writeString(10, 12, "Site", deviceidHdrFmt);
-        w.writeString(11, 12, "Time", deviceidHdrFmt);
+        w.writeString(9, 12, "HW Bin", deviceidHdrFmt);
+        w.writeString(10, 12, "SW Bin", deviceidHdrFmt);
+        w.writeString(11, 12, "Site", deviceidHdrFmt);
+        w.writeString(8, 12, "Time", deviceidHdrFmt);
         w.writeString(12, 12, "Result", deviceidHdrFmt);
     }
     else
@@ -667,15 +687,13 @@ private void setTableHeaders(CmdOptions options, Config config, Worksheet w, Fla
         w.writeString(21, 6, "Lo Limit", testidHdrFmt);
         w.writeString(22, 6, "Hi Limit", testidHdrFmt);
         w.writeString(23, 6, "Pin", testidHdrFmt);
-        // units/temp header
-        w.mergeRange(24, 6, 25, 6, "    Units Temp", unitstempHdrFmt);
-        // device id header
-        if (wafersort) w.writeString(25, 0, "X, Y", deviceidHdrFmt); else w.writeString(25, 0, "S/N", deviceidHdrFmt);
-        w.writeString(25, 1, "HW Bin", deviceidHdrFmt);
-        w.writeString(25, 2, "SW Bin", deviceidHdrFmt);
-        w.writeString(25, 3, "Site", deviceidHdrFmt);
-        w.writeString(25, 4, "Time", deviceidHdrFmt);
-        w.writeString(25, 5, "Result", deviceidHdrFmt);
+        w.writeString(24, 6, "Units", testidHdrFmt);
+        if (wafersort) w.writeString(24, 0, "X, Y", deviceidHdrFmt); else w.writeString(24, 0, "S/N", deviceidHdrFmt);
+        w.writeString(24, 2, "HW Bin", deviceidHdrFmt);
+        w.writeString(24, 3, "SW Bin", deviceidHdrFmt);
+        w.writeString(24, 4, "Site", deviceidHdrFmt);
+        w.writeString(24, 1, "Time", deviceidHdrFmt);
+        w.writeString(24, 5, "Result", deviceidHdrFmt);
     }
 }
 
@@ -731,11 +749,12 @@ private void setDeviceNameHeader(CmdOptions options, Config config, Worksheet w,
         w.writeNumber(rowOrCol, 2, device.hwbin, deviceidHdrFmt);
         w.writeNumber(rowOrCol, 3, device.swbin, deviceidHdrFmt);
         w.writeNumber(rowOrCol, 4, device.site, deviceidHdrFmt);
-        if (device.goodDevice) w.writeString(rowOrCol, 5, "PASS", testRsltHdrFmt);
-        else w.writeString(rowOrCol, 5, "FAIL", testFailHdrFmt);
+        if (device.goodDevice) w.mergeRange(rowOrCol, 5, rowOrCol, 6, "PASS", testRsltHdrFmt);
+        else w.mergeRange(rowOrCol, 5, rowOrCol, 6, "FAIL", testFailHdrFmt);
     }
 }
 
+private bool[ushort] cmap;
 // This is for not-rotated spreadsheets
 private void setData(CmdOptions options, Config config, Worksheet w, size_t sheetNum, const size_t maxCols, Flag!"wafersort" wafersort, LinkedMap!(const TestID, uint) rowOrColMap, DeviceResult[] devices)
 {
@@ -747,7 +766,8 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
         if (device.tstamp < tmin) tmin = device.tstamp;
     }
     // do not exceed maxCols
-    uint row = 26;
+    uint row = 25;
+    cmap.clear();
     foreach(device; devices)
     {
         setDeviceNameHeader(options, config, w, wafersort, No.rotated, row, tmin, device);
@@ -756,6 +776,13 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
             TestRecord tr = device.tests[i];
             uint seqNum = rowOrColMap[tr.id];
             ushort col = cast(ushort) (seqNum + 7);
+            if (col !in cmap)
+            {
+                w.writeNumber(21, col, tr.loLimit, testLimitHdrFmt);
+                w.writeNumber(22, col, tr.hiLimit, testLimitHdrFmt);
+                w.writeString(24, col, tr.units, testNumberHdrFmt);
+                cmap[col] = true;
+            }
             switch (tr.type) with(TestType)
             {
             case FUNCTIONAL:
@@ -803,6 +830,7 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
         if (device.tstamp < tmin) tmin = device.tstamp;
     }
     ushort col = 13;
+    lmap.clear();
     foreach(device; devices)
     {
         setDeviceNameHeader(options, config, w, wafersort, Yes.rotated, col, tmin, device);
