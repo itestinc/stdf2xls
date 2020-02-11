@@ -92,7 +92,7 @@ public void loadDb(CmdOptions options)
                         }
                         if (!hiLims.contains(hdr, id)) 
                         {
-                            hiLims.put(test.loLimit, hdr, id);
+                            hiLims.put(test.hiLimit, hdr, id);
                         }
                         else
                         {
@@ -100,6 +100,7 @@ public void loadDb(CmdOptions options)
                             float hl2 = fabs(test.hiLimit);
                             if (hl > (1.001 * hl2) || hl < (0.999 * hl2))
                             {
+                                writeln("hl = ", hl, " hl2 = ", hl2);
                                 if (!dynHiLims.contains(hdr, id)) dynHiLims.put(true, hdr, id);
                             }
                         }

@@ -102,7 +102,7 @@ class CmdOptions
 {
     bool textDump = false;
     bool byteDump = false;
-    bool extractPin = false;
+    bool extractPin = true;
     bool verifyWrittenStdf = false;
     bool noIgnoreMiscHeader = false;
     bool summarize = false;
@@ -110,6 +110,7 @@ class CmdOptions
     bool genWafermap = false;
     bool genHistogram = false;
     bool rotate = false;
+    bool ignoreSerialMarker = false;
     bool generateRC = false;
     bool limit1k = false;
     bool noDynamicLimits = false;
@@ -142,6 +143,7 @@ class CmdOptions
             "modify|m", "modify a string field in specified record type.\n     Example: -m 'MIR TST_TEMP \"TEMPERATURE :\" \"TEMPERATURE:\"'", &modify,
             "outputDir|o", "write out the STDF to this directory. Specifying this will cause the STDF to be written back out.", &outputDir,
             "pin-delimiter|p", "Delimiter character that separates pin name from test name (Default = '@')", &delims,
+            "ignoreSerialMarker|i", "Ignore the serial marker and use STDF part ID instead", &ignoreSerialMarker,
             "digest|D", "Summarize file contents", &summarize,
 
             "genSpreadsheets|s", "Generate spreadsheet(s)", &genSpreadsheet,
