@@ -194,7 +194,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         size_t maxLoc = 0;
         size_t i = 0;
         if (devices.length == 0) return;
-        foreach (d; devices)
+        foreach (ref d; devices)
         {
             if (d.tests.length > maxLen)
             {

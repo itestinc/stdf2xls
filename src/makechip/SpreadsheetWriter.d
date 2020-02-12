@@ -739,6 +739,7 @@ private void setDeviceNameHeader(CmdOptions options, Config config, Worksheet w,
         w.writeNumber(9, cast(ushort) rowOrCol, device.hwbin, deviceidHdrFmt);
         w.writeNumber(10, cast(ushort) rowOrCol, device.swbin, deviceidHdrFmt);
         w.writeNumber(11, cast(ushort) rowOrCol, device.site, deviceidHdrFmt);
+        writeln("goodDevice = ", device.goodDevice);
         if (device.goodDevice) w.mergeRange(12, cast(ushort) rowOrCol, 13, cast(ushort) rowOrCol, "PASS", testRsltHdrFmt);
         else w.mergeRange(12, cast(ushort) rowOrCol, 13, cast(ushort) rowOrCol, "FAIL", testFailHdrFmt);
     }
@@ -761,14 +762,14 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
     if (options.verbosityLevel > 9) writeln("setData(1)");
     // Find the smallest timestamp:
     ulong tmin = ulong.max;
-    foreach (device; devices)
+    foreach (ref device; devices)
     {
         if (device.tstamp < tmin) tmin = device.tstamp;
     }
     // do not exceed maxCols
     uint row = 25;
     cmap.clear();
-    foreach(device; devices)
+    foreach(ref device; devices)
     {
         setDeviceNameHeader(options, config, w, wafersort, No.rotated, row, tmin, device);
         for (int i=0; i<device.tests.length; i++)
@@ -825,13 +826,13 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
     if (options.verbosityLevel > 9) writeln("setData(2)");
     // Find the smallest timestamp:
     ulong tmin = ulong.max;
-    foreach (device; devices)
+    foreach (ref device; devices)
     {
         if (device.tstamp < tmin) tmin = device.tstamp;
     }
     ushort col = 13;
     lmap.clear();
-    foreach(device; devices)
+    foreach(ref device; devices)
     {
         setDeviceNameHeader(options, config, w, wafersort, Yes.rotated, col, tmin, device);
         for (int i=0; i<device.tests.length; i++)
