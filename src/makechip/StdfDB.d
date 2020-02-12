@@ -723,7 +723,7 @@ class StdfDB
                     serial_number = "";
                     uint head = prr.HEAD_NUM;
                     uint site = prr.SITE_NUM;
-                    if (prr.HARD_BIN == 1) dvdDone = true;
+                    //if (prr.HARD_BIN == 1) dvdDone = true; // this doesn't work if test flow is not consistent
                     time += ((site * head) * prr.TEST_T) / (numSites * numHeads);
                     stdout.flush();
                     dr[site - minSite][head - minHead].devId = pid;
@@ -742,7 +742,7 @@ class StdfDB
                 default:
             }
         }
-        foreach (device; devices)
+        foreach (ref device; devices)
         {
             device.goodDevice = false;
             foreach(passBin; passingHWBins)
