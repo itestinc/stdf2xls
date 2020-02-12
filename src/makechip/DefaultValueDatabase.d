@@ -169,12 +169,12 @@ public class DefaultValueDatabase
             NdefaultHlmScals.put(ptr.HLM_SCAL, ptr.recordType, ptr.TEST_NUM, dup);
         }
 
-        writeln("defaultLoLimit = ", defaultLoLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, tname, dup));
-        writeln("max = ", (defaultLoLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, tname, dup) == float.max));
-        writeln("LO_LIMIT.isEmpty = ", ptr.LO_LIMIT.isEmpty());
+//      writeln("defaultLoLimit = ", defaultLoLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, tname, dup));
+//      writeln("max = ", (defaultLoLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, tname, dup) == float.max));
+//      writeln("LO_LIMIT.isEmpty = ", ptr.LO_LIMIT.isEmpty());
         if ((!ptr.LO_LIMIT.isEmpty()) && (defaultLoLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, tname, dup) == float.max))
         {
-            writeln("type = ", ptr.recordType, " tnum = ", ptr.TEST_NUM, " tname = ", tname, " dup = ", dup, "LO limit = ", ptr.LO_LIMIT);
+//          writeln("type = ", ptr.recordType, " tnum = ", ptr.TEST_NUM, " tname = ", tname, " dup = ", dup, "LO limit = ", ptr.LO_LIMIT);
             defaultLoLimits.put(ptr.LO_LIMIT, ptr.recordType, ptr.TEST_NUM, tname, dup);
         }
         if (!ptr.LO_LIMIT.isEmpty() && NdefaultLoLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, dup) == float.max)

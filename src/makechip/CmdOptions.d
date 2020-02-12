@@ -114,6 +114,7 @@ class CmdOptions
     bool generateRC = false;
     bool limit1k = false;
     bool noDynamicLimits = false;
+    bool asciiDump = true;
     Sort_t sortType = Sort_t.SN_UP_TIME_UP; 
     private string[] modify;
     PMRNameType channelType = PMRNameType.AUTO;
