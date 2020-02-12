@@ -219,7 +219,7 @@ struct StdfFile
         string sblot = mir.SBLOT_ID;
         string device = mir.PART_TYP;
         string wafer = (wir is null) ? "" : wir.WAFER_ID;
-        writeln("WAFER = ", wafer);
+//      writeln("WAFER = ", wafer);
         string[string] miscFields;
         foreach (dtr; dtrs)
         {

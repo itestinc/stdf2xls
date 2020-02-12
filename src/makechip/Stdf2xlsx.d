@@ -85,7 +85,7 @@ public void loadDb(CmdOptions options)
                         {
                             float ll = fabs(loLims.get(-999999.0, hdr, id));
                             float ll2 = fabs(test.loLimit);
-                            writeln("id = ", test.id, " ll = ", ll, " ll2 = ", ll2);
+//                          writeln("id = ", test.id, " ll = ", ll, " ll2 = ", ll2);
                             if (ll > (1.001 * ll2) || ll < (0.999 * ll2))
                             {
                                 if (!dynLoLims.contains(hdr, id)) dynLoLims.put(true, hdr, id);
