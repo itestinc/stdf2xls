@@ -522,9 +522,9 @@ class StdfDB
                     ubyte parmFlags = ptr.PARM_FLG;
                     float loLimit = ((optFlags & 16) || ptr.LO_LIMIT.isEmpty()) ? dvd.getDefaultLoLimit(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.LO_LIMIT;
                     float hiLimit = ((optFlags & 32) || ptr.HI_LIMIT.isEmpty()) ? dvd.getDefaultHiLimit(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.HI_LIMIT;
-                    writeln("ptr.LO_LIMIT.isEmpty() = ", ptr.LO_LIMIT.isEmpty());
-                    writeln("optFlags = ", optFlags, " loLimit = ", loLimit, " TEST_NUM = ", ptr.TEST_NUM, " testName = ", testName);
-                    writeln("optFlags = ", optFlags, " hiLimit = ", hiLimit, " TEST_NUM = ", ptr.TEST_NUM, " testName = ", testName);
+//                  writeln("ptr.LO_LIMIT.isEmpty() = ", ptr.LO_LIMIT.isEmpty());
+//                  writeln("optFlags = ", optFlags, " loLimit = ", loLimit, " TEST_NUM = ", ptr.TEST_NUM, " testName = ", testName);
+//                  writeln("optFlags = ", optFlags, " hiLimit = ", hiLimit, " TEST_NUM = ", ptr.TEST_NUM, " testName = ", testName);
                     float result = ptr.RESULT;
                     string units = ptr.UNITS.isEmpty() ? dvd.getDefaultUnits(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.UNITS;
                     byte resScal = ptr.RES_SCAL.isEmpty() ? dvd.getDefaultResScal(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.RES_SCAL;
@@ -708,7 +708,7 @@ class StdfDB
                 case Record_t.PRR.ordinal:
                     dupNums = new MultiMap!(uint, Record_t, TestNumber_t, TestName_t, Site_t, Head_t)();
                     Record!(PRR) prr = cast(Record!(PRR)) rec;
-                    writeln("serial_number = ", serial_number, " isWafersort = ", stdf.hdr.isWafersort());
+//                  writeln("serial_number = ", serial_number, " isWafersort = ", stdf.hdr.isWafersort());
                     if (serial_number == "")
                     {
                         if (stdf.hdr.isWafersort())
