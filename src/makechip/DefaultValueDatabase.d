@@ -90,6 +90,10 @@ public class DefaultValueDatabase
     {
         auto v = defaultLoLimits.get(float.max, type, testNumber, testName, dupNumber);
         if (v == float.max) v = NdefaultLoLimits.get(float.max, type, testNumber, dupNumber);
+        if (testNumber == 1420)
+        {
+            writeln("testName = ", testName, " v = ", v, " float.max = ", float.max);
+        }
         return v;
     }
 
@@ -172,9 +176,10 @@ public class DefaultValueDatabase
         writeln("defaultLoLimit = ", defaultLoLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, tname, dup));
         writeln("max = ", (defaultLoLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, tname, dup) == float.max));
         writeln("LO_LIMIT.isEmpty = ", ptr.LO_LIMIT.isEmpty());
+        writeln("AA type = ", ptr.recordType, " tnum = ", ptr.TEST_NUM, " tname = ", tname, " dup = ", dup, "LO limit = ", ptr.LO_LIMIT);
         if ((!ptr.LO_LIMIT.isEmpty()) && (defaultLoLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, tname, dup) == float.max))
         {
-            writeln("type = ", ptr.recordType, " tnum = ", ptr.TEST_NUM, " tname = ", tname, " dup = ", dup, "LO limit = ", ptr.LO_LIMIT);
+            writeln("BB type = ", ptr.recordType, " tnum = ", ptr.TEST_NUM, " tname = ", tname, " dup = ", dup, "LO limit = ", ptr.LO_LIMIT);
             defaultLoLimits.put(ptr.LO_LIMIT, ptr.recordType, ptr.TEST_NUM, tname, dup);
         }
         if (!ptr.LO_LIMIT.isEmpty() && NdefaultLoLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, dup) == float.max)
