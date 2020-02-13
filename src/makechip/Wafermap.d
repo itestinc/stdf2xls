@@ -7,14 +7,33 @@ import makechip.Config;
 import makechip.Stdf2xls;
 import std.stdio;
 
+// O(n^2)
+void transpose(char[][] a, char[][] b, uint row, uint col) {
+	for(uint i = 0; i < row; i++) {
+		for(uint j = 0; j < col; j++) {
+			b[j][i] = a[i][j];
+		}
+	}
+}
+
+void rotate90(char[][] a, char[][] b, uint row, uint col) {
+	//transpose
+	transpose(a, b, row, col);
+
+	// reverse each row
+	const int new_row = col;
+	const int new_col = row;
+	char[][] tmp = new char[][](new_row,new_col);
+
+	foreach(x, rows; b) {
+		tmp[new_row-x-1][] = rows;
+	}
+	b[] = tmp[];
+
+}
+
 public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 {
-	uint[] hwbin;
-	int[] x_coord;
-	int[] y_coord;
-	hwbin.length = 0;
-	x_coord.length = 0;
-	y_coord.length = 0;
 
 	foreach(hdr; stdfdb.deviceMap.keys) {
 		// useful header values
@@ -22,6 +41,13 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		writeln("hdr.devName = ", hdr.devName);
 		writeln("hdr.temperature = ", hdr.temperature);
 		writeln("hdr.step = ", hdr.step);
+
+		uint[] hwbin;
+		int[] x_coord;
+		int[] y_coord;
+		hwbin.length = 0;
+		x_coord.length = 0;
+		y_coord.length = 0;
 
 		foreach(i, dr; stdfdb.deviceMap[hdr]) {
 
@@ -38,7 +64,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		// if(options.asy) {
 		if(options.asciiDump) {
 
-			// sort to get min element
+			// sort for min/max elements
 			int[] x_sorted = x_coord.dup;
 			int[] y_sorted = y_coord.dup;
 
@@ -46,62 +72,67 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 			x_sorted.sort();
 			y_sorted.sort();
 
-			// shift
 			const int x_min = x_sorted[0];
 			const int y_min = y_sorted[0];
+			const int x_max = x_sorted[$-1] - x_sorted[0];
+			const int y_max = y_sorted[$-1] - y_sorted[0];
 
-			const ulong size = hwbin.length;
-
-			int[] x_shifted = new int[size];
-			int[] y_shifted = new int[size];
-
+			// shift for indexing
+			int[] x_shifted = new int[x_coord.length];
+			int[] y_shifted = new int[y_coord.length];
 			x_shifted[] = x_coord[] - x_min;
 			y_shifted[] = y_coord[] - y_min;
 
-			int[] x_sorted_shifted = x_sorted.dup;
-			int[] y_sorted_shifted = y_sorted.dup;
-
-			x_sorted_shifted[] = x_sorted[] - x_min;
-			y_sorted_shifted[] = y_sorted[] - y_min;
-
-			// empty map
-			const int col = x_sorted_shifted[$-1] + 1;
-			const int row = y_sorted_shifted[$-1] + 1;
+			// create empty map
+			const uint col = x_max + 1;
+			const uint row = y_max + 1;
 
 			char[][] matrix = new char[][](row, col);
 			writeln("row = ", row);
 			writeln("col = ", col);
 
-			// fill with dots
-			for(int i = 0; i < row; i++) {
-				for(int j = 0; j < col; j++) {
+			// pre-fill map with dots
+			for(uint i = 0; i < row; i++) {
+				for(uint j = 0; j < col; j++) {
 					matrix[i][j] = '.';
 				}
 			}
 
-			// fill map
+			uint goodbins = 0;
+			uint badbins = 0;
+			// fill map with hwbins
 			foreach(i, bin; hwbin) {
 				switch(hwbin[i]) {
 					default:
 						// matrix[y_shifted[i]][x_shifted[i]] = '?'; break;
 						throw new Exception("Unsupported HW bin number");
 					case 1:
-						matrix[y_shifted[i]][x_shifted[i]] = '1'; break;
+						matrix[y_shifted[i]][x_shifted[i]] = '1'; goodbins++; break;
 					case 2:
-						matrix[y_shifted[i]][x_shifted[i]] = 'X'; break;
+						matrix[y_shifted[i]][x_shifted[i]] = 'X'; badbins++; break;
 				}
 			}
 
 			// print map
+			writeln("good bins = ", goodbins);
+			writeln("bad bins = ", badbins);
+			writeln("total bins = ", goodbins+badbins);
 			foreach(n; matrix) {
 				writeln(n);
 			}
 
+			char[][] mat_rot = new char[][](col, row);
+			rotate90(matrix, mat_rot, row, col);
+
+			foreach(n; mat_rot) {
+				writeln(n);
+			}
 		}
 	}
 
 	if(options.asciiDump) {
 		// dump wafermap to ascii...
+
 	}
 }
 
