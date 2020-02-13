@@ -7,6 +7,12 @@ import makechip.Config;
 import makechip.Stdf2xls;
 import std.stdio;
 
+import libxlsxd.workbook;
+import libxlsxd.worksheet;
+import libxlsxd.format;
+import libxlsxd.xlsxwrap;
+
+
 // O(n^2)
 void transpose(char[][] a, char[][] b, uint row, uint col) {
 	for(uint i = 0; i < row; i++) {
@@ -34,13 +40,21 @@ void rotate90(char[][] a, char[][] b, uint row, uint col) {
 
 public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 {
+	auto wb = newWorkbook("Wafermap.xlsx");
+	auto ws = wb.addWorksheet("Page 1");
+
+	lxw_image_options img_options;
+	double ss_width = 449 * 0.350;
+	double ss_height = 245 * 0.324;
+	img_options.x_scale = (4.0 * 70.0) / ss_width;
+	img_options.y_scale = (7.0 * 20.0) / ss_height;
+	ws.mergeRange(0, 0, 7, 3, null);
+	img_options.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
+	// ws.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, img.dup.ptr, img.length, &img_options);
+	//ws.insertImageOpt(cast(uint) 0, cast(ushort) 0, "itest_logo.png", &img_options);
+
 
 	foreach(hdr; stdfdb.deviceMap.keys) {
-		// useful header values
-		writeln("hdr.wafer_id = ", hdr.wafer_id);
-		writeln("hdr.devName = ", hdr.devName);
-		writeln("hdr.temperature = ", hdr.temperature);
-		writeln("hdr.step = ", hdr.step);
 
 		uint[] hwbin;
 		int[] x_coord;
@@ -48,6 +62,14 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		hwbin.length = 0;
 		x_coord.length = 0;
 		y_coord.length = 0;
+
+		if (options.verbosityLevel > 0) {
+			// useful header values
+			writeln("hdr.wafer_id = ", hdr.wafer_id);
+			writeln("hdr.devName = ", hdr.devName);
+			writeln("hdr.temperature = ", hdr.temperature);
+			writeln("hdr.step = ", hdr.step);
+		}
 
 		foreach(i, dr; stdfdb.deviceMap[hdr]) {
 
@@ -59,6 +81,9 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 			x_coord[i] = dr.devId.id.xy.x;
 			y_coord[i] = dr.devId.id.xy.y;
 		}
+		writeln("hwbin = ", hwbin);
+		writeln("x_coord = ", x_coord);
+		writeln("y_coord = ", y_coord);
 
 		// ASY Format
 		// if(options.asy) {
@@ -104,8 +129,8 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 			foreach(i, bin; hwbin) {
 				switch(hwbin[i]) {
 					default:
-						// matrix[y_shifted[i]][x_shifted[i]] = '?'; break;
-						throw new Exception("Unsupported HW bin number");
+						matrix[y_shifted[i]][x_shifted[i]] = '?'; badbins++; break;
+						// throw new Exception("Unsupported HW bin number");
 					case 1:
 						matrix[y_shifted[i]][x_shifted[i]] = '1'; goodbins++; break;
 					case 2:
@@ -124,6 +149,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 			char[][] mat_rot = new char[][](col, row);
 			rotate90(matrix, mat_rot, row, col);
 
+			writeln("rotated:");
 			foreach(n; mat_rot) {
 				writeln(n);
 			}
@@ -132,7 +158,6 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 
 	if(options.asciiDump) {
 		// dump wafermap to ascii...
-
 	}
 }
 
