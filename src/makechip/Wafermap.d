@@ -11,47 +11,31 @@ import libxlsxd.workbook;
 import libxlsxd.worksheet;
 import libxlsxd.format;
 import libxlsxd.xlsxwrap;
+import makechip.logo;
+import makechip.Util;
+import makechip.SpreadsheetWriter;
 
-
-// O(n^2)
-void transpose(char[][] a, char[][] b, uint row, uint col) {
-	for(uint i = 0; i < row; i++) {
-		for(uint j = 0; j < col; j++) {
-			b[j][i] = a[i][j];
-		}
-	}
-}
-
-void rotate90(char[][] a, char[][] b, uint row, uint col) {
-	//transpose
-	transpose(a, b, row, col);
-
-	// reverse each row
-	const int new_row = col;
-	const int new_col = row;
-	char[][] tmp = new char[][](new_row,new_col);
-
-	foreach(x, rows; b) {
-		tmp[new_row-x-1][] = rows;
-	}
-	b[] = tmp[];
-
-}
 
 public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 {
-	auto wb = newWorkbook("Wafermap.xlsx");
+	Workbook wb = newWorkbook("Wafermap.xlsx");
 	auto ws = wb.addWorksheet("Page 1");
 
 	lxw_image_options img_options;
-	double ss_width = 449 * 0.350;
-	double ss_height = 245 * 0.324;
+	const double ss_width = 449 * 0.350;
+	const double ss_height = 245 * 0.324;
 	img_options.x_scale = (4.0 * 70.0) / ss_width;
 	img_options.y_scale = (7.0 * 20.0) / ss_height;
 	ws.mergeRange(0, 0, 7, 3, null);
 	img_options.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
-	// ws.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, img.dup.ptr, img.length, &img_options);
+	ws.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, img.dup.ptr, img.length, &img_options);
 	//ws.insertImageOpt(cast(uint) 0, cast(ushort) 0, "itest_logo.png", &img_options);
+
+	MultiMap!(Workbook, string, string) wbMap = new MultiMap!(Workbook, string, string)();
+
+	wbMap.put(wb, "asd", "lkj");
+
+	wb.close();
 
 
 	foreach(hdr; stdfdb.deviceMap.keys) {
@@ -81,9 +65,9 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 			x_coord[i] = dr.devId.id.xy.x;
 			y_coord[i] = dr.devId.id.xy.y;
 		}
-		writeln("hwbin = ", hwbin);
-		writeln("x_coord = ", x_coord);
-		writeln("y_coord = ", y_coord);
+		// writeln("hwbin = ", hwbin);
+		// writeln("x_coord = ", x_coord);
+		// writeln("y_coord = ", y_coord);
 
 		// ASY Format
 		// if(options.asy) {
@@ -174,4 +158,28 @@ unittest {
 	assert(arr[2]==12);
 
 	writeln("Unit test passes");
+}
+
+// O(n^2)
+void transpose(char[][] a, char[][] b, uint row, uint col) {
+	for(uint i = 0; i < row; i++) {
+		for(uint j = 0; j < col; j++) {
+			b[j][i] = a[i][j];
+		}
+	}
+}
+
+void rotate90(char[][] a, char[][] b, uint row, uint col) {
+	//transpose
+	transpose(a, b, row, col);
+
+	// reverse each row
+	const int new_row = col;
+	const int new_col = row;
+	char[][] tmp = new char[][](new_row,new_col);
+
+	foreach(x, rows; b) {
+		tmp[new_row-x-1][] = rows;
+	}
+	b[] = tmp[];
 }
