@@ -122,7 +122,7 @@ class CmdOptions
     string outputDir = "";
     string sfile = "<device>_<lot>.xlsx";
     string hfile = "<device>_historgrams.pdf";
-    string wfile = "<device>_<lot>_<wafer>";
+    string wfile = "<device>_<lot>_<wafer>.xlsx";
     BinCategory_t category = BinCategory_t.NONE;
 
     string[] stdfFiles;
