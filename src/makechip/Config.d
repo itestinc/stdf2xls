@@ -51,6 +51,10 @@ class Config
     static immutable string ss_logo_x_scale                 = "ss.logo.x_scale";
     static immutable string ss_logo_y_scale                 = "ss.logo.y_scale";
 
+    static immutable string wafer_pass_bg_color             = "wafer.pass.bg_color";
+    static immutable string wafer_fail_bg_color             = "wafer.fail.bg_color";
+    static immutable string wafer_empty_bg_color            = "wafer.empty.bg_color";
+
     public this()
     {
     }
@@ -161,6 +165,10 @@ class Config
         cfgMap[ss_logo_file_path] = "";
         cfgMap[ss_logo_x_scale] = "0.0";
         cfgMap[ss_logo_y_scale] = "0.0";
+
+        cfgMap[wafer_pass_bg_color] = "009900";
+        cfgMap[wafer_fail_bg_color] = "990000";
+        cfgMap[wafer_empty_bg_color] = "444444";
 
         string rc = std.path.expandTilde("~/.stdf2xlsxrc");
         if (rc.exists)
