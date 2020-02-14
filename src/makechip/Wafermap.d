@@ -63,11 +63,13 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		const uint col = x_max + 1;
 		const uint row = y_max + 1;
 
-		char[][] matrix = new char[][](row, col);
+		char[][] matrix = new char[][](row, col);		// inital val is 0xFF
 		writeln("row = ", row);
 		writeln("col = ", col);
 
+		// do this only for ASY format, otherwise affects speed
 		// pre-fill map with dots
+		
 		for(uint i = 0; i < row; i++) {
 			for(uint j = 0; j < col; j++) {
 				matrix[i][j] = '.';
@@ -89,6 +91,10 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 			}
 		}
 
+		// rotate 90
+		char[][] mat_rot = new char[][](col, row);
+		rotate90(matrix, mat_rot, row, col);
+
 		if(options.asciiDump) {
 			// useful header values
 			writeln("hdr.wafer_id = ", hdr.wafer_id);
@@ -97,7 +103,6 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 			writeln("hdr.devName = ", hdr.devName);
 			writeln("hdr.temperature = ", hdr.temperature);
 			writeln("hdr.step = ", hdr.step);
-
 			// print map
 			writeln("good bins = ", goodbins);
 			writeln("bad bins = ", badbins);
@@ -105,10 +110,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 			foreach(n; matrix) {
 				writeln(n);
 			}
-
-			// rotate 90 and print
-			char[][] mat_rot = new char[][](col, row);
-			rotate90(matrix, mat_rot, row, col);
+			// print rotated map
 			writeln("rotated:");
 			foreach(n; mat_rot) {
 				writeln(n);
@@ -149,19 +151,48 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		ws.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, img.dup.ptr, img.length, &img_options);
 		//ws.insertImageOpt(cast(uint) 0, cast(ushort) 0, "itest_logo.png", &img_options);
 
+		const short offset_row = 8;
+		const short offset_col = 4;
 		import std.conv : to;
 		// ws.write(10, 10, "hello");
-		foreach(i, row_arr; matrix) {
+		initFormats(wb, options, config);		// need this to load formats
+		ws.setColumn(offset_col, cast(ushort) (row + offset_col) , 1.0);		// -> 0.26" ; new_col = row
+
+		foreach(i, row_arr; mat_rot) {
+
+			ws.setRow(cast(uint)(i + offset_row), 10.0);		// -> 0.28"
+
+			ws.write(cast(uint)(i + offset_row), cast(ushort)(offset_col), to!string(i), waferRowNumberFmt);	// write row numbers
+			ws.write(cast(uint)(i + offset_row), cast(ushort)(row + offset_col + 1), to!string(i), waferRowNumberFmt);	// write row numbers ; new_col = row
+
 			foreach(j, val; row_arr) {
 
-				string val2 = to!string(val);
-				initFormats(wb, options, config);
-				ws.write(cast(uint) i, cast(ushort) j, val2);
+				ws.write(cast(uint)(offset_row), cast(ushort)(j + offset_col), to!string(j), waferColNumberFmt); // write column numbers
+				ws.write(cast(uint)(col + offset_row + 1), cast(ushort)(j + offset_col), to!string(j), waferColNumberFmt); // write column numbers ; new_row = col
 
+				switch(val) {
+					case 0xFF:
+					case '.':
+						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), to!string(val), waferEmptyFmt);	//+1 for row,col numbering
+						break;
+					case '1':
+						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), to!string(val), waferPassFmt);
+						break;
+					case 'X':
+						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), to!string(val), waferFailFmt);
+						break;
+					case '?':
+						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), to!string(val), waferFailFmt);
+						break;
+					default:
+						throw new Exception("Unknown bin numbering - shouldn't happen");
+				}
 				// set column width to 2
 				// don't write '.'s.. maybe color gray
+
 				// add color
 				// center the text
+				// combine with prev for loop to optimize time
 			}
 		}
 
@@ -213,3 +244,15 @@ void rotate90(char[][] a, char[][] b, uint row, uint col) {
 	}
 	b[] = tmp[];
 }
+
+/*
+
+Excel 2007-2019
+max rows = 2^20	= 1,048,576	-> uint @ 2^32
+max cols = 2^14	= 16,384	-> ushort @ 2^16
+
+
+Define new format in:
+SpreadsheetWriter.d 	- new format name, format options
+Config.d				- format option color names
+*/
