@@ -166,9 +166,9 @@ class Config
         cfgMap[ss_logo_x_scale] = "0.0";
         cfgMap[ss_logo_y_scale] = "0.0";
 
-        cfgMap[wafer_pass_bg_color] = "009900";
-        cfgMap[wafer_fail_bg_color] = "990000";
-        cfgMap[wafer_empty_bg_color] = "444444";
+        cfgMap[wafer_pass_bg_color] = "22C600";
+        cfgMap[wafer_fail_bg_color] = "BF0000";
+        cfgMap[wafer_empty_bg_color] = "666666";
 
         string rc = std.path.expandTilde("~/.stdf2xlsxrc");
         if (rc.exists)
