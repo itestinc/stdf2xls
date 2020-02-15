@@ -173,6 +173,7 @@ public class DefaultValueDatabase
             NdefaultHlmScals.put(ptr.HLM_SCAL, ptr.recordType, ptr.TEST_NUM, dup);
         }
 
+        writeln("---------------------------------------------------------------------------------------------------");
         writeln("defaultLoLimit = ", defaultLoLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, tname, dup));
         writeln("max = ", (defaultLoLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, tname, dup) == float.max));
         writeln("LO_LIMIT.isEmpty = ", ptr.LO_LIMIT.isEmpty());
@@ -182,25 +183,26 @@ public class DefaultValueDatabase
             writeln("BB type = ", ptr.recordType, " tnum = ", ptr.TEST_NUM, " tname = ", tname, " dup = ", dup, "LO limit = ", ptr.LO_LIMIT);
             defaultLoLimits.put(ptr.LO_LIMIT, ptr.recordType, ptr.TEST_NUM, tname, dup);
         }
-        if (!ptr.LO_LIMIT.isEmpty() && NdefaultLoLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, dup) == float.max)
+        if ((!ptr.LO_LIMIT.isEmpty()) && (NdefaultLoLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, dup) == float.max))
         {
             NdefaultLoLimits.put(ptr.LO_LIMIT, ptr.recordType, ptr.TEST_NUM, dup);
         }
+        writeln("===================================================================================================");
 
-        if (!ptr.HI_LIMIT.isEmpty() && defaultHiLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, tname, dup) == float.max)
+        if ((!ptr.HI_LIMIT.isEmpty()) && (defaultHiLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, tname, dup) == float.max))
         {
             defaultHiLimits.put(ptr.HI_LIMIT, ptr.recordType, ptr.TEST_NUM, tname, dup);
         }
-        if (!ptr.HI_LIMIT.isEmpty() && NdefaultHiLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, dup) == float.max)
+        if ((!ptr.HI_LIMIT.isEmpty()) && (NdefaultHiLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, dup) == float.max))
         {
             NdefaultHiLimits.put(ptr.HI_LIMIT, ptr.recordType, ptr.TEST_NUM, dup);
         }
 
-        if (!ptr.UNITS.isEmpty() && defaultUnits.get("*&^%$##", ptr.recordType, ptr.TEST_NUM, tname, dup) == "*&^%$##")
+        if ((!ptr.UNITS.isEmpty()) && (defaultUnits.get("*&^%$##", ptr.recordType, ptr.TEST_NUM, tname, dup) == "*&^%$##"))
         {
             defaultUnits.put(ptr.UNITS, ptr.recordType, ptr.TEST_NUM, tname, dup);
         }
-        if (!ptr.UNITS.isEmpty() && NdefaultUnits.get("*&^%$##", ptr.recordType, ptr.TEST_NUM, dup) == "*&^%$##")
+        if ((!ptr.UNITS.isEmpty()) && (NdefaultUnits.get("*&^%$##", ptr.recordType, ptr.TEST_NUM, dup) == "*&^%$##"))
         {
             NdefaultUnits.put(ptr.UNITS, ptr.recordType, ptr.TEST_NUM, dup);
         }

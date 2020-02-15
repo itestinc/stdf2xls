@@ -189,23 +189,76 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
             if (devices[$-1].devId != prevDevice.devId) devices ~= prevDevice;
         }
         else devices = dr;
-        TestRecord[][] normList = new TestRecord[][devices.length];
-        size_t maxLen = 0;
-        size_t maxLoc = 0;
-        size_t i = 0;
-        if (devices.length == 0) return;
-        foreach (ref d; devices)
+        // Now create the list of all tests in the test flow in the correct order. (Different devices may have slightly different test flows)
+        string[const(TestID)] tmpmap;
+        // determine the total number of unique TestIDs:
+        foreach (d, dev; devices)
         {
-            if (d.tests.length > maxLen)
+            writeln("dev.tests.length = ", dev.tests.length);
+            foreach (t, test; dev.tests)
             {
-                    maxLen = d.tests.length;
-                    maxLoc = i;
+                tmpmap[test.id] = "1"; 
             }
-            i++;
         }
-        // First expand the test list so they are essentially equal length (assuming they are passing devices)
-        TestRecord[][] newTests = new TestRecord[][devices.length];
-        writeln("maxLoc = ", maxLoc, " devices.length = ", devices.length); stdout.flush();
+        size_t totalIds = tmpmap.length;
+        TestRecord[const(TestID)][] normList;
+        normList.length = totalIds;
+        writeln("totalIds = ", totalIds);
+        // Now find the number of different tests at each point in the flow:
+        foreach (d, dev; devices)
+        {
+            writeln("dev.tests.length = ", dev.tests.length);
+            foreach (t, test; dev.tests)
+            {
+                normList[t][test.id] = test;
+            }
+        }
+        // Now figure out the order of the tests
+        TestRecord[] testList;
+        for (size_t i=0; i<normList.length; i++)
+        {
+            
+            if (normList[i].length == 1)
+            {
+                foreach(k; normList[i].keys) testList ~= normList[i][k];
+            }
+            else
+            {
+                size_t[const(TestID)] depth;
+                foreach(l, k; normList[i].keys)
+                {
+                    for (size_t j=i; j<normList.length; j++)
+                    {
+                        if (k in normList[j]) 
+                        {
+                            if (k !in depth)
+                            {
+                                depth[k] = j - i;
+                            }
+                            else
+                            {
+                                size_t x = depth[k];
+                                x++;
+                                depth[k] = x;
+                            }
+                        }
+                    }
+                }
+                size_t minDepth = size_t.max;
+                foreach(k; depth.keys)
+                {
+                    size_t s = depth[k];
+                    if (s < minDepth) minDepth = s;
+                }
+                foreach(k; depth.keys)
+                {
+                    size_t s = depth[k];
+                    if (s == minDepth) testList ~= normList[i][k];
+                }
+            }
+        }
+        writeln("testList.length = ", testList.length);
+/*
         for (size_t j=0; j<devices[maxLoc].tests.length; j++)
         {
             scan(j, devices[maxLoc].tests[j].id, devices[maxLoc].tests[j].type, devices, newTests);
@@ -259,12 +312,13 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
                 }
             }
         }
+        */
         // If there are dynamicLimits, then insert test headers for the upper and lower limits where appropriate
         TestRecord[] newCompTests;
-        writeln("compTests.length = ", compTests.length);
+        writeln("testList.length = ", testList.length);
         if (!options.noDynamicLimits)
         {
-            foreach(test; compTests)
+            foreach(test; testList)
             {
                 if (test.dynamicLoLimit)
                 {
@@ -285,7 +339,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         }
         else
         {
-            newCompTests = compTests;
+            newCompTests = testList;
         }
         // now build a row map that maps test ID to spreadsheet row:
         uint rc = 0;
@@ -294,7 +348,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
             rowOrColMap[test.id] = rc;
             rc++;
         }
-        for (size_t n=0; n<devices.length; n++) devices[n].tests = newTests[n];
+        //for (size_t n=0; n<devices.length; n++) devices[n].tests = newTests[n];
         writeln("filename = ", wb.filename);
         writeSheet(options, wb, rowOrColMap, key, devices, config);
         wb.close();
