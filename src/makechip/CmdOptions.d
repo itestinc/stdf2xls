@@ -96,6 +96,13 @@ enum BinCategory_t
     TEMP
 };
 
+enum Notch {
+    top,
+    bottom,
+    left,
+    right
+}
+
 import std.regex;
 import makechip.StdfFile;
 class CmdOptions
@@ -115,6 +122,7 @@ class CmdOptions
     bool limit1k = false;
     bool noDynamicLimits = false;
     bool asciiDump = true;
+    Notch notch = Notch.top;
     Sort_t sortType = Sort_t.SN_UP_TIME_UP; 
     private string[] modify;
     PMRNameType channelType = PMRNameType.AUTO;
@@ -157,6 +165,7 @@ class CmdOptions
             "genWafermaps|w", "Generate wafer map(s)", &genWafermap,
             "wo|W", "Wafermap output filename(s); name may contain variables for device, wafer, and/or lot\nDefault = ${device}_${lot}_${wafer}.{pdf,txt}", &wfile,
             "dumpAscii|A", "dump the wafer map in ASCII form", &asciiDump,
+            "notch|n", "Rotate the wafer map for desired notch position: top|bottom|left|right.", &notch,
 
             "genHistograms|h", "Generate histogram(s)", &genHistogram,
             "ho|H", "Histogram output filename(s); name may contain variables for device, step, lot, and/or testID\nDefault = ${device}_histograms.pdf", &hfile,
