@@ -64,14 +64,11 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		const uint row = y_max + 1;
 
 		char[][] matrix = new char[][](row, col);		// inital val is 0xFF
-		writeln("row = ", row);
-		writeln("col = ", col);
 
 		uint[][] matrix_uint = new uint[][](row,col);
 
-		// do this only for ASY format, otherwise affects speed
+
 		// pre-fill map with dots
-		
 		for(uint i = 0; i < row; i++) {
 			for(uint j = 0; j < col; j++) {
 				matrix[i][j] = '.';
@@ -111,17 +108,24 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 			writeln("hdr.temperature = ", hdr.temperature);
 			writeln("hdr.step = ", hdr.step);
 			// print map
+			writeln("row = ", row);
+			writeln("col = ", col);
 			writeln("good bins = ", goodbins);
 			writeln("bad bins = ", badbins);
 			writeln("total bins = ", goodbins+badbins);
-			foreach(n; matrix) {
+			//foreach(n; matrix) {
+			//	writeln(n);
+			//}
+			// print rotated map
+			writeln("rotated 90 CW:");
+			foreach(n; mat_rot) {
 				writeln(n);
 			}
-			// print rotated map
-			// writeln("rotated:");
-			// foreach(n; mat_rot) {
+
+			//writeln("matrix_uint:");
+			//foreach(n; matrix_uint) {
 			//	writeln(n);
-			// }
+			//}
 		}
 
 	// EXCEL
@@ -161,7 +165,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		const short offset_row = 15;
 		const short offset_col = 4;
 		import std.conv : to;
-		// ws.write(10, 10, "hello");
+
 		initFormats(wb, options, config);		// need this to load formats
 
 		// write some headers. Note: logo takes up 7 rows, 3 cols.
@@ -238,21 +242,6 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 
 }
 
-unittest {
-	int[] arr;
-	arr.length = 0;
-
-	for(uint i=0;i<3;i++) {
-		arr.length += 1;
-		arr[i] = i + 10;
-	}
-	assert(arr[0]==10);
-	assert(arr[1]==11);
-	assert(arr[2]==12);
-
-	writeln("Unit test passes");
-}
-
 /**
 	O(n^2)
 */
@@ -281,17 +270,29 @@ void rotate90(char[][] a, char[][] b, uint row, uint col) {
 	b[] = tmp[];
 }
 
-/*
+unittest {
+	int[] arr;
+	arr.length = 0;
 
+	for(uint i=0;i<3;i++) {
+		arr.length += 1;
+		arr[i] = i + 10;
+	}
+	assert(arr[0]==10);
+	assert(arr[1]==11);
+	assert(arr[2]==12);
+
+	writeln("Unit test passes");
+}
+
+/*
 Excel 2007-2019
 max rows = 2^20	= 1,048,576	-> uint @ 2^32
 max cols = 2^14	= 16,384	-> ushort @ 2^16
 
-
 Define new format in:
 SpreadsheetWriter.d 	- new format name, format options
 Config.d				- format option color names
-
 
 why setting column is (first, last) ; setting row is just (one row) ??
 */

@@ -747,7 +747,7 @@ class StdfDB
                     dr[site - minSite][head - minHead].hwbin = prr.HARD_BIN;
                     dr[site - minSite][head - minHead].swbin = prr.SOFT_BIN;
                     devices ~= dr[site - minSite][head - minHead];
-                    writeln("devices[$].tests.length = ", devices[$-1].tests.length);
+//                  writeln("devices[$].tests.length = ", devices[$-1].tests.length);
                     dr[site - minSite][head - minHead].tests.length = 0;
                     seq = 0;
                     break;
@@ -763,7 +763,7 @@ class StdfDB
             device.goodDevice = false;
             foreach(passBin; passingHWBins)
             {
-                writeln("passBin = ", passBin, " id = ", device.devId, " hwbin = ", device.hwbin);
+//              writeln("passBin = ", passBin, " id = ", device.devId, " hwbin = ", device.hwbin);
                 if (passBin == device.hwbin)
                 {
                     device.goodDevice = true;
