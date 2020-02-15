@@ -75,6 +75,8 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		for(uint i = 0; i < row; i++) {
 			for(uint j = 0; j < col; j++) {
 				matrix[i][j] = '.';
+
+				matrix_uint[i][j] = 0;
 			}
 		}
 
@@ -82,6 +84,9 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		uint badbins = 0;
 		// fill map with hwbins
 		foreach(i, bin; hwbin) {
+
+			matrix_uint[y_shifted[i]][x_shifted[i]] = bin;
+
 			switch(hwbin[i]) {
 				default:
 					matrix[y_shifted[i]][x_shifted[i]] = '?'; badbins++; break;
@@ -113,10 +118,10 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 				writeln(n);
 			}
 			// print rotated map
-			writeln("rotated:");
-			foreach(n; mat_rot) {
-				writeln(n);
-			}
+			// writeln("rotated:");
+			// foreach(n; mat_rot) {
+			//	writeln(n);
+			// }
 		}
 
 	// EXCEL
@@ -184,12 +189,12 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		const double rowWidth = 11.6;
 
 		ws.setColumn(offset_col, cast(ushort) (col + offset_col + 1) , colWidth);		// -> 0.26"; +1 to include other-side col numbering
-		//ws.setRow(cast(uint)(offset_row), rowWidth);			// to include row numbering
-		//ws.setRow(cast(uint)(row + offset_row + 1), rowWidth);		// +1 to include other-side row numbering
+		ws.setRow(cast(uint)(offset_row), rowWidth);			// to include row numbering
+		ws.setRow(cast(uint)(row + offset_row + 1), rowWidth);		// +1 to include other-side row numbering
 
 		foreach(i, row_arr; matrix) {
 
-			//ws.setRow(cast(uint)(i + offset_row + 1), rowWidth);		// -> 0.28"; set rows for all the bin squares
+			ws.setRow(cast(uint)(i + offset_row + 1), rowWidth);		// -> 0.28"; set rows for all the bin squares
 
 			ws.write(cast(uint)(i + offset_row + 1), cast(ushort)(offset_col), i, waferRowNumberFmt);	// write row numbers; +1 to not overlap the 0
 			ws.write(cast(uint)(i + offset_row + 1), cast(ushort)(col + offset_col + 1), i, waferRowNumberFmt);	// write row numbers on other side
