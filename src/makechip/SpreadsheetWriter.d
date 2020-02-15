@@ -472,6 +472,7 @@ private Worksheet[] createSheets(CmdOptions options, Config config, Workbook wb,
     for (size_t i=0; i<numSheets; i++)
     {
         string title = getTitle(options, hdr, i);
+        if (title.length > 31) title = title[0..31];
         Worksheet w = wb.addWorksheet(title);
         ws ~= w;
         setLogo(options, config, w);
@@ -786,7 +787,7 @@ private void setTestNameHeaders(CmdOptions options, Config config, Worksheet w, 
             w.writeNumber(19, col, id.testNumber, testNumberHdrFmt);
             w.writeNumber(20, col, id.dup, testNumberHdrFmt);
             // Limits must be added when the test data is added
-            w.writeString(23, col, id.pin, testNameHdrFmt);
+            w.writeString(23, col, id.pin, testNumberHdrFmt);
         }
     }
 }
@@ -841,9 +842,19 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
             ushort col = cast(ushort) (seqNum + 7);
             if (col !in cmap)
             {
-                w.writeNumber(21, col, tr.loLimit, testLimitHdrFmt);
-                w.writeNumber(22, col, tr.hiLimit, testLimitHdrFmt);
-                w.writeString(24, col, tr.units, testNumberHdrFmt);
+                if (tr.type == TestType.FLOAT || tr.type == TestType.HEX_INT || tr.type == TestType.DEC_INT ||
+                    tr.type == TestType.DYNAMIC_LOLIMIT || tr.type == TestType.DYNAMIC_HILIMIT || tr.type == TestType.STRING)
+                {
+                    w.writeString(21, col, "", testLimitHdrFmt);
+                    w.writeString(22, col, "", testLimitHdrFmt);
+                    w.writeString(24, col, tr.units, testNumberHdrFmt);
+                }
+                else
+                {
+                    w.writeNumber(21, col, tr.loLimit, testLimitHdrFmt);
+                    w.writeNumber(22, col, tr.hiLimit, testLimitHdrFmt);
+                    w.writeString(24, col, tr.units, testNumberHdrFmt);
+                }
                 cmap[col] = true;
             }
             switch (tr.type) with(TestType)
@@ -900,13 +911,24 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
         for (int i=0; i<device.tests.length; i++)
         {
             TestRecord tr = device.tests[i];
+            writeln("tr.id = ", tr.id); std.stdio.stdout.flush();
             uint seqNum = rowOrColMap[tr.id];
             uint row = seqNum + 14;
             if (row !in lmap)
             {
-                w.writeNumber(row, 7, tr.loLimit, testLimitHdrFmt);
-                w.writeNumber(row, 8, tr.hiLimit, testLimitHdrFmt);
-                w.writeString(row, 12, tr.units, testNumberHdrFmt);
+                if (tr.type == TestType.FLOAT || tr.type == TestType.HEX_INT || tr.type == TestType.DEC_INT ||
+                    tr.type == TestType.DYNAMIC_LOLIMIT || tr.type == TestType.DYNAMIC_HILIMIT || tr.type == TestType.STRING)
+                {
+                    w.writeString(row, 7, "", testLimitHdrFmt);
+                    w.writeString(row, 8, "", testLimitHdrFmt);
+                    w.writeString(row, 12, tr.units, testNumberHdrFmt);
+                }
+                else
+                {
+                    w.writeNumber(row, 7, tr.loLimit, testLimitHdrFmt);
+                    w.writeNumber(row, 8, tr.hiLimit, testLimitHdrFmt);
+                    w.writeString(row, 12, tr.units, testNumberHdrFmt);
+                }
                 lmap[row] = true;
             }
             switch (tr.type) with(TestType)

@@ -50,6 +50,11 @@ struct Point
 {
     int x;
     int y;
+
+    public string toString() const pure
+    {
+        return "(" ~ to!string(x) ~ ", " ~ to!string(y) ~ ")";
+    }
 }
 
 union SN
@@ -70,6 +75,11 @@ struct PartID
     {
         numericSN = numeric;
         return this;
+    }
+
+    public string toString() const pure
+    {
+        return ws ? id.xy.toString() : id.sn;
     }
 
     this(string sn)
@@ -251,7 +261,7 @@ class TestRecord
     /**
       CTOR for TEXT_DATA of type float
      */
-    this(TestID id, ubyte site, ubyte head, float rslt, uint seqNum)
+    this(TestID id, ubyte site, ubyte head, float rslt, uint seqNum, string units)
     {
         this.id = id;
         this.type = TestType.FLOAT;
@@ -259,6 +269,7 @@ class TestRecord
         this.site = site;
         result.f = rslt;
         this.seqNum = seqNum;
+        this.units = units;
         this.testFlags = 0;
         this.optFlags = 0;
         this.parmFlags = 0;
@@ -267,7 +278,7 @@ class TestRecord
     /**
       CTOR for TEXT_DATA of type hex int
      */
-    this(TestID id, ubyte site, ubyte head, ulong rslt, uint seqNum)
+    this(TestID id, ubyte site, ubyte head, ulong rslt, uint seqNum, string units)
     {
         this.id = id;
         this.type = TestType.HEX_INT;
@@ -275,6 +286,7 @@ class TestRecord
         this.site = site;
         result.u = rslt;
         this.seqNum = seqNum;
+        this.units = units;
         this.testFlags = 0;
         this.optFlags = 0;
         this.parmFlags = 0;
@@ -283,7 +295,7 @@ class TestRecord
     /**
       CTOR for TEXT_DATA of type dec int
      */
-    this(TestID id, ubyte site, ubyte head, long  rslt, uint seqNum)
+    this(TestID id, ubyte site, ubyte head, long  rslt, uint seqNum, string units)
     {
         this.id = id;
         this.type = TestType.DEC_INT;
@@ -291,6 +303,7 @@ class TestRecord
         this.site = site;
         result.l = rslt;
         this.seqNum = seqNum;
+        this.units = units;
         this.testFlags = 0;
         this.optFlags = 0;
         this.parmFlags = 0;
@@ -299,7 +312,7 @@ class TestRecord
     /**
       CTOR for TEXT_DATA of type string
      */
-    this(TestID id, ubyte site, ubyte head, string rslt, uint seqNum)
+    this(TestID id, ubyte site, ubyte head, string rslt, uint seqNum, string units)
     {
         this.id = id;
         this.type = TestType.STRING;
@@ -307,6 +320,7 @@ class TestRecord
         this.site = site;
         result.s = rslt;
         this.seqNum = seqNum;
+        this.units = units;
         this.testFlags = 0;
         this.optFlags = 0;
         this.parmFlags = 0;
@@ -686,19 +700,19 @@ class StdfDB
                             TestRecord tr = null;
                             if (format == "float")
                             {
-                                tr = new TestRecord(id, to!ubyte(site), to!ubyte(head), to!(float)(value), seq);
+                                tr = new TestRecord(id, to!ubyte(site), to!ubyte(head), to!(float)(value), seq, units);
                             }
                             else if (format == "hex_int")
                             {
-                                tr = new TestRecord(id, to!ubyte(site), to!ubyte(head), to!(ulong)(value), seq);
+                                tr = new TestRecord(id, to!ubyte(site), to!ubyte(head), to!(ulong)(value), seq, units);
                             }
                             else if (format == "dec_int")
                             {
-                                tr = new TestRecord(id, to!ubyte(site), to!ubyte(head), to!(long)(value), seq);
+                                tr = new TestRecord(id, to!ubyte(site), to!ubyte(head), to!(long)(value), seq, units);
                             }
                             else // format is string
                             {
-                                tr = new TestRecord(id, to!ubyte(site), to!ubyte(head), value, seq);
+                                tr = new TestRecord(id, to!ubyte(site), to!ubyte(head), value, seq, units);
                             }
                             seq++;
                             dr[to!(ubyte)(site) - minSite][to!(ubyte)(head) - minHead].tests ~= tr;
@@ -733,6 +747,8 @@ class StdfDB
                     dr[site - minSite][head - minHead].hwbin = prr.HARD_BIN;
                     dr[site - minSite][head - minHead].swbin = prr.SOFT_BIN;
                     devices ~= dr[site - minSite][head - minHead];
+                    writeln("devices[$].tests.length = ", devices[$-1].tests.length);
+                    dr[site - minSite][head - minHead].tests.length = 0;
                     seq = 0;
                     break;
                 case Record_t.HBR.ordinal:
@@ -747,6 +763,7 @@ class StdfDB
             device.goodDevice = false;
             foreach(passBin; passingHWBins)
             {
+                writeln("passBin = ", passBin, " id = ", device.devId, " hwbin = ", device.hwbin);
                 if (passBin == device.hwbin)
                 {
                     device.goodDevice = true;
