@@ -67,6 +67,8 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		writeln("row = ", row);
 		writeln("col = ", col);
 
+		uint[][] matrix_uint = new uint[][](row,col);
+
 		// do this only for ASY format, otherwise affects speed
 		// pre-fill map with dots
 		
@@ -145,30 +147,57 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		const double ss_width = 449 * 0.350;
 		const double ss_height = 245 * 0.324;
 		img_options.x_scale = (4.0 * 70.0) / ss_width;
-		img_options.y_scale = (7.0 * 20.0) / ss_height;
+		img_options.y_scale = (8.0 * 20.0) / ss_height;
 		ws.mergeRange(0, 0, 7, 3, null);
 		img_options.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
 		ws.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, img.dup.ptr, img.length, &img_options);
 		//ws.insertImageOpt(cast(uint) 0, cast(ushort) 0, "itest_logo.png", &img_options);
 
-		const short offset_row = 8;
+		const short offset_row = 15;
 		const short offset_col = 4;
 		import std.conv : to;
 		// ws.write(10, 10, "hello");
 		initFormats(wb, options, config);		// need this to load formats
-		ws.setColumn(offset_col, cast(ushort) (row + offset_col) , 1.0);		// -> 0.26" ; new_col = row
 
-		foreach(i, row_arr; mat_rot) {
+		// write some headers. Note: logo takes up 7 rows, 3 cols.
+		ws.write(8, 0, "wafer_id:", headerNameFmt);
+		ws.write(9, 0, "lot_id:", headerNameFmt);
+		ws.write(10, 0, "sublot_id:", headerNameFmt);
+		ws.write(11, 0, "devName:", headerNameFmt);
+		ws.write(12, 0, "temperature:", headerNameFmt);
+		ws.write(13, 0, "step:", headerNameFmt);
+		ws.write(8, 1, hdr.wafer_id, headerValueFmt);
+		ws.write(9, 1, hdr.lot_id, headerValueFmt);
+		ws.write(10, 1, hdr.sublot_id, headerValueFmt);
+		ws.write(11, 1, hdr.devName, headerValueFmt);
+		ws.write(12, 1, hdr.temperature, headerValueFmt);
+		ws.write(13, 1, hdr.step, headerValueFmt);
 
-			ws.setRow(cast(uint)(i + offset_row), 10.0);		// -> 0.28"
+		ws.mergeRange(8, 1, 8, 3, null);
+		ws.mergeRange(9, 1, 9, 3, null);
+		ws.mergeRange(10, 1, 10, 3, null);
+		ws.mergeRange(11, 1, 11, 3, null);
+		ws.mergeRange(12, 1, 12, 3, null);
+		ws.mergeRange(13, 1, 13, 3, null);
 
-			ws.write(cast(uint)(i + offset_row), cast(ushort)(offset_col), to!string(i), waferRowNumberFmt);	// write row numbers
-			ws.write(cast(uint)(i + offset_row), cast(ushort)(row + offset_col + 1), to!string(i), waferRowNumberFmt);	// write row numbers ; new_col = row
+		const double colWidth = 2.0;
+		const double rowWidth = 11.6;
+
+		ws.setColumn(offset_col, cast(ushort) (col + offset_col + 1) , colWidth);		// -> 0.26"; +1 to include other-side col numbering
+		//ws.setRow(cast(uint)(offset_row), rowWidth);			// to include row numbering
+		//ws.setRow(cast(uint)(row + offset_row + 1), rowWidth);		// +1 to include other-side row numbering
+
+		foreach(i, row_arr; matrix) {
+
+			//ws.setRow(cast(uint)(i + offset_row + 1), rowWidth);		// -> 0.28"; set rows for all the bin squares
+
+			ws.write(cast(uint)(i + offset_row + 1), cast(ushort)(offset_col), i, waferRowNumberFmt);	// write row numbers; +1 to not overlap the 0
+			ws.write(cast(uint)(i + offset_row + 1), cast(ushort)(col + offset_col + 1), i, waferRowNumberFmt);	// write row numbers on other side
 
 			foreach(j, val; row_arr) {
 
-				ws.write(cast(uint)(offset_row), cast(ushort)(j + offset_col), to!string(j), waferColNumberFmt); // write column numbers
-				ws.write(cast(uint)(col + offset_row + 1), cast(ushort)(j + offset_col), to!string(j), waferColNumberFmt); // write column numbers ; new_row = col
+				ws.write(cast(uint)(offset_row), cast(ushort)(j + offset_col + 1), j, waferColNumberFmt); // write column numbers; +1 to not overlap the 0
+				ws.write(cast(uint)(row + offset_row + 1), cast(ushort)(j + offset_col + 1), j, waferColNumberFmt); // write column numbers on other side
 
 				switch(val) {
 					case 0xFF:
@@ -176,7 +205,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), to!string(val), waferEmptyFmt);	//+1 for row,col numbering
 						break;
 					case '1':
-						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), to!string(val), waferPassFmt);
+						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), to!int(val), waferPassFmt);
 						break;
 					case 'X':
 						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), to!string(val), waferFailFmt);
@@ -187,12 +216,14 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 					default:
 						throw new Exception("Unknown bin numbering - shouldn't happen");
 				}
-				// set column width to 2
-				// don't write '.'s.. maybe color gray
 
-				// add color
-				// center the text
+				// TO DO:
+				// don't write '.'s.. maybe color gray
 				// combine with prev for loop to optimize time
+				// add die color legend
+				// !!: header location with respect to logo WILL change with different wafer sizes, due to changing row/col size
+
+				// convert char[][] to uint[][] -> easier to output, but harder to dump as ASY?
 			}
 		}
 
@@ -255,4 +286,7 @@ max cols = 2^14	= 16,384	-> ushort @ 2^16
 Define new format in:
 SpreadsheetWriter.d 	- new format name, format options
 Config.d				- format option color names
+
+
+why setting column is (first, last) ; setting row is just (one row) ??
 */
