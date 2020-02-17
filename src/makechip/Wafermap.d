@@ -1,19 +1,11 @@
 module makechip.Wafermap;
 import makechip.StdfDB;
-import makechip.StdfFile;
-import makechip.Stdf;
 import makechip.CmdOptions;
 import makechip.Config;
-import makechip.Stdf2xls;
-import std.stdio;
-
-import libxlsxd.workbook;
-import libxlsxd.worksheet;
-import libxlsxd.format;
-import libxlsxd.xlsxwrap;
 import makechip.logo;
-import makechip.Util;
-import makechip.SpreadsheetWriter;
+import WafermapFormat;		// including module name gives error ?
+import libxlsxd.workbook;
+import std.stdio;
 
 /**
 	Read from the STDF database to generate a wafer map in excel.
@@ -71,31 +63,14 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		}
 
 		uint[][] matrix;
-		string notch;
+		string notch;		// save to string since compiler can't read 'options.notch' at compile time in order to 'ws.write'
 		switch(options.notch) with (Notch)
 		{
 			case right: // 0
 				matrix = matrix_uint.dup;
 				notch = "Right";
 				break;
-			case left: // 180
-				uint[][] matrix_rot180 = new uint[][](row,col);
-				rotate180(matrix_uint, matrix_rot180);
-				matrix = matrix_rot180.dup;
-				notch = "Left";
-				break;
-			case top: // 270
-				uint[][] matrix_rot270 = new uint[][](col,row);
-				rotate270(matrix_uint, matrix_rot270);
-				matrix = matrix_rot270.dup;
-				if(row != col) {
-					row ^= col;
-					col ^= row;
-					row ^= col;
-				}
-				notch = "Top";
-				break;
-			case bottom:	// 90
+			case bottom:	// +90
 				uint[][] matrix_rot90 = new uint[][](col,row);
 				rotate90(matrix_uint, matrix_rot90);
 				matrix = matrix_rot90.dup;
@@ -105,6 +80,23 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 					row ^= col;
 				}
 				notch = "Bottom";
+				break;
+			case left: // +180
+				uint[][] matrix_rot180 = new uint[][](row,col);
+				rotate180(matrix_uint, matrix_rot180);
+				matrix = matrix_rot180.dup;
+				notch = "Left";
+				break;
+			case top: // +270
+				uint[][] matrix_rot270 = new uint[][](col,row);
+				rotate270(matrix_uint, matrix_rot270);
+				matrix = matrix_rot270.dup;
+				if(row != col) {
+					row ^= col;
+					col ^= row;
+					row ^= col;
+				}
+				notch = "Top";
 				break;
 			default:
 				throw new Exception("Invalid notch position");
@@ -119,7 +111,6 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		import std.array : replace;
 		string fname = replace(wfile, "<device>", hdr.devName).replace("<lot>", hdr.lot_id).replace("<wafer>", hdr.wafer_id);
 
-		/*
 		if(separateFileForDevice && separateFileForLot && separateFileForWafer) {
 			import std.array : replace;
 			fname = replace(wfile, "<device>", hdr.devName).replace("<lot>", hdr.lot_id).replace("<wafer>", hdr.wafer_id);
@@ -127,12 +118,13 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		}
 		else {
 			// ...
-		}*/
+		}
 
 		Workbook wb = newWorkbook(fname);
 		auto ws = wb.addWorksheet("Sheet1");
 
 		// Draw logo (7 rows, 3 cols)
+		import libxlsxd.xlsxwrap : lxw_image_options, lxw_object_position;
 		lxw_image_options img_options;
 		const double ss_width = 449 * 0.350;
 		const double ss_height = 245 * 0.324;
@@ -144,7 +136,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		//ws.insertImageOpt(cast(uint) 0, cast(ushort) 0, "itest_logo.png", &img_options);
 
 		// Write some headers..
-		initFormats(wb, options, config);		// need this to load formats
+		initWaferFormats(wb, options, config);
 
 		ws.write(8, 0, "wafer_id:", headerNameFmt);
 		ws.write(9, 0, "lot_id:", headerNameFmt);
@@ -170,7 +162,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		ws.write(16, 1, goodbins, headerValueFmt);
 		ws.write(17, 1, badbins, headerValueFmt);
 		ws.write(18, 1, (goodbins+badbins), headerValueFmt);
-		ws.write(19, 1, notch, headerValueFmt);		// can't read options.notch at compile time
+		ws.write(19, 1, notch, headerValueFmt);
 
 		ws.mergeRange(8, 1, 8, 3, null);
 		ws.mergeRange(9, 1, 9, 3, null);
@@ -222,7 +214,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 
 				switch(val) {
 					case 0:
-						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), "", waferEmptyFmt);    //+1 to write after row & col numbering
+						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), "", waferEmptyFmt);    //+1 to write bins after row & col numbering
 						if(options.asciiDump) { write("."); }
 						break;
 					case 1:
@@ -230,6 +222,14 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 						if(options.asciiDump) { write("1"); }
 						break;
 					case 2:
+					case 3:
+					case 4:
+					case 5:
+					case 6:
+					case 7:
+					case 8:
+					case 9:
+					case 10:
 						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferFailFmt);
 						if(options.asciiDump) { write("X"); }
 						break;
@@ -319,6 +319,7 @@ public void rotate180(uint[][] a, uint[][] a_rot180) {
 	rotate90(temp, a_rot180);
 }
 
+
 unittest {
 
 }
@@ -327,8 +328,4 @@ unittest {
 Excel 2007-2019
 max rows = 2^20	= 1,048,576	-> uint @ 2^32
 max cols = 2^14	= 16,384	-> ushort @ 2^16
-
-Define new format in:
-SpreadsheetWriter.d 	- new format name, format options
-Config.d				- format option color names
 */
