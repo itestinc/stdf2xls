@@ -224,6 +224,11 @@ class Config
     static immutable string wafer_fail_bg_color                 = "wafer.fail.bg_color";
     static immutable string wafer_empty_bg_color                = "wafer.empty.bg_color";
     static immutable string wafer_pass_bg_color                 = "wafer.pass.bg_color";
+    static immutable string wafer_pass_text_color               = "wafer.pass.text_color";
+    static immutable string wafer_header_bg_color               = "wafer.header.bg_color";
+    static immutable string wafer_header_text_color             = "wafer.header.text_color";
+    static immutable string wafer_label_bg_color                = "wafer.label.bg_color";
+    static immutable string wafer_label_text_color              = "wafer.label.text_color";
 
     public this()
     {
@@ -516,6 +521,11 @@ class Config
         cfgMap[wafer_fail_bg_color]               = "BF0000";
         cfgMap[wafer_empty_bg_color]              = "666666";
         cfgMap[wafer_pass_bg_color]               = "22C600";
+        cfgMap[wafer_pass_text_color]             = "000000";
+        cfgMap[wafer_header_bg_color]             = "DEE6EF";
+        cfgMap[wafer_header_text_color]           = "000000";
+        cfgMap[wafer_label_bg_color]              = "999999";
+        cfgMap[wafer_label_text_color]            = "000000";
 
 
         string rc = std.path.expandTilde("~/.stdf2xlsxrc");
