@@ -9,418 +9,357 @@ import makechip.Config;
 import makechip.CmdOptions;
 import std.stdio;
 
-static Format legendTitleFmt;           // ss.title.bg_color ss.legend.title.text_color
-static Format failFmt;                  // ss.fail.bg_color ss.legend.fail.text_color
-static Format testRsltHdrFmt;           // ss.fail.bg_color ss.legend.fail.text_color
-static Format testFailHdrFmt;           // ss.fail.bg_color ss.legend.fail.text_color
-static Format unreliableFmt;            // ss.unreliable.bg_color ss.legend.unreliable.text_color
-static Format timeoutFmt;               // ss.timeout.bg_color ss.legend.timeout.text_color
-static Format alarmFmt;                 // ss.alarm.bg_color ss.legend.alarm.text_color
-static Format abortFmt;                 // ss.abort.bg_color ss.legend.abort.text_color
-static Format invalidFmt;               // ss.invalid.bg_color ss.legend.invalid.text_color
-static Format passFmt;                  // ss.legend.pass.bg_color ss.legend.pass.text_color
-static Format pageTitleFmt;             // ss.step.label.bg_color ss.step.label.text_color
-static Format headerNameFmt;            // ss.header.name.bg_color ss.header.name.text_color
-static Format headerValueFmt;           // ss.header.value.bg_color ss.header.value.text_color
-
-static Format testidHdrFmt;             // ss.testid.header.bg_color ss.testid.header.text_color
-static Format testidNameHdrFmt;         // same as ss.testid.header.bg_color ss.testid.header.text_color
-static Format deviceidHdrFmt;           // ss.deviceid.header.bg_color ss.deviceid.header.text_color
-static Format unitstempHdrFmt;          // ss.unitstemp.header.bg_color ss.unitstemp.header.text_color
-static Format unitsHdrFmt;              // ss.units.header.bg_color ss.units.header.text_color
-static Format tempHdrFmt;               // ss.temp.header.bg_color ss.temp.header.text_color
-
-static Format testNumberHdrFmt;         // ss.test.header.bg_color ss.test.header.text_color
-static Format testNameHdrFmt;           // ss.test.header.bg_color ss.test.header.text_color
-static Format testLimitHdrFmt;          // ss.test.header.bg_color ss.test.header.text_color
-static Format rsltHdrFmt;               // ss.result.header.bg_color ss.result.header.text_color
-static Format dylimFmt;                 // ss.dynamic_limit.bg_color ss.dynamic_limit.text_color
-static Format floatFmt;                 // ss.legend.pass.bg_color ss.legend.pass.text_color
-static Format intFmt;                   // ss.legend.pass.bg_color ss.legend.pass.text_color
-static Format floatFailFmt;             // ss.fail.bg_color ss.legend.fail.text_color
-static Format intFailFmt;               // ss.fail.bg_color ss.legend.fail.text_color
-
-static Format waferPassFmt;
-static Format waferFailFmt;
-static Format waferEmptyFmt;
-static Format waferRowNumberFmt;
-static Format waferColNumberFmt;
+static Format logoFmt; 
+static Format titleFmt;
+static Format hdrNameFmt;
+static Format hdrValueFmt;
+static Format testNameHdrFmt;
+static Format testNameValueFmt;
+static Format testNumberHdrFmt;
+static Format testNumberValueFmt;
+static Format dupHdrFmt;
+static Format dupValueFmt;
+static Format loLimitHdrFmt;
+static Format loLimitValueFmt;
+static Format hiLimitHdrFmt;
+static Format hiLimitValueFmt;
+static Format dynLoLimitHdrFmt;
+static Format dynLoLimitValueFmt;
+static Format dynHiLimitHdrFmt;
+static Format dynHiLimitValueFmt;
+static Format pinHdrFmt;
+static Format pinValueFmt;
+static Format unitsHdrFmt;
+static Format unitsValueFmt;
+static Format snxyHdrFmt;
+static Format snxyValueFmt;
+static Format tempHdrFmt;
+static Format tempValueFmt;
+static Format timeHdrFmt;
+static Format timeValueFmt;
+static Format hwbinHdrFmt;
+static Format hwbinValueFmt;
+static Format swbinHdrFmt;
+static Format swbinValueFmt;
+static Format siteHdrFmt;
+static Format siteValueFmt;
+static Format rsltHdrFmt;
+static Format rsltPassValueFmt;
+static Format rsltFailValueFmt;
+static Format passDataFloatFmt;
+static Format passDataIntFmt;
+static Format passDataHexFmt;
+static Format passDataStringFmt;
+static Format failDataFmt;
 
 immutable size_t defaultRowHeight = 20;
 immutable size_t defaultColWidth = 70;
 
-public void initFormats(Workbook wb, CmdOptions options, Config config)
+private Format setFormat(Workbook wb, string fmtName, Config config)
+{
+    size_t i;
+    for (i=fmtName.length-1; i>0; i--) { if (fmtName[i] == '.') break; }
+    string name = fmtName[0..i];
+    Format f = wb.addFormat();
+    config.setBGColor(f, name ~ ".bg_color");
+    config.setFontColor(f, name ~ ".text_color");
+    string font = config.getValue(name ~ ".font_name");
+    f.setFontName(font == "" ? "Arial" : font);
+    string fsize = config.getValue(name ~ ".font_size");
+    double size = (fsize == "") ? 8.0 : to!double(fsize);
+    f.setFontSize(size);
+    string style = config.getValue(name ~ ".font_style");
+    if (style == "") style = "normal";
+    switch (style)
+    {
+    case "bold":                    
+        f.setBold(); 
+        break;
+    case "italic":                  
+        f.setItalic(); 
+        break;
+    case "underline":               
+        f.setUnderline(lxw_format_underlines.LXW_UNDERLINE_SINGLE); 
+        break;
+    case "bold_italic":             
+        f.setBold(); 
+        f.setItalic(); 
+        break;
+    case "bold_underline":          
+        f.setBold(); 
+        f.setUnderline(lxw_format_underlines.LXW_UNDERLINE_SINGLE); 
+        break;
+    case "italic_underline":        
+        f.setItalic(); 
+        f.setUnderline(lxw_format_underlines.LXW_UNDERLINE_SINGLE); 
+        break;
+    case "bold_italic_underline":   
+        f.setBold(); 
+        f.setItalic(); 
+        f.setUnderline(lxw_format_underlines.LXW_UNDERLINE_SINGLE); 
+        break;
+    case "normal":
+        break;
+    default: throw new Exception("ERROR: unknown font style: " ~ style);
+    }
+    return f;
+}
+
+void initFormats(Workbook wb, CmdOptions options, Config config)
 {
     if (options.verbosityLevel > 9) writeln("initFormats()");
     import libxlsxd.xlsxwrap;
-    legendTitleFmt = wb.addFormat();
-    legendTitleFmt.setFontName("Arial");
-    legendTitleFmt.setFontSize(8.0);
-    config.setBGColor(legendTitleFmt, Config.ss_legend_title_bg_color);
-    config.setFontColor(legendTitleFmt, Config.ss_legend_title_text_color);
-    legendTitleFmt.setBold(); 
-    legendTitleFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    legendTitleFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    legendTitleFmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
-    legendTitleFmt.setBorderColor(0x1000000);
-    legendTitleFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    logoFmt            = setFormat(wb, Config.ss_logo_bg_color, config); 
 
-    failFmt = wb.addFormat();
-    failFmt.setFontName("Arial");
-    failFmt.setFontSize(8.0);
-    config.setBGColor(failFmt, Config.ss_fail_bg_color);
-    config.setFontColor(failFmt, Config.ss_fail_text_color);
-    failFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    failFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    failFmt.setBorderColor(0x1000000);
-    failFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    hdrNameFmt         = setFormat(wb, Config.ss_header_name_bg_color, config);
+    hdrNameFmt.setAlign(lxw_format_alignments.LXW_ALIGN_RIGHT);
+    hdrNameFmt.setBorderColor(0x1000000);
 
-    testRsltHdrFmt = wb.addFormat();
-    testRsltHdrFmt.setFontName("Arial");
-    testRsltHdrFmt.setFontSize(8.0);
-    config.setBGColor(testRsltHdrFmt, Config.ss_deviceid_header_bg_color);
-    config.setFontColor(testRsltHdrFmt, Config.ss_deviceid_header_text_color);
-    if (!options.rotate) testRsltHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_LEFT);
-    else 
-    {
-        testRsltHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-        testRsltHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_TOP);
-    }
-    testRsltHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    testRsltHdrFmt.setBorderColor(0x1000000);
-    testRsltHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    titleFmt = setFormat(wb, Config.ss_header_value_bg_color, config);
 
-    testFailHdrFmt = wb.addFormat();
-    testFailHdrFmt.setFontName("Arial");
-    testFailHdrFmt.setFontSize(8.0);
-    config.setBGColor(testFailHdrFmt, Config.ss_fail_bg_color);
-    config.setFontColor(testFailHdrFmt, Config.ss_fail_text_color);
-    if (!options.rotate) testFailHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_LEFT);
-    else 
-    {
-        testFailHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-        testFailHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_TOP);
-    }
-    testFailHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    testFailHdrFmt.setBorderColor(0x1000000);
-    testFailHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    hdrValueFmt        = setFormat(wb, Config.ss_header_value_bg_color, config);
+    hdrValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_LEFT);
+    hdrValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    hdrValueFmt.setBorderColor(0x1000000);
 
-    unreliableFmt = wb.addFormat();
-    unreliableFmt.setFontName("Arial");
-    unreliableFmt.setFontSize(8.0);
-    config.setBGColor(unreliableFmt, Config.ss_unreliable_bg_color);
-    config.setFontColor(unreliableFmt, Config.ss_unreliable_text_color);
-    unreliableFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    unreliableFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    unreliableFmt.setBorderColor(0x1000000);
-    unreliableFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-
-    timeoutFmt = wb.addFormat();
-    timeoutFmt.setFontName("Arial");
-    timeoutFmt.setFontSize(8.0);
-    config.setBGColor(timeoutFmt, Config.ss_timeout_bg_color);
-    config.setFontColor(timeoutFmt, Config.ss_timeout_text_color);
-    timeoutFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    timeoutFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    timeoutFmt.setBorderColor(0x1000000);
-    timeoutFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-
-    alarmFmt = wb.addFormat();
-    alarmFmt.setFontName("Arial");
-    alarmFmt.setFontSize(8.0);
-    config.setBGColor(alarmFmt, Config.ss_alarm_bg_color);
-    config.setFontColor(alarmFmt, Config.ss_alarm_text_color);
-    alarmFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    alarmFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    alarmFmt.setBorderColor(0x1000000);
-    alarmFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-
-    abortFmt = wb.addFormat();
-    abortFmt.setFontName("Arial");
-    abortFmt.setFontSize(8.0);
-    config.setBGColor(abortFmt, Config.ss_abort_bg_color);
-    config.setFontColor(abortFmt, Config.ss_abort_text_color);
-    abortFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    abortFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    abortFmt.setBorderColor(0x1000000);
-    abortFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-
-    invalidFmt = wb.addFormat();
-    invalidFmt.setFontName("Arial");
-    invalidFmt.setFontSize(8.0);
-    config.setBGColor(invalidFmt, Config.ss_invalid_bg_color);
-    config.setFontColor(invalidFmt, Config.ss_invalid_text_color);
-    invalidFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    invalidFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    invalidFmt.setBorderColor(0x1000000);
-    invalidFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-
-    passFmt = wb.addFormat();
-    passFmt.setFontName("Arial");
-    passFmt.setFontSize(8.0);
-    config.setBGColor(passFmt, Config.ss_pass_bg_color);
-    config.setFontColor(passFmt, Config.ss_pass_text_color);
-    passFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    passFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    passFmt.setBorderColor(0x1000000);
-    passFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-
-    pageTitleFmt = wb.addFormat();
-    pageTitleFmt.setFontName("Arial");
-    pageTitleFmt.setFontSize(18.0);
-    pageTitleFmt.setBold();
-    config.setBGColor(pageTitleFmt, Config.ss_page_title_bg_color);
-    config.setFontColor(pageTitleFmt, Config.ss_page_title_text_color);
-    pageTitleFmt.setAlign(lxw_format_alignments.LXW_ALIGN_LEFT);
-    pageTitleFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_CENTER);
-    pageTitleFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    pageTitleFmt.setBorderColor(0x1000000);
-    pageTitleFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-
-    headerNameFmt = wb.addFormat();
-    headerNameFmt.setFontName("Arial");
-    headerNameFmt.setFontSize(8.0);
-    headerNameFmt.setBold();
-    config.setBGColor(headerNameFmt, Config.ss_header_name_bg_color);
-    config.setFontColor(headerNameFmt, Config.ss_header_name_text_color);
-    headerNameFmt.setAlign(lxw_format_alignments.LXW_ALIGN_RIGHT);
-    //headerNameFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    headerNameFmt.setBorderColor(0x1000000);
-    //headerNameFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-
-    headerValueFmt = wb.addFormat();
-    headerValueFmt.setFontName("Arial");
-    headerValueFmt.setFontSize(8.0);
-    config.setBGColor(headerValueFmt, Config.ss_header_value_bg_color);
-    config.setFontColor(headerValueFmt, Config.ss_header_value_text_color);
-    headerValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_LEFT);
-    headerValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    headerValueFmt.setBorderColor(0x1000000);
-    //headerValueFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-
-    testidHdrFmt = wb.addFormat();
-    testidHdrFmt.setBold();
-    testidHdrFmt.setFontName("Arial");
-    testidHdrFmt.setFontSize(8.0);
-    config.setBGColor(testidHdrFmt, Config.ss_testid_header_bg_color);
-    config.setFontColor(testidHdrFmt, Config.ss_testid_header_text_color);
-    testidHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    testidHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    if (options.rotate) testidHdrFmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
-    testidHdrFmt.setBorderColor(0x1000000);
-    testidHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-
-    testidNameHdrFmt = wb.addFormat();
-    testidNameHdrFmt.setFontName("Arial");
-    testidNameHdrFmt.setFontSize(8.0);
-    config.setBGColor(testidNameHdrFmt, Config.ss_testid_header_bg_color);
-    config.setFontColor(testidNameHdrFmt, Config.ss_testid_header_text_color);
-    testidNameHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    testidNameHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    testidNameHdrFmt.setBorderColor(0x1000000);
-    testidNameHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-    if (!options.rotate) testidNameHdrFmt.setRotation(90);
-
-    deviceidHdrFmt = wb.addFormat();
-    deviceidHdrFmt.setBold();
-    deviceidHdrFmt.setFontName("Arial");
-    deviceidHdrFmt.setFontSize(8.0);
-    config.setBGColor(deviceidHdrFmt, Config.ss_deviceid_header_bg_color);
-    config.setFontColor(deviceidHdrFmt, Config.ss_deviceid_header_text_color);
-    deviceidHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    deviceidHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    deviceidHdrFmt.setBorderColor(0x1000000);
-    deviceidHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-
-    unitstempHdrFmt = wb.addFormat();
-    unitstempHdrFmt.setBold();
-    unitstempHdrFmt.setFontName("Arial");
-    unitstempHdrFmt.setFontSize(8.0);
-    unitstempHdrFmt.setTextWrap();
-    config.setBGColor(unitstempHdrFmt, Config.ss_unitstemp_header_bg_color);
-    config.setFontColor(unitstempHdrFmt, Config.ss_unitstemp_header_text_color);
-    unitstempHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_RIGHT);
-    unitstempHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    unitstempHdrFmt.setBorderColor(0x1000000);
-    unitstempHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-    unitstempHdrFmt.setDiagType(2);
-    unitstempHdrFmt.setDiagBorder(1);
-    unitstempHdrFmt.setDiagColor(0x1000000);
-
-    testNameHdrFmt = wb.addFormat();
-    testNameHdrFmt.setFontName("Arial");
-    testNameHdrFmt.setFontSize(8.0);
+    testNameHdrFmt     = setFormat(wb, Config.ss_test_name_header_bg_color, config);
     if (!options.rotate) testNameHdrFmt.setTextWrap();
-    config.setBGColor(testNameHdrFmt, Config.ss_test_header_bg_color);
-    config.setFontColor(testNameHdrFmt, Config.ss_test_header_text_color);
     testNameHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
     testNameHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
     testNameHdrFmt.setBorderColor(0x1000000);
     testNameHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
     if (!options.rotate) testNameHdrFmt.setRotation(90);
 
-    unitsHdrFmt = wb.addFormat();
-    unitsHdrFmt.setFontName("Arial");
-    unitsHdrFmt.setFontSize(8.0);
-    config.setBGColor(unitsHdrFmt, Config.ss_units_header_bg_color);
-    config.setFontColor(unitsHdrFmt, Config.ss_units_header_text_color);
+    testNameValueFmt   = setFormat(wb, Config.ss_test_name_value_bg_color, config);
+    if (!options.rotate) testNameValueFmt.setTextWrap();
+    testNameValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    testNameValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    testNameValueFmt.setBorderColor(0x1000000);
+    testNameValueFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    if (!options.rotate) testNameValueFmt.setRotation(90);
+
+    testNumberHdrFmt   = setFormat(wb, Config.ss_test_number_header_bg_color, config);
+    testNumberHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    testNumberHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    if (options.rotate) testNumberHdrFmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
+    testNumberHdrFmt.setBorderColor(0x1000000);
+    testNumberHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+
+    testNumberValueFmt = setFormat(wb, Config.ss_test_number_value_bg_color, config);
+    testNumberValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    testNumberValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    if (options.rotate) testNumberValueFmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
+    testNumberValueFmt.setBorderColor(0x1000000);
+    testNumberValueFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+
+    dupHdrFmt          = setFormat(wb, Config.ss_duplicate_header_bg_color, config);
+    dupHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    dupHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    if (options.rotate) dupHdrFmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
+    dupHdrFmt.setBorderColor(0x1000000);
+    dupHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+
+    dupValueFmt        = setFormat(wb, Config.ss_duplicate_value_bg_color, config);
+    dupValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    dupValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    if (options.rotate) dupValueFmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
+    dupValueFmt.setBorderColor(0x1000000);
+    dupValueFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+
+    loLimitHdrFmt      = setFormat(wb, Config.ss_lo_limit_header_bg_color, config);
+    loLimitHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    loLimitHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    loLimitHdrFmt.setBorderColor(0x1000000);
+    loLimitHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    loLimitHdrFmt.setNumFormat("0.000");
+
+    loLimitValueFmt    = setFormat(wb, Config.ss_lo_limit_value_bg_color, config);
+    loLimitValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    loLimitValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    loLimitValueFmt.setBorderColor(0x1000000);
+    loLimitValueFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    loLimitValueFmt.setNumFormat("0.000");
+
+    hiLimitHdrFmt      = setFormat(wb, Config.ss_hi_limit_header_bg_color, config);
+    hiLimitHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    hiLimitHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    hiLimitHdrFmt.setBorderColor(0x1000000);
+    hiLimitHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    hiLimitHdrFmt.setNumFormat("0.000");
+
+    hiLimitValueFmt    = setFormat(wb, Config.ss_hi_limit_value_bg_color, config);
+    hiLimitValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    hiLimitValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    hiLimitValueFmt.setBorderColor(0x1000000);
+    hiLimitValueFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    hiLimitValueFmt.setNumFormat("0.000");
+
+    pinHdrFmt          = setFormat(wb, Config.ss_pin_header_bg_color, config);
+    pinHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    pinHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    if (options.rotate) pinHdrFmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
+    pinHdrFmt.setBorderColor(0x1000000);
+    pinHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    if (!options.rotate) pinHdrFmt.setRotation(90);
+
+    pinValueFmt        = setFormat(wb, Config.ss_pin_value_bg_color, config);
+    pinValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    pinValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    if (options.rotate) pinValueFmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
+    pinValueFmt.setBorderColor(0x1000000);
+    pinValueFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    if (!options.rotate) pinValueFmt.setRotation(90);
+
+    unitsHdrFmt        = setFormat(wb, Config.ss_units_header_bg_color, config);
     if (options.rotate) unitsHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
     else unitsHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_RIGHT);
     unitsHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
     unitsHdrFmt.setBorderColor(0x1000000);
     unitsHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
 
-    tempHdrFmt = wb.addFormat();
-    tempHdrFmt.setFontName("Arial");
-    tempHdrFmt.setFontSize(8.0);
-    config.setBGColor(tempHdrFmt, Config.ss_temp_header_bg_color);
-    config.setFontColor(tempHdrFmt, Config.ss_temp_header_text_color);
+    unitsValueFmt      = setFormat(wb, Config.ss_units_value_bg_color, config);
+    unitsValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    unitsValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    if (options.rotate) unitsValueFmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
+    unitsValueFmt.setBorderColor(0x1000000);
+    unitsValueFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+
+    snxyHdrFmt         = setFormat(wb, Config.ss_sn_xy_header_bg_color, config);
+    snxyHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    snxyHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    snxyHdrFmt.setBorderColor(0x1000000);
+    snxyHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+
+    snxyValueFmt       = setFormat(wb, Config.ss_sn_xy_value_bg_color, config);
+    snxyValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    snxyValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    snxyValueFmt.setBorderColor(0x1000000);
+    snxyValueFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+
+    tempHdrFmt         = setFormat(wb, Config.ss_temp_header_bg_color, config);
     tempHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    if (options.rotate) tempHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_CENTER);
     tempHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
     tempHdrFmt.setBorderColor(0x1000000);
     tempHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
 
-    testNumberHdrFmt = wb.addFormat();
-    testNumberHdrFmt.setFontName("Arial");
-    testNumberHdrFmt.setFontSize(8.0);
-    config.setBGColor(testNumberHdrFmt, Config.ss_test_header_bg_color);
-    config.setFontColor(testNumberHdrFmt, Config.ss_test_header_text_color);
-    testNumberHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    testNumberHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    testNumberHdrFmt.setBorderColor(0x1000000);
-    testNumberHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    tempValueFmt       = setFormat(wb, Config.ss_temp_value_bg_color, config);
+    tempValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    tempValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    tempValueFmt.setBorderColor(0x1000000);
+    tempValueFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
 
-    testLimitHdrFmt = wb.addFormat();
-    testLimitHdrFmt.setFontName("Arial");
-    testLimitHdrFmt.setFontSize(8.0);
-    config.setBGColor(testLimitHdrFmt, Config.ss_test_header_bg_color);
-    config.setFontColor(testLimitHdrFmt, Config.ss_test_header_text_color);
-    testLimitHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    testLimitHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    testLimitHdrFmt.setBorderColor(0x1000000);
-    testLimitHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-    testLimitHdrFmt.setNumFormat("0.000");
+    timeHdrFmt         = setFormat(wb, Config.ss_time_header_bg_color, config);
+    timeHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    timeHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    timeHdrFmt.setBorderColor(0x1000000);
+    timeHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
 
-    rsltHdrFmt = wb.addFormat();
-    rsltHdrFmt.setFontName("Arial");
-    rsltHdrFmt.setFontSize(8.0);
-    config.setBGColor(rsltHdrFmt, Config.ss_result_header_bg_color);
-    config.setFontColor(rsltHdrFmt, Config.ss_result_header_text_color);
-    rsltHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    timeValueFmt       = setFormat(wb, Config.ss_time_value_bg_color, config);
+
+    hwbinHdrFmt        = setFormat(wb, Config.ss_hw_bin_header_bg_color, config);
+    hwbinHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    hwbinHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    hwbinHdrFmt.setBorderColor(0x1000000);
+    hwbinHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+
+    hwbinValueFmt      = setFormat(wb, Config.ss_hw_bin_value_bg_color, config);
+
+    swbinHdrFmt        = setFormat(wb, Config.ss_sw_bin_header_bg_color, config);
+    swbinHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    swbinHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    swbinHdrFmt.setBorderColor(0x1000000);
+    swbinHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+
+    swbinValueFmt      = setFormat(wb, Config.ss_sw_bin_value_bg_color, config);
+
+    siteHdrFmt         = setFormat(wb, Config.ss_site_header_bg_color, config);
+    siteHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    siteHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    siteHdrFmt.setBorderColor(0x1000000);
+    siteHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+
+    siteValueFmt       = setFormat(wb, Config.ss_site_value_bg_color, config);
+
+    rsltHdrFmt         = setFormat(wb, Config.ss_result_header_bg_color, config);
+    if (!options.rotate) rsltHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_LEFT);
+    else 
+    {
+        rsltHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+        rsltHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_TOP);
+    }
     rsltHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
     rsltHdrFmt.setBorderColor(0x1000000);
     rsltHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
 
-    dylimFmt = wb.addFormat();
-    dylimFmt.setFontName("Arial");
-    dylimFmt.setFontSize(8.0);
-    config.setBGColor(dylimFmt, Config.ss_dynamic_limit_bg_color);
-    config.setFontColor(dylimFmt, Config.ss_dynamic_limit_text_color);
-    dylimFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    dylimFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    dylimFmt.setBorderColor(0x1000000);
-    dylimFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    rsltPassValueFmt   = setFormat(wb, Config.ss_result_pass_value_bg_color, config);
 
-    floatFmt = wb.addFormat();
-    floatFmt.setFontName("Arial");
-    floatFmt.setFontSize(8.0);
-    config.setBGColor(floatFmt, Config.ss_pass_bg_color);
-    config.setFontColor(floatFmt, Config.ss_pass_text_color);
-    floatFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    floatFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    floatFmt.setBorderColor(0x1000000);
-    floatFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-    floatFmt.setNumFormat("0.000");
+    rsltFailValueFmt   = setFormat(wb, Config.ss_result_fail_value_bg_color, config);
+    if (!options.rotate) rsltFailValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_LEFT);
+    else 
+    {
+        rsltFailValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+        rsltFailValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_TOP);
+    }
+    rsltFailValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    rsltFailValueFmt.setBorderColor(0x1000000);
+    rsltFailValueFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
 
-    intFmt = wb.addFormat();
-    intFmt.setFontName("Arial");
-    intFmt.setFontSize(8.0);
-    config.setBGColor(intFmt, Config.ss_pass_bg_color);
-    config.setFontColor(intFmt, Config.ss_pass_text_color);
-    intFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    intFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    intFmt.setBorderColor(0x1000000);
-    intFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-    intFmt.setNumFormat("General");
+    passDataFloatFmt   = setFormat(wb, Config.ss_pass_data_float_value_bg_color, config);
+    passDataFloatFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    passDataFloatFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    passDataFloatFmt.setBorderColor(0x1000000);
+    passDataFloatFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    passDataFloatFmt.setNumFormat("0.000");
 
-    floatFailFmt = wb.addFormat();
-    floatFailFmt.setFontName("Arial");
-    floatFailFmt.setFontSize(8.0);
-    config.setBGColor(floatFailFmt, Config.ss_fail_bg_color);
-    config.setFontColor(floatFailFmt, Config.ss_fail_text_color);
-    floatFailFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    floatFailFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    floatFailFmt.setBorderColor(0x1000000);
-    floatFailFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-    floatFailFmt.setNumFormat("0.000");
+    passDataIntFmt     = setFormat(wb, Config.ss_pass_data_int_value_bg_color, config);
+    passDataIntFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    passDataIntFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    passDataIntFmt.setBorderColor(0x1000000);
+    passDataIntFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    passDataIntFmt.setNumFormat("General");
 
-    intFailFmt = wb.addFormat();
-    intFailFmt.setFontName("Arial");
-    intFailFmt.setFontSize(8.0);
-    config.setBGColor(intFailFmt, Config.ss_fail_bg_color);
-    config.setFontColor(intFailFmt, Config.ss_fail_text_color);
-    intFailFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    intFailFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    intFailFmt.setBorderColor(0x1000000);
-    intFailFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-    intFailFmt.setNumFormat("General");
+    passDataHexFmt     = setFormat(wb, Config.ss_pass_data_hex_value_bg_color, config);
+    passDataHexFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    passDataHexFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    passDataHexFmt.setBorderColor(0x1000000);
+    passDataHexFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
 
-    waferPassFmt = wb.addFormat();
-    waferPassFmt.setFontName("Arial");
-    waferPassFmt.setFontSize(7.0);
-    config.setBGColor(waferPassFmt, Config.wafer_pass_bg_color);
-    config.setFontColor(waferPassFmt, Config.ss_pass_text_color);
-    waferPassFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    waferPassFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_CENTER);
-    waferPassFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    waferPassFmt.setBorderColor(0x1000000);
-    waferPassFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-    // waferPassFmt.setBold();
+    passDataStringFmt  = setFormat(wb, Config.ss_pass_data_string_value_bg_color, config);
+    passDataStringFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    passDataStringFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    passDataStringFmt.setBorderColor(0x1000000);
+    passDataStringFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
 
-    waferFailFmt = wb.addFormat();
-    waferFailFmt.setFontName("Arial");
-    waferFailFmt.setFontSize(7.0);
-    config.setBGColor(waferFailFmt, Config.wafer_fail_bg_color);
-    config.setFontColor(waferFailFmt, Config.ss_pass_text_color);
-    waferFailFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    waferFailFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_CENTER);
-    waferFailFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    waferFailFmt.setBorderColor(0x1000000);
-    waferFailFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    failDataFmt        = setFormat(wb, Config.ss_fail_data_value_bg_color, config);
+    failDataFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    failDataFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    failDataFmt.setBorderColor(0x1000000);
+    failDataFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    failDataFmt.setNumFormat("0.000");
 
-    waferEmptyFmt = wb.addFormat();
-    waferEmptyFmt.setFontName("Arial");
-    waferEmptyFmt.setFontSize(7.0);
-    config.setBGColor(waferEmptyFmt, Config.wafer_empty_bg_color);
-    config.setFontColor(waferEmptyFmt, Config.ss_pass_text_color);
-    waferEmptyFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    waferEmptyFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_CENTER);
-    waferEmptyFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    waferEmptyFmt.setBorderColor(0x1000000);
-    waferEmptyFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    dynLoLimitHdrFmt = setFormat(wb, Config.ss_dyn_lo_limit_header_bg_color, config);
+    dynLoLimitHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    dynLoLimitHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    dynLoLimitHdrFmt.setBorderColor(0x1000000);
+    dynLoLimitHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
 
-    waferRowNumberFmt = wb.addFormat();
-    waferRowNumberFmt.setFontName("Arial");
-    waferRowNumberFmt.setFontSize(9.0);
-    config.setBGColor(waferRowNumberFmt, Config.ss_testid_header_bg_color);
-    config.setFontColor(waferRowNumberFmt, Config.ss_pass_text_color);
-    waferRowNumberFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    waferRowNumberFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_CENTER);
-    waferRowNumberFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-    waferRowNumberFmt.setBorderColor(0x1000000);
+    dynLoLimitValueFmt = setFormat(wb, Config.ss_dyn_lo_limit_value_bg_color, config);
+    dynLoLimitValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    dynLoLimitValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    dynLoLimitValueFmt.setBorderColor(0x1000000);
+    dynLoLimitValueFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
 
-    waferColNumberFmt = wb.addFormat();
-    waferColNumberFmt.setFontName("Arial");
-    waferColNumberFmt.setFontSize(9.0);
-    config.setBGColor(waferColNumberFmt, Config.ss_testid_header_bg_color);
-    config.setFontColor(waferColNumberFmt, Config.ss_pass_text_color);
-    waferColNumberFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
-    waferColNumberFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_CENTER);
-    waferColNumberFmt.setRotation(90);
-    waferColNumberFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    waferColNumberFmt.setBorderColor(0x1000000);
+    dynHiLimitHdrFmt = setFormat(wb, Config.ss_dyn_hi_limit_header_bg_color, config);
+    dynHiLimitHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    dynHiLimitHdrFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    dynHiLimitHdrFmt.setBorderColor(0x1000000);
+    dynHiLimitHdrFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
 
+    dynHiLimitValueFmt = setFormat(wb, Config.ss_dyn_hi_limit_value_bg_color, config);
+    dynHiLimitValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
+    dynHiLimitValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    dynHiLimitValueFmt.setBorderColor(0x1000000);
+    dynHiLimitValueFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
 
 }
 
@@ -451,12 +390,11 @@ private Worksheet[] createSheetsRotated(CmdOptions options, Config config, Workb
         Worksheet w = wb.addWorksheet(title);
         ws ~= w;
         setLogo(options, config, w);
-        setLegend(options, config, w, Yes.rotated);
-        setPageHeader(options, config, w, title, numDevices > maxCols - 4 ? maxCols - 4 : numDevices, Yes.rotated);
+        setTitle(w, hdr, Yes.rotated);
         setDeviceHeader(options, config, w, hdr, Yes.rotated);
         setTableHeaders(options, config, w, Yes.wafersort, Yes.rotated);
         setTestNameHeaders(options, config, w, Yes.rotated, rowOrColMap);
-        setData(options, config, w, i, Yes.wafersort, rowOrColMap, devices);
+        setData(options, config, w, i, Yes.wafersort, rowOrColMap, devices, hdr.temperature);
     }
     return ws;
 }
@@ -476,35 +414,60 @@ private Worksheet[] createSheets(CmdOptions options, Config config, Workbook wb,
         Worksheet w = wb.addWorksheet(title);
         ws ~= w;
         setLogo(options, config, w);
-        setLegend(options, config, w, No.rotated);
-        setPageHeader(options, config, w, title, numTests > maxCols - 4 ? maxCols - 4 : numTests, No.rotated);
+        setTitle(w, hdr, No.rotated);
         setDeviceHeader(options, config, w, hdr, No.rotated);
         setTableHeaders(options, config, w, No.wafersort, No.rotated);
         setTestNameHeaders(options, config, w, No.rotated, rowOrColMap);
-        setData(options, config, w, i, maxCols, No.wafersort, rowOrColMap, devices);
+        setData(options, config, w, i, maxCols, No.wafersort, rowOrColMap, devices, hdr.temperature);
     }
     return ws;
 }
 
-import std.conv;
 private string getTitle(CmdOptions options, HeaderInfo hdr, size_t page)
 {
-    if (options.verbosityLevel > 9) writeln("getTitle()");
-    string title;
     if (hdr.isWafersort())
     {
-        title = hdr.devName ~ " Lot " ~ hdr.lot_id ~ " Wafer " ~ hdr.wafer_id ~ " Page " ~ to!string(page);
+        return "Page " ~ to!string(page) ~ " Wafer " ~ hdr.wafer_id;
+    }
+    if ((hdr.step is null) || hdr.step == "")
+    {
+        return "Page " ~ to!string(page) ~ " Temp " ~ hdr.temperature;
+    }
+    return "Page " ~ to!string(page) ~ " Step " ~ hdr.step;
+}
+
+import std.conv;
+
+private void setTitle(Worksheet w, HeaderInfo hdr, bool rotated)
+{
+    if (rotated)
+    {
+        w.mergeRange(0, 3, 2, 4, hdr.devName, titleFmt);
+        if (hdr.isWafersort())
+        {
+            w.mergeRange(3, 3, 4, 4, "Lot: " ~ hdr.lot_id, titleFmt);
+            w.mergeRange(5, 3, 6, 4, "Wafer: " ~ hdr.wafer_id, titleFmt);
+        }
+        else
+        {
+            w.mergeRange(3, 3, 4, 4, "Step: " ~ hdr.step, titleFmt);
+            w.mergeRange(5, 3, 6, 4, "Temp: " ~ hdr.temperature, titleFmt);
+        }
     }
     else
     {
-        string name;
-        if (hdr.lot_id == "" && hdr.step == "") name = "";
-        else if (hdr.lot_id == "") name = "Step " ~ hdr.step;
-        else if (hdr.step == "") name = "Lot " ~ hdr.lot_id;
-        else name = "Lot " ~ hdr.lot_id ~ " Step " ~ hdr.step;
-        title = hdr.devName ~ (hdr.devName != "" ? " " : "") ~ name ~ " Page " ~ to!string(page);
+        w.mergeRange(0, 3, 2, 6, hdr.devName, titleFmt);
+        if (hdr.isWafersort())
+        {
+            w.mergeRange(3, 3, 4, 6, "Lot: " ~ hdr.lot_id, titleFmt);
+            w.mergeRange(5, 3, 6, 6, "Wafer: " ~ hdr.wafer_id, titleFmt);
+        }
+        else
+        {
+            w.mergeRange(3, 3, 4, 6, "Step: " ~ hdr.step, titleFmt);
+            w.mergeRange(5, 3, 6, 6, "Temp: " ~ hdr.temperature, titleFmt);
+        }
     }
-    return title;
 }
 
 // Note scaling relies on the image having a resolution of 11.811 pixels / mm
@@ -557,158 +520,120 @@ private void setLogo(CmdOptions options, Config config, Worksheet w)
     }
 }
 
-private void setLegend(CmdOptions options, Config config, Worksheet w, Flag!"rotated" rotated)
-{
-    if (options.verbosityLevel > 9) writeln("setLegend()");
-    if (rotated)
-    {
-        w.writeString(0, 3, "Legend:", legendTitleFmt);
-        w.writeString(1, 3, "FAIL", failFmt);
-        w.writeString(2, 3, "Unreliable", unreliableFmt);
-        w.writeString(3, 3, "Timeout", timeoutFmt);
-        w.writeString(4, 3, "Alarm", alarmFmt);
-        w.writeString(5, 3, "Abort", abortFmt);
-        w.writeString(6, 3, "Invalid", invalidFmt);
-    }
-    else
-    {
-        w.mergeRange(0, 3, 0, 5, "Legend:", legendTitleFmt);
-        w.mergeRange(1, 3, 1, 5, "FAIL", failFmt);
-        w.mergeRange(2, 3, 2, 5, "Unreliable", unreliableFmt);
-        w.mergeRange(3, 3, 3, 5, "Timeout", timeoutFmt);
-        w.mergeRange(4, 3, 4, 5, "Alarm", alarmFmt);
-        w.mergeRange(5, 3, 5, 5, "Abort", abortFmt);
-        w.mergeRange(6, 3, 6, 5, "Invalid", invalidFmt);
-    }
-}
-
-private void setPageHeader(CmdOptions options, Config config, Worksheet w, string title, size_t dataCols, Flag!"rotated" rotated)
-{
-    if (options.verbosityLevel > 9) writeln("setPageHeader()");
-    if (rotated)
-    {
-        w.mergeRange(0, cast(ushort) 4, 6, cast(ushort) (12+dataCols), title, pageTitleFmt);
-    }
-    else
-    {
-        w.mergeRange(0, cast(ushort) 6, 6, cast(ushort) (6+dataCols), title, pageTitleFmt);
-    }
-}
-
 private void setDeviceHeader(CmdOptions options, Config config, Worksheet w, HeaderInfo hdr, Flag!"rotated" rotated)
 {
     if (options.verbosityLevel > 9) writeln("setDeviceHeader()");
     if (rotated)
     {
-        for (uint r=7; r<13; r++)
+        for (uint r=0; r<7; r++)
         {
-            for (ushort c=0; c<12; c+=4)
+            for (ushort c=5; c<14; c+=4)
             {
-                w.mergeRange(r, c, r, cast(ushort) (c+1), "", headerNameFmt);
-                w.mergeRange(r, cast(ushort) (c+2), r, cast(ushort) (c+3), "", headerValueFmt);
+                w.mergeRange(r, c, r, cast(ushort) (c+1), "", hdrNameFmt);
+                w.mergeRange(r, cast(ushort) (c+2), r, cast(ushort) (c+3), "", hdrValueFmt);
             }
         }
-        int r = 7;
+        int r = 0;
         if (hdr.step != "")
         {
-            w.mergeRange(r, 0, r, 1, "STEP #:", headerNameFmt);
-            w.mergeRange(r, 2, r, 3, hdr.step, headerValueFmt);
+            w.mergeRange(r, 5, r, 6, "STEP #:", hdrNameFmt);
+            w.mergeRange(r, 7, r, 8, hdr.step, hdrValueFmt);
             r++;
         }
         if (hdr.temperature != "")
         {
-            w.mergeRange(r, 0, r, 1, "Temperature:", headerNameFmt);
-            w.mergeRange(r, 2, r, 3, hdr.temperature, headerValueFmt);
+            w.mergeRange(r, 5, r, 6, "Temperature:", hdrNameFmt);
+            w.mergeRange(r, 7, r, 8, hdr.temperature, hdrValueFmt);
             r++;
         }
         if (hdr.lot_id != "")
         {
-            w.mergeRange(r, 0, r, 1, "Lot #:", headerNameFmt);
-            w.mergeRange(r, 2, r, 3, hdr.lot_id, headerValueFmt);
+            w.mergeRange(r, 5, r, 6, "Lot #:", hdrNameFmt);
+            w.mergeRange(r, 7, r, 8, hdr.lot_id, hdrValueFmt);
             r++;
         }
         if (hdr.sublot_id != "")
         {
-            w.mergeRange(r, 0, r, 1, "SubLot #:", headerNameFmt);
-            w.mergeRange(r, 2, r, 3, hdr.sublot_id, headerValueFmt);
+            w.mergeRange(r, 5, r, 6, "SubLot #:", hdrNameFmt);
+            w.mergeRange(r, 7, r, 8, hdr.sublot_id, hdrValueFmt);
             r++;
         }
         if (hdr.wafer_id != "")
         {
-            w.mergeRange(r, 0, r, 1, "Wafer #:", headerNameFmt);
-            w.mergeRange(r, 2, r, 3, hdr.wafer_id, headerValueFmt);
+            w.mergeRange(r, 5, r, 6, "Wafer #:", hdrNameFmt);
+            w.mergeRange(r, 7, r, 8, hdr.wafer_id, hdrValueFmt);
             r++;
         }
         if (hdr.devName != "")
         {
-            w.mergeRange(r, 0, r, 1, "Device:", headerNameFmt);
-            w.mergeRange(r, 2, r, 3, hdr.devName, headerValueFmt);
+            w.mergeRange(r, 5, r, 6, "Device:", hdrNameFmt);
+            w.mergeRange(r, 7, r, 8, hdr.devName, hdrValueFmt);
             r++;
         }
         auto map = hdr.getHeaderItems();
-        ushort c = 0;
+        ushort c = 5;
         foreach (key; map)
         {
-            w.mergeRange(r, c, r, cast(ushort) (c+1), key, headerNameFmt);
-            w.mergeRange(r, cast(ushort) (c+2), r, cast(ushort) (c+3), map[key], headerValueFmt);
+            w.mergeRange(r, c, r, cast(ushort) (c+1), key, hdrNameFmt);
+            w.mergeRange(r, cast(ushort) (c+2), r, cast(ushort) (c+3), map[key], hdrValueFmt);
             r++;
-            if (r == 14)
+            if (r == 7)
             {
-                r = 7;
+                r = 0;
                 c += 4;
             }
-            if (r == 14 && c == 8) break;
+            if (r == 7 && c == 8) break;
         }
     }
     else
     {
         for (uint r=7; r<24; r++)
         {
-            w.mergeRange(r, 0, r, cast(ushort) 1, "", headerNameFmt);
-            w.mergeRange(r, cast(ushort) 2, r, cast(ushort) 5, "", headerValueFmt);
+            w.mergeRange(r, 0, r, cast(ushort) 2, "", hdrNameFmt);
+            w.mergeRange(r, cast(ushort) 3, r, cast(ushort) 6, "", hdrValueFmt);
         }
         int r = 7;
         if (hdr.step != "")
         {
-            w.mergeRange(r, 0, r, 1, "STEP #:", headerNameFmt);
-            w.mergeRange(r, 2, r, 5, hdr.step, headerValueFmt);
+            w.mergeRange(r, 0, r, 2, "STEP #:", hdrNameFmt);
+            w.mergeRange(r, 3, r, 6, hdr.step, hdrValueFmt);
             r++;
         }
         if (hdr.temperature != "")
         {
-            w.mergeRange(r, 0, r, 1, "Temperature:", headerNameFmt);
-            w.mergeRange(r, 2, r, 5, hdr.temperature, headerValueFmt);
+            w.mergeRange(r, 0, r, 2, "Temperature:", hdrNameFmt);
+            w.mergeRange(r, 3, r, 6, hdr.temperature, hdrValueFmt);
             r++;
         }
         if (hdr.lot_id != "")
         {
-            w.mergeRange(r, 0, r, 1, "Lot #:", headerNameFmt);
-            w.mergeRange(r, 2, r, 5, hdr.lot_id, headerValueFmt);
+            w.mergeRange(r, 0, r, 2, "Lot #:", hdrNameFmt);
+            w.mergeRange(r, 3, r, 6, hdr.lot_id, hdrValueFmt);
             r++;
         }
         if (hdr.sublot_id != "")
         {
-            w.mergeRange(r, 0, r, 1, "SubLot #:", headerNameFmt);
-            w.mergeRange(r, 2, r, 5, hdr.sublot_id, headerValueFmt);
+            w.mergeRange(r, 0, r, 2, "SubLot #:", hdrNameFmt);
+            w.mergeRange(r, 3, r, 6, hdr.sublot_id, hdrValueFmt);
             r++;
         }
         if (hdr.wafer_id != "")
         {
-            w.mergeRange(r, 0, r, 1, "Wafer #:", headerNameFmt);
-            w.mergeRange(r, 2, r, 5, hdr.wafer_id, headerValueFmt);
+            w.mergeRange(r, 0, r, 2, "Wafer #:", hdrNameFmt);
+            w.mergeRange(r, 3, r, 6, hdr.wafer_id, hdrValueFmt);
             r++;
         }
         if (hdr.devName != "")
         {
-            w.mergeRange(r, 0, r, 1, "Device:", headerNameFmt);
-            w.mergeRange(r, 2, r, 5, hdr.devName, headerValueFmt);
+            w.mergeRange(r, 0, r, 2, "Device:", hdrNameFmt);
+            w.mergeRange(r, 3, r, 6, hdr.devName, hdrValueFmt);
             r++;
         }
         auto map = hdr.getHeaderItems();
         foreach (key; map)
         {
-            w.mergeRange(r, 0, r, 1, key, headerNameFmt);
-            w.mergeRange(r, 2, r, 5, map[key], headerValueFmt);
+            w.mergeRange(r, 0, r, 2, key, hdrNameFmt);
+            w.mergeRange(r, 3, r, 6, map[key], hdrValueFmt);
             r++;
             if (r > 23) break;
         }
@@ -726,37 +651,39 @@ private void setTableHeaders(CmdOptions options, Config config, Worksheet w, Fla
     if (rotated)
     {
         // test id header
-        w.writeString(13, 0, "Test Num", testidHdrFmt);
-        w.mergeRange(13, 1, 13, 5, "Test Name", testidHdrFmt);
-        w.writeString(13, 6, "Duplicate", testidHdrFmt);
-        w.writeString(13, 7, "Lo Limit", testidHdrFmt);
-        w.writeString(13, 8, "Hi Limit", testidHdrFmt);
-        w.mergeRange(13, 9, 13, 11, "Pin", testidHdrFmt);
-        w.writeString(13, 12, "Units", testidHdrFmt);
+        w.mergeRange(7, 0, 7, 5, "Test Name", testNameHdrFmt);
+        w.writeString(7, 6, "Test Num", testNumberHdrFmt);
+        w.writeString(7, 7, "Duplicate", dupHdrFmt);
+        w.writeString(7, 8, "Lo Limit", loLimitHdrFmt);
+        w.writeString(7, 9, "Hi Limit", hiLimitHdrFmt);
+        w.writeString(7, 10, "Units", unitsHdrFmt);
+        w.mergeRange(7, 11, 7, 13, "Pin", pinHdrFmt);
         // device id header
-        if (wafersort) w.writeString(7, 12, "X, Y", deviceidHdrFmt); else w.writeString(7, 12, "S/N", deviceidHdrFmt);
-        w.writeString(9, 12, "HW Bin", deviceidHdrFmt);
-        w.writeString(10, 12, "SW Bin", deviceidHdrFmt);
-        w.writeString(11, 12, "Site", deviceidHdrFmt);
-        w.writeString(8, 12, "Time", deviceidHdrFmt);
-        w.writeString(12, 12, "Result", deviceidHdrFmt);
+        if (wafersort) w.writeString(0, 13, "X, Y", snxyHdrFmt); else w.writeString(0, 13, "S/N", snxyHdrFmt);
+        w.writeString(1, 13, "Temp", tempHdrFmt);
+        w.writeString(2, 13, "HW Bin", hwbinHdrFmt);
+        w.writeString(3, 13, "SW Bin", swbinHdrFmt);
+        w.writeString(4, 13, "Site", siteHdrFmt);
+        w.writeString(5, 13, "Time", timeHdrFmt);
+        w.writeString(6, 13, "Result", rsltHdrFmt);
     }
     else
     {
         // test id header
-        w.mergeRange(7, 6, 18, 6, "Test Name", testidNameHdrFmt);
-        w.writeString(19, 6, "Test Num", testidHdrFmt);
-        w.writeString(20, 6, "Duplicate", testidHdrFmt);
-        w.writeString(21, 6, "Lo Limit", testidHdrFmt);
-        w.writeString(22, 6, "Hi Limit", testidHdrFmt);
-        w.writeString(23, 6, "Pin", testidHdrFmt);
-        w.writeString(24, 6, "Units", testidHdrFmt);
-        if (wafersort) w.writeString(24, 0, "X, Y", deviceidHdrFmt); else w.writeString(24, 0, "S/N", deviceidHdrFmt);
-        w.writeString(24, 2, "HW Bin", deviceidHdrFmt);
-        w.writeString(24, 3, "SW Bin", deviceidHdrFmt);
-        w.writeString(24, 4, "Site", deviceidHdrFmt);
-        w.writeString(24, 1, "Time", deviceidHdrFmt);
-        w.writeString(24, 5, "Result", deviceidHdrFmt);
+        w.mergeRange(0, 7, 11, 7, "Test Name", testNameHdrFmt);
+        w.writeString(12, 7, "Test Num", testNumberHdrFmt);
+        w.writeString(13, 7, "Duplicate", dupHdrFmt);
+        w.writeString(14, 7, "Lo Limit", loLimitHdrFmt);
+        w.writeString(15, 7, "Hi Limit", hiLimitHdrFmt);
+        w.writeString(16, 7, "Units", unitsHdrFmt);
+        w.mergeRange(17, 7, 23, 7, "Pin", pinHdrFmt);
+        if (wafersort) w.writeString(24, 0, "X, Y", snxyHdrFmt); else w.writeString(24, 0, "S/N", snxyHdrFmt);
+        w.writeString(24, 1, "Temp", tempHdrFmt);
+        w.writeString(24, 2, "Time", timeHdrFmt);
+        w.writeString(24, 3, "HW Bin", hwbinHdrFmt);
+        w.writeString(24, 4, "SW Bin", swbinHdrFmt);
+        w.writeString(24, 5, "Site", siteHdrFmt);
+        w.mergeRange(24, 6, 24, 7, "Result", rsltHdrFmt);
     }
 }
 
@@ -769,12 +696,12 @@ private void setTestNameHeaders(CmdOptions options, Config config, Worksheet w, 
         for (uint i=0; i<tests.length(); i++)
         {
             auto id = ids[i];       
-            int row = i + 14;
-            w.writeNumber(row, 0, id.testNumber, testNumberHdrFmt);
-            w.mergeRange(row, 1, row, 5, id.testName, testNameHdrFmt);
-            w.writeNumber(row, 6, id.dup, testNumberHdrFmt);
+            int row = i + 8;
+            w.mergeRange(row, 0, row, 5, id.testName, testNameValueFmt);
+            w.writeNumber(row, 6, id.testNumber, testNumberValueFmt);
+            w.writeNumber(row, 7, id.dup, dupValueFmt);
             // Limits must be added when the test data is added
-            w.mergeRange(row, 9, row, 11, id.pin, testNameHdrFmt);
+            w.mergeRange(row, 11, row, 13, id.pin, pinValueFmt);
         }
     }
     else
@@ -782,45 +709,47 @@ private void setTestNameHeaders(CmdOptions options, Config config, Worksheet w, 
         for (uint i=0; i<tests.length(); i++)
         {
             auto id = ids[i];       
-            ushort col = cast(ushort) (i + 7);
-            w.mergeRange(7, col, 18, col, id.testName, testNameHdrFmt);
-            w.writeNumber(19, col, id.testNumber, testNumberHdrFmt);
-            w.writeNumber(20, col, id.dup, testNumberHdrFmt);
+            ushort col = cast(ushort) (i + 8);
+            w.mergeRange(0, col, 11, col, id.testName, testNameValueFmt);
+            w.writeNumber(12, col, id.testNumber, testNumberValueFmt);
+            w.writeNumber(13, col, id.dup, dupValueFmt);
             // Limits must be added when the test data is added
-            w.writeString(23, col, id.pin, testNumberHdrFmt);
+            w.mergeRange(18, col, 24, col, id.pin, pinValueFmt);
         }
     }
 }
 
-private void setDeviceNameHeader(CmdOptions options, Config config, Worksheet w, Flag!"wafersort" wafersort, Flag!"rotated" rotated, uint rowOrCol, ulong tmin, DeviceResult device)
+private void setDeviceNameHeader(CmdOptions options, Config config, Worksheet w, Flag!"wafersort" wafersort, Flag!"rotated" rotated, uint rowOrCol, ulong tmin, string temp, DeviceResult device)
 {
     if (options.verbosityLevel > 9) writeln("setDeviceNameHeaders()");
     if (rotated)
     {
-        w.writeString(7, cast(ushort) rowOrCol, device.devId.getID(), deviceidHdrFmt);
-        w.writeNumber(8, cast(ushort) rowOrCol, device.tstamp - tmin, deviceidHdrFmt);
-        w.writeNumber(9, cast(ushort) rowOrCol, device.hwbin, deviceidHdrFmt);
-        w.writeNumber(10, cast(ushort) rowOrCol, device.swbin, deviceidHdrFmt);
-        w.writeNumber(11, cast(ushort) rowOrCol, device.site, deviceidHdrFmt);
-        writeln("goodDevice = ", device.goodDevice);
-        if (device.goodDevice) w.mergeRange(12, cast(ushort) rowOrCol, 13, cast(ushort) rowOrCol, "PASS", testRsltHdrFmt);
-        else w.mergeRange(12, cast(ushort) rowOrCol, 13, cast(ushort) rowOrCol, "FAIL", testFailHdrFmt);
+        w.writeString(0, cast(ushort) rowOrCol, device.devId.getID(), snxyValueFmt);
+        w.writeString(1, cast(ushort) rowOrCol, temp, tempValueFmt);
+        w.writeNumber(2, cast(ushort) rowOrCol, device.tstamp - tmin, timeValueFmt);
+        w.writeNumber(3, cast(ushort) rowOrCol, device.hwbin, hwbinValueFmt);
+        w.writeNumber(4, cast(ushort) rowOrCol, device.swbin, swbinValueFmt);
+        w.writeNumber(5, cast(ushort) rowOrCol, device.site, siteValueFmt);
+        if (device.goodDevice) w.writeString(6, cast(ushort) rowOrCol, "PASS", rsltPassValueFmt);
+        else w.writeString(6, cast(ushort) rowOrCol, "FAIL", rsltFailValueFmt);
     }
     else
     {
-        w.writeString(rowOrCol, 0, device.devId.getID(), deviceidHdrFmt);
-        w.writeNumber(rowOrCol, 1, device.tstamp - tmin, deviceidHdrFmt);
-        w.writeNumber(rowOrCol, 2, device.hwbin, deviceidHdrFmt);
-        w.writeNumber(rowOrCol, 3, device.swbin, deviceidHdrFmt);
-        w.writeNumber(rowOrCol, 4, device.site, deviceidHdrFmt);
-        if (device.goodDevice) w.mergeRange(rowOrCol, 5, rowOrCol, 6, "PASS", testRsltHdrFmt);
-        else w.mergeRange(rowOrCol, 5, rowOrCol, 6, "FAIL", testFailHdrFmt);
+        w.writeString(rowOrCol, 0, device.devId.getID(), snxyValueFmt);
+        w.writeString(rowOrCol, 1, temp, tempValueFmt);
+        w.writeNumber(rowOrCol, 2, device.tstamp - tmin, timeValueFmt);
+        w.writeNumber(rowOrCol, 3, device.hwbin, hwbinValueFmt);
+        w.writeNumber(rowOrCol, 4, device.swbin, swbinValueFmt);
+        w.writeNumber(rowOrCol, 5, device.site, siteValueFmt);
+        if (device.goodDevice) w.mergeRange(rowOrCol, 6, rowOrCol, 7, "PASS", rsltPassValueFmt);
+        else w.mergeRange(rowOrCol, 6, rowOrCol, 7, "FAIL", rsltFailValueFmt);
     }
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 private bool[ushort] cmap;
 // This is for not-rotated spreadsheets
-private void setData(CmdOptions options, Config config, Worksheet w, size_t sheetNum, const size_t maxCols, Flag!"wafersort" wafersort, LinkedMap!(const TestID, uint) rowOrColMap, DeviceResult[] devices)
+private void setData(CmdOptions options, Config config, Worksheet w, size_t sheetNum, const size_t maxCols, Flag!"wafersort" wafersort, LinkedMap!(const TestID, uint) rowOrColMap, DeviceResult[] devices, string temp)
 {
     if (options.verbosityLevel > 9) writeln("setData(1)");
     // Find the smallest timestamp:
@@ -834,56 +763,58 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
     cmap.clear();
     foreach(ref device; devices)
     {
-        setDeviceNameHeader(options, config, w, wafersort, No.rotated, row, tmin, device);
+        setDeviceNameHeader(options, config, w, wafersort, No.rotated, row, tmin, temp, device);
         for (int i=0; i<device.tests.length; i++)
         {
             TestRecord tr = device.tests[i];
             uint seqNum = rowOrColMap[tr.id];
-            ushort col = cast(ushort) (seqNum + 7);
+            ushort col = cast(ushort) (seqNum + 8);
             if (col !in cmap)
             {
                 if (tr.type == TestType.FLOAT || tr.type == TestType.HEX_INT || tr.type == TestType.DEC_INT ||
                     tr.type == TestType.DYNAMIC_LOLIMIT || tr.type == TestType.DYNAMIC_HILIMIT || tr.type == TestType.STRING)
                 {
-                    w.writeString(21, col, "", testLimitHdrFmt);
-                    w.writeString(22, col, "", testLimitHdrFmt);
-                    w.writeString(24, col, tr.units, testNumberHdrFmt);
+                    w.writeString(14, col, "", loLimitValueFmt);
+                    w.writeString(15, col, "", hiLimitValueFmt);
+                    w.writeString(16, col, tr.units, unitsValueFmt);
                 }
                 else
                 {
-                    w.writeNumber(21, col, tr.loLimit, testLimitHdrFmt);
-                    w.writeNumber(22, col, tr.hiLimit, testLimitHdrFmt);
-                    w.writeString(24, col, tr.units, testNumberHdrFmt);
+                    w.writeNumber(14, col, tr.loLimit, loLimitValueFmt);
+                    w.writeNumber(15, col, tr.hiLimit, hiLimitValueFmt);
+                    w.writeString(16, col, tr.units, unitsValueFmt);
                 }
                 cmap[col] = true;
             }
             switch (tr.type) with(TestType)
             {
             case FUNCTIONAL:
-                if ((tr.testFlags & 0x80) == 0x80) w.writeString(row, col, "FAIL", failFmt);
-                else w.writeString(row, col, "PASS", passFmt);
+                if ((tr.testFlags & 0x80) == 0x80) w.writeString(row, col, "FAIL", failDataFmt);
+                else w.writeString(row, col, "PASS", passDataStringFmt);
                 break;
             case PARAMETRIC: goto case;
             case FLOAT:
-                if ((tr.testFlags & 0x80) == 0x80) w.writeNumber(row, col, tr.result.f, floatFailFmt);
-                else w.writeNumber(row, col, tr.result.f, floatFmt);
+                if ((tr.testFlags & 0x80) == 0x80) w.writeNumber(row, col, tr.result.f, failDataFmt);
+                else w.writeNumber(row, col, tr.result.f, passDataFloatFmt);
                 break;
             case HEX_INT:
                 string value = to!string(tr.result.u);
-                if ((tr.testFlags & 0x80) == 0x80) w.writeFormula(row, col, "=DEC2HEX(" ~ value ~ "; 8)", intFailFmt);
-                else w.writeFormula(row, col, "=DEC2HEX(" ~ value ~ "; 8)", intFmt);
+                if ((tr.testFlags & 0x80) == 0x80) w.writeFormula(row, col, "=DEC2HEX(" ~ value ~ "; 8)", failDataFmt);
+                else w.writeFormula(row, col, "=DEC2HEX(" ~ value ~ "; 8)", passDataHexFmt);
                 break;
             case DEC_INT:
-                if ((tr.testFlags & 0x80) == 0x80) w.writeNumber(row, col, tr.result.l, intFailFmt);
-                else w.writeNumber(row, col, tr.result.l, intFmt);
+                if ((tr.testFlags & 0x80) == 0x80) w.writeNumber(row, col, tr.result.l, failDataFmt);
+                else w.writeNumber(row, col, tr.result.l, passDataIntFmt);
                 break;
-            case DYNAMIC_LOLIMIT: goto case;
+            case DYNAMIC_LOLIMIT:
+                w.writeNumber(row, col, tr.result.f, dynLoLimitValueFmt);
+                break;
             case DYNAMIC_HILIMIT:
-                w.writeNumber(row, col, tr.result.f, dylimFmt);
+                w.writeNumber(row, col, tr.result.f, dynHiLimitValueFmt);
                 break;
             default: // STRING
-                if ((tr.testFlags & 0x80) == 0x80) w.writeString(row, col, tr.result.s, failFmt);
-                else w.writeString(row, col, tr.result.s, passFmt);
+                if ((tr.testFlags & 0x80) == 0x80) w.writeString(row, col, tr.result.s, failDataFmt);
+                else w.writeString(row, col, tr.result.s, passDataStringFmt);
                 break;
             }
         }
@@ -894,7 +825,7 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
 private bool[uint] lmap;
 
 // This is for rotated spreadsheets
-private void setData(CmdOptions options, Config config, Worksheet w, size_t sheetNum, Flag!"wafersort" wafersort, LinkedMap!(const TestID, uint) rowOrColMap, DeviceResult[] devices)
+private void setData(CmdOptions options, Config config, Worksheet w, size_t sheetNum, Flag!"wafersort" wafersort, LinkedMap!(const TestID, uint) rowOrColMap, DeviceResult[] devices, string temp)
 {
     if (options.verbosityLevel > 9) writeln("setData(2)");
     // Find the smallest timestamp:
@@ -903,61 +834,63 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
     {
         if (device.tstamp < tmin) tmin = device.tstamp;
     }
-    ushort col = 13;
+    ushort col = 14;
     lmap.clear();
     foreach(ref device; devices)
     {
-        setDeviceNameHeader(options, config, w, wafersort, Yes.rotated, col, tmin, device);
+        setDeviceNameHeader(options, config, w, wafersort, Yes.rotated, col, tmin, temp, device);
         for (int i=0; i<device.tests.length; i++)
         {
             TestRecord tr = device.tests[i];
             writeln("tr.id = ", tr.id); std.stdio.stdout.flush();
             uint seqNum = rowOrColMap[tr.id];
-            uint row = seqNum + 14;
+            uint row = seqNum + 8;
             if (row !in lmap)
             {
                 if (tr.type == TestType.FLOAT || tr.type == TestType.HEX_INT || tr.type == TestType.DEC_INT ||
                     tr.type == TestType.DYNAMIC_LOLIMIT || tr.type == TestType.DYNAMIC_HILIMIT || tr.type == TestType.STRING)
                 {
-                    w.writeString(row, 7, "", testLimitHdrFmt);
-                    w.writeString(row, 8, "", testLimitHdrFmt);
-                    w.writeString(row, 12, tr.units, testNumberHdrFmt);
+                    w.writeString(row, 8, "", loLimitValueFmt);
+                    w.writeString(row, 9, "", hiLimitValueFmt);
+                    w.writeString(row, 10, tr.units, unitsValueFmt);
                 }
                 else
                 {
-                    w.writeNumber(row, 7, tr.loLimit, testLimitHdrFmt);
-                    w.writeNumber(row, 8, tr.hiLimit, testLimitHdrFmt);
-                    w.writeString(row, 12, tr.units, testNumberHdrFmt);
+                    w.writeNumber(row, 8, tr.loLimit, loLimitValueFmt);
+                    w.writeNumber(row, 9, tr.hiLimit, loLimitValueFmt);
+                    w.writeString(row, 10, tr.units, unitsValueFmt);
                 }
                 lmap[row] = true;
             }
             switch (tr.type) with(TestType)
             {
             case FUNCTIONAL:
-                if ((tr.testFlags & 0x80) == 0x80) w.writeString(row, col, "FAIL", failFmt);
-                else w.writeString(row, col, "PASS", passFmt);
+                if ((tr.testFlags & 0x80) == 0x80) w.writeString(row, col, "FAIL", failDataFmt);
+                else w.writeString(row, col, "PASS", passDataStringFmt);
                 break;
             case PARAMETRIC: goto case;
             case FLOAT:
-                if ((tr.testFlags & 0x80) == 0x80) w.writeNumber(row, col, tr.result.f, floatFailFmt);
-                else w.writeNumber(row, col, tr.result.f, floatFmt);
+                if ((tr.testFlags & 0x80) == 0x80) w.writeNumber(row, col, tr.result.f, failDataFmt);
+                else w.writeNumber(row, col, tr.result.f, passDataFloatFmt);
                 break;
             case HEX_INT:
                 string value = to!string(tr.result.u);
-                if ((tr.testFlags & 0x80) == 0x80) w.writeFormula(row, col, "=DEC2HEX(" ~ value ~ "; 8)", intFailFmt);
-                else w.writeFormula(row, col, "=DEC2HEX(" ~ value ~ "; 8)", intFmt);
+                if ((tr.testFlags & 0x80) == 0x80) w.writeFormula(row, col, "=DEC2HEX(" ~ value ~ "; 8)", failDataFmt);
+                else w.writeFormula(row, col, "=DEC2HEX(" ~ value ~ "; 8)", passDataHexFmt);
                 break;
             case DEC_INT:
-                if ((tr.testFlags & 0x80) == 0x80) w.writeNumber(row, col, tr.result.l, intFailFmt);
-                else w.writeNumber(row, col, tr.result.l, intFmt);
+                if ((tr.testFlags & 0x80) == 0x80) w.writeNumber(row, col, tr.result.l, failDataFmt);
+                else w.writeNumber(row, col, tr.result.l, passDataIntFmt);
                 break;
-            case DYNAMIC_LOLIMIT: goto case;
+            case DYNAMIC_LOLIMIT:
+                w.writeNumber(row, col, tr.result.f, dynLoLimitValueFmt);
+                break;
             case DYNAMIC_HILIMIT:
-                w.writeNumber(row, col, tr.result.f, dylimFmt);
+                w.writeNumber(row, col, tr.result.f, dynHiLimitValueFmt);
                 break;
             default: // STRING
-                if ((tr.testFlags & 0x80) == 0x80) w.writeString(row, col, tr.result.s, failFmt);
-                else w.writeString(row, col, tr.result.s, passFmt);
+                if ((tr.testFlags & 0x80) == 0x80) w.writeString(row, col, tr.result.s, failDataFmt);
+                else w.writeString(row, col, tr.result.s, passDataStringFmt);
                 break;
             }
         }
