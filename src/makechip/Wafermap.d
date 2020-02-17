@@ -1,125 +1,107 @@
 module makechip.Wafermap;
 import makechip.StdfDB;
-import makechip.StdfFile;
-import makechip.Stdf;
 import makechip.CmdOptions;
 import makechip.Config;
-import makechip.Stdf2xls;
-import std.stdio;
-
-import libxlsxd.workbook;
-import libxlsxd.worksheet;
-import libxlsxd.format;
-import libxlsxd.xlsxwrap;
 import makechip.logo;
-import makechip.Util;
-import makechip.SpreadsheetWriter;
+import WafermapFormat;		// including module name gives error ?
+import libxlsxd.workbook;
+import std.stdio;
 
 /**
 	Read from the STDF database to generate a wafer map in excel.
+	- option to dump wafer map in ascii ASE format
 */
 public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 {
 	foreach(hdr; stdfdb.deviceMap.keys) {
 
-		uint[] hwbin;
+		uint[] hwbin;		// default length is zero
 		int[] x_coord;
 		int[] y_coord;
-		hwbin.length = 0;
-		x_coord.length = 0;
-		y_coord.length = 0;
 
+		// Retrieve wafer data from STDF database.
 		foreach(i, dr; stdfdb.deviceMap[hdr]) {
-
 			hwbin.length +=1;
 			x_coord.length +=1;
 			y_coord.length +=1;
-
 			hwbin[i] = dr.hwbin;
 			x_coord[i] = dr.devId.id.xy.x;
 			y_coord[i] = dr.devId.id.xy.y;
 		}
 
-		// sort for min/max elements 
+		// Sort to get min and max coordinates.
 		int[] x_sorted = x_coord.dup;
 		int[] y_sorted = y_coord.dup;
-
 		import std.algorithm.sorting : sort;
 		x_sorted.sort();
 		y_sorted.sort();
-
 		const int x_min = x_sorted[0];
 		const int y_min = y_sorted[0];
 		const int x_max = x_sorted[$-1] - x_sorted[0];
 		const int y_max = y_sorted[$-1] - y_sorted[0];
 
-		// shift for indexing
+		// Shift coordinates to start indexing from (0,0).
 		int[] x_shifted = new int[x_coord.length];
 		int[] y_shifted = new int[y_coord.length];
 		x_shifted[] = x_coord[] - x_min;
 		y_shifted[] = y_coord[] - y_min;
 
-		// create empty map
-		const uint col = x_max + 1;
-		const uint row = y_max + 1;
-
-		char[][] matrix = new char[][](row, col);		// inital val is 0xFF
-		writeln("row = ", row);
-		writeln("col = ", col);
-
-		uint[][] matrix_uint = new uint[][](row,col);
-
-		// do this only for ASY format, otherwise affects speed
-		// pre-fill map with dots
-		
-		for(uint i = 0; i < row; i++) {
-			for(uint j = 0; j < col; j++) {
-				matrix[i][j] = '.';
-			}
-		}
-
+		// Create 2D array map of bins.
+		uint col = x_max + 1;
+		uint row = y_max + 1;
 		uint goodbins = 0;
 		uint badbins = 0;
-		// fill map with hwbins
+		uint[][] matrix_uint = new uint[][](row,col);	// pre-filled with zeros
+
 		foreach(i, bin; hwbin) {
-			switch(hwbin[i]) {
-				default:
-					matrix[y_shifted[i]][x_shifted[i]] = '?'; badbins++; break;
-					// throw new Exception("Unsupported HW bin number");
-				case 1:
-					matrix[y_shifted[i]][x_shifted[i]] = '1'; goodbins++; break;
-				case 2:
-					matrix[y_shifted[i]][x_shifted[i]] = 'X'; badbins++; break;
+			matrix_uint[y_shifted[i]][x_shifted[i]] = bin;
+
+			switch(bin) {
+				case 1: goodbins++; break;
+				default: badbins++; break;
 			}
 		}
 
-		// rotate 90
-		char[][] mat_rot = new char[][](col, row);
-		rotate90(matrix, mat_rot, row, col);
-
-		if(options.asciiDump) {
-			// useful header values
-			writeln("hdr.wafer_id = ", hdr.wafer_id);
-			writeln("hdr.lot_id = ", hdr.lot_id);
-			writeln("hdr.sublot_id = ", hdr.sublot_id);
-			writeln("hdr.devName = ", hdr.devName);
-			writeln("hdr.temperature = ", hdr.temperature);
-			writeln("hdr.step = ", hdr.step);
-			// print map
-			writeln("good bins = ", goodbins);
-			writeln("bad bins = ", badbins);
-			writeln("total bins = ", goodbins+badbins);
-			foreach(n; matrix) {
-				writeln(n);
-			}
-			// print rotated map
-			writeln("rotated:");
-			foreach(n; mat_rot) {
-				writeln(n);
-			}
+		uint[][] matrix;
+		string notch;		// save to string since compiler can't read 'options.notch' at compile time in order to 'ws.write'
+		switch(options.notch) with (Notch)
+		{
+			case right: // 0
+				matrix = matrix_uint.dup;
+				notch = "Right";
+				break;
+			case bottom:	// +90
+				uint[][] matrix_rot90 = new uint[][](col,row);
+				rotate90(matrix_uint, matrix_rot90);
+				matrix = matrix_rot90.dup;
+				if(row != col) {
+					row ^= col;
+					col ^= row;
+					row ^= col;
+				}
+				notch = "Bottom";
+				break;
+			case left: // +180
+				uint[][] matrix_rot180 = new uint[][](row,col);
+				rotate180(matrix_uint, matrix_rot180);
+				matrix = matrix_rot180.dup;
+				notch = "Left";
+				break;
+			case top: // +270
+				uint[][] matrix_rot270 = new uint[][](col,row);
+				rotate270(matrix_uint, matrix_rot270);
+				matrix = matrix_rot270.dup;
+				if(row != col) {
+					row ^= col;
+					col ^= row;
+					row ^= col;
+				}
+				notch = "Top";
+				break;
+			default:
+				throw new Exception("Invalid notch position");
 		}
 
-	// EXCEL
 		import std.algorithm: canFind;
 		string wfile = options.wfile;	// "<device>_<lot>_<wafer>"
 		const bool separateFileForDevice = canFind(wfile, "<device>");
@@ -128,9 +110,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		
 		import std.array : replace;
 		string fname = replace(wfile, "<device>", hdr.devName).replace("<lot>", hdr.lot_id).replace("<wafer>", hdr.wafer_id);
-		writeln("fname = ", fname);
 
-		/*
 		if(separateFileForDevice && separateFileForLot && separateFileForWafer) {
 			import std.array : replace;
 			fname = replace(wfile, "<device>", hdr.devName).replace("<lot>", hdr.lot_id).replace("<wafer>", hdr.wafer_id);
@@ -138,11 +118,13 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		}
 		else {
 			// ...
-		}*/
+		}
 
 		Workbook wb = newWorkbook(fname);
-		auto ws = wb.addWorksheet("Page 1");
+		auto ws = wb.addWorksheet("Sheet1");
 
+		// Draw logo (7 rows, 3 cols)
+		import libxlsxd.xlsxwrap : lxw_image_options, lxw_object_position;
 		lxw_image_options img_options;
 		const double ss_width = 449 * 0.350;
 		const double ss_height = 245 * 0.324;
@@ -153,25 +135,34 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		ws.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, img.dup.ptr, img.length, &img_options);
 		//ws.insertImageOpt(cast(uint) 0, cast(ushort) 0, "itest_logo.png", &img_options);
 
-		const short offset_row = 15;
-		const short offset_col = 4;
-		import std.conv : to;
-		// ws.write(10, 10, "hello");
-		initFormats(wb, options, config);		// need this to load formats
+		// Write some headers..
+		initWaferFormats(wb, options, config);
 
-		// write some headers. Note: logo takes up 7 rows, 3 cols.
 		ws.write(8, 0, "wafer_id:", headerNameFmt);
 		ws.write(9, 0, "lot_id:", headerNameFmt);
 		ws.write(10, 0, "sublot_id:", headerNameFmt);
 		ws.write(11, 0, "devName:", headerNameFmt);
 		ws.write(12, 0, "temperature:", headerNameFmt);
 		ws.write(13, 0, "step:", headerNameFmt);
+		ws.write(14, 0, "row:", headerNameFmt);
+		ws.write(15, 0, "col:", headerNameFmt);
+		ws.write(16, 0, "good bins:", headerNameFmt);
+		ws.write(17, 0, "bad bins:", headerNameFmt);
+		ws.write(18, 0, "total bins:", headerNameFmt);
+		ws.write(19, 0, "notch:", headerNameFmt);
+
 		ws.write(8, 1, hdr.wafer_id, headerValueFmt);
 		ws.write(9, 1, hdr.lot_id, headerValueFmt);
 		ws.write(10, 1, hdr.sublot_id, headerValueFmt);
 		ws.write(11, 1, hdr.devName, headerValueFmt);
 		ws.write(12, 1, hdr.temperature, headerValueFmt);
 		ws.write(13, 1, hdr.step, headerValueFmt);
+		ws.write(14, 1, row, headerValueFmt);
+		ws.write(15, 1, col, headerValueFmt);
+		ws.write(16, 1, goodbins, headerValueFmt);
+		ws.write(17, 1, badbins, headerValueFmt);
+		ws.write(18, 1, (goodbins+badbins), headerValueFmt);
+		ws.write(19, 1, notch, headerValueFmt);
 
 		ws.mergeRange(8, 1, 8, 3, null);
 		ws.mergeRange(9, 1, 9, 3, null);
@@ -179,114 +170,162 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		ws.mergeRange(11, 1, 11, 3, null);
 		ws.mergeRange(12, 1, 12, 3, null);
 		ws.mergeRange(13, 1, 13, 3, null);
+		ws.mergeRange(14, 1, 14, 3, null);
+		ws.mergeRange(15, 1, 15, 3, null);
+		ws.mergeRange(16, 1, 16, 3, null);
+		ws.mergeRange(17, 1, 17, 3, null);
+		ws.mergeRange(18, 1, 18, 3, null);
+		ws.mergeRange(19, 1, 19, 3, null);
 
-		const double colWidth = 2.0;
-		const double rowWidth = 11.6;
+		if(options.asciiDump) {
+			writeln("hdr.wafer_id = ", hdr.wafer_id);
+			writeln("hdr.lot_id = ", hdr.lot_id);
+			writeln("hdr.sublot_id = ", hdr.sublot_id);
+			writeln("hdr.devName = ", hdr.devName);
+			writeln("hdr.temperature = ", hdr.temperature);
+			writeln("hdr.step = ", hdr.step);
+			writeln("row = ", row);
+			writeln("col = ", col);
+			writeln("good bins = ", goodbins);
+			writeln("bad bins = ", badbins);
+			writeln("total bins = ", goodbins+badbins);
+			writeln("notch = ", options.notch);
+		}
 
-		ws.setColumn(offset_col, cast(ushort) (col + offset_col + 1) , colWidth);		// -> 0.26"; +1 to include other-side col numbering
-		//ws.setRow(cast(uint)(offset_row), rowWidth);			// to include row numbering
-		//ws.setRow(cast(uint)(row + offset_row + 1), rowWidth);		// +1 to include other-side row numbering
+		// Set widths so that each bin cell is a square.
+		const double colWidth = 2.29;
+		const double rowWidth = 15.0;
+
+		// Start drawing wafermap at defined offset cell position.
+		const ushort offset_row = 15;
+		const ushort offset_col = 4;
 
 		foreach(i, row_arr; matrix) {
+			ws.setRow(cast(uint)(i + offset_row + 1), rowWidth);
 
-			//ws.setRow(cast(uint)(i + offset_row + 1), rowWidth);		// -> 0.28"; set rows for all the bin squares
-
-			ws.write(cast(uint)(i + offset_row + 1), cast(ushort)(offset_col), i, waferRowNumberFmt);	// write row numbers; +1 to not overlap the 0
-			ws.write(cast(uint)(i + offset_row + 1), cast(ushort)(col + offset_col + 1), i, waferRowNumberFmt);	// write row numbers on other side
+			// Label row numbers on each side of the wafermap.
+			ws.write(cast(uint)(i + offset_row + 1), cast(ushort)(offset_col), i, waferRowNumberFmt);
+			ws.write(cast(uint)(i + offset_row + 1), cast(ushort)(col + offset_col + 1), i, waferRowNumberFmt);
 
 			foreach(j, val; row_arr) {
-
-				ws.write(cast(uint)(offset_row), cast(ushort)(j + offset_col + 1), j, waferColNumberFmt); // write column numbers; +1 to not overlap the 0
-				ws.write(cast(uint)(row + offset_row + 1), cast(ushort)(j + offset_col + 1), j, waferColNumberFmt); // write column numbers on other side
+				// Label column numbers on top and bottom of the wafermap.
+				ws.write(cast(uint)(offset_row), cast(ushort)(j + offset_col + 1), j, waferColNumberFmt);
+				ws.write(cast(uint)(row + offset_row + 1), cast(ushort)(j + offset_col + 1), j, waferColNumberFmt);
 
 				switch(val) {
-					case 0xFF:
-					case '.':
-						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), to!string(val), waferEmptyFmt);	//+1 for row,col numbering
+					case 0:
+						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), "", waferEmptyFmt);    //+1 to write bins after row & col numbering
+						if(options.asciiDump) { write("."); }
 						break;
-					case '1':
-						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), to!int(val), waferPassFmt);
+					case 1:
+						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferPassFmt);
+						if(options.asciiDump) { write("1"); }
 						break;
-					case 'X':
-						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), to!string(val), waferFailFmt);
-						break;
-					case '?':
-						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), to!string(val), waferFailFmt);
+					case 2:
+					case 3:
+					case 4:
+					case 5:
+					case 6:
+					case 7:
+					case 8:
+					case 9:
+					case 10:
+						ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferFailFmt);
+						if(options.asciiDump) { write("X"); }
 						break;
 					default:
 						throw new Exception("Unknown bin numbering - shouldn't happen");
 				}
 
 				// TO DO:
-				// don't write '.'s.. maybe color gray
-				// combine with prev for loop to optimize time
 				// add die color legend
 				// !!: header location with respect to logo WILL change with different wafer sizes, due to changing row/col size
 
-				// convert char[][] to uint[][] -> easier to output, but harder to dump as ASY?
 			}
+			if(options.asciiDump) { write("\n"); }
 		}
 
+		// Set cell widths for row/col numbering cells.
+		ws.setColumn(offset_col, cast(ushort) (col + offset_col + 1) , colWidth);
+		ws.setRow(cast(uint)(offset_row), rowWidth);
+		ws.setRow(cast(uint)(row + offset_row + 1), rowWidth);		// why setting column is (first, last) ; setting row is just (one row) ??
+
 		wb.close();
-
 	}
-
-}
-
-unittest {
-	int[] arr;
-	arr.length = 0;
-
-	for(uint i=0;i<3;i++) {
-		arr.length += 1;
-		arr[i] = i + 10;
-	}
-	assert(arr[0]==10);
-	assert(arr[1]==11);
-	assert(arr[2]==12);
-
-	writeln("Unit test passes");
 }
 
 /**
 	O(n^2)
 */
-void transpose(char[][] a, char[][] b, uint row, uint col) {
+private void transpose(uint[][] a, uint[][] a_trans) {
+	const uint row = cast(uint)a.length;
+	const ushort col = cast(ushort)a[0].length;
+
 	for(uint i = 0; i < row; i++) {
-		for(uint j = 0; j < col; j++) {
-			b[j][i] = a[i][j];
+		for(ushort j = 0; j < col; j++) {
+			a_trans[j][i] = a[i][j];
 		}
 	}
 }
 
 /**
 	rotate 90 clockwise:
-	1. transpose
-	2. reverse each row
+	1. reverse each row
+	2. transpose
 */
-void rotate90(char[][] a, char[][] b, uint row, uint col) {
-	transpose(a, b, row, col);
-	const uint new_row = col;
-	const uint new_col = row;
-	char[][] tmp = new char[][](new_row,new_col);
+public void rotate90(uint[][] a, uint[][] a_rot90) {
+	const uint row = cast(uint)a.length;
+	const ushort col = cast(ushort)a[0].length;
 
-	foreach(x, rows; b) {
-		tmp[new_row-x-1][] = rows;
+	uint[][] a_rev = new uint[][](row,col);
+	foreach(r, rows; a) {
+		a_rev[row - r - 1][] = rows;
 	}
-	b[] = tmp[];
+
+	transpose(a_rev, a_rot90);
+}
+
+/**
+	rotate 270 clockwise:
+	1. transpose
+	2. reverse each row (which is column after transposing)
+*/
+public void rotate270(uint[][] a, uint[][] a_rot90) {
+	const uint row = cast(uint)a.length;
+	const ushort col = cast(ushort)a[0].length;
+	uint[][] a_trans = new uint[][](col,row);
+	transpose(a, a_trans);
+
+	const ushort new_row = cast(ushort)a_trans.length;
+	const ushort new_col = cast(ushort)a_trans[0].length;
+
+	assert(new_row == col);
+	assert(new_col == row);
+
+	foreach(r, rows; a_trans) {
+		a_rot90[new_row - r - 1][] = rows;
+	}
+}
+
+/**
+	rotate 180 clockwise:
+	1. rotate 90 twice
+*/
+public void rotate180(uint[][] a, uint[][] a_rot180) {
+	const uint row = cast(uint)a.length;
+	const ushort col = cast(ushort)a[0].length;
+	uint[][] temp = new uint[][](col,row);
+	rotate90(a, temp);
+	rotate90(temp, a_rot180);
+}
+
+
+unittest {
+
 }
 
 /*
-
 Excel 2007-2019
 max rows = 2^20	= 1,048,576	-> uint @ 2^32
 max cols = 2^14	= 16,384	-> ushort @ 2^16
-
-
-Define new format in:
-SpreadsheetWriter.d 	- new format name, format options
-Config.d				- format option color names
-
-
-why setting column is (first, last) ; setting row is just (one row) ??
 */

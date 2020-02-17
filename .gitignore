@@ -15,5 +15,9 @@ src/makechip/a
 stdf2xls
 stdf2xls-test-library
 x.tmp
+*.tmp
 *.a
 .~lock*
+.idea/
+*.iml
+.vscode/
