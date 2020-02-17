@@ -122,7 +122,7 @@ class CmdOptions
     bool limit1k = false;
     bool noDynamicLimits = false;
     bool asciiDump = true;
-    Notch notch = Notch.top;
+    Notch notch = Notch.bottom;
     Sort_t sortType = Sort_t.SN_UP_TIME_UP; 
     private string[] modify;
     PMRNameType channelType = PMRNameType.AUTO;
