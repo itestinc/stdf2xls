@@ -103,10 +103,9 @@ class HeaderInfo
     public string[const string] getHeaderItems() pure
     { 
         hi.clear();
-        foreach (key; headerItems)
+        foreach (key; headerItems.keys)
         {
-            string value = headerItems.get(key, "");
-            hi[key] = value;
+            hi[key] = headerItems[key];
         }
         return hi;
     } 

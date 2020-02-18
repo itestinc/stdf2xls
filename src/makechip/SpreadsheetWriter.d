@@ -620,7 +620,7 @@ private void setDeviceHeader(CmdOptions options, Config config, Worksheet w, Hea
         auto map = hdr.getHeaderItems();
         ushort c = 7;
         writeln("map.size = ", map.length);
-        foreach (key; map)
+        foreach (key; map.keys)
         {
             writeln("key = ", key, " value = ", map[key]);
             w.mergeRange(r, c, r, cast(ushort) (c+1), key, hdrNameFmt);
@@ -679,7 +679,7 @@ private void setDeviceHeader(CmdOptions options, Config config, Worksheet w, Hea
             r++;
         }
         auto map = hdr.getHeaderItems();
-        foreach (key; map)
+        foreach (key; map.keys)
         {
             w.mergeRange(r, 0, r, 2, key, hdrNameFmt);
             w.mergeRange(r, 3, r, 6, map[key], hdrValueFmt);
