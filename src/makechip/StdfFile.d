@@ -85,8 +85,9 @@ class HeaderInfo
     const string wafer_id;
     const string devName;
     private string[const string] headerItems;
+    private string[const string] hi;
 
-    this(bool ignoreMiscItems, string step, string temperature, string lot_id, string sublot_id, string wafer_id, string devName)
+    this(bool ignoreMiscItems, string step, string temperature, string lot_id, string sublot_id, string wafer_id, string devName, string options)
     {
         this.ignoreMiscItems = ignoreMiscItems;
         this.step = step;
@@ -99,9 +100,9 @@ class HeaderInfo
 
     public bool isWafersort() @safe pure nothrow { return wafer_id != ""; }
 
-    public string[const string] getHeaderItems() @safe pure
+    public string[const string] getHeaderItems() pure
     { 
-        string[const string] hi;
+        hi.clear();
         foreach (key; headerItems)
         {
             string value = headerItems.get(key, "");
@@ -172,6 +173,7 @@ struct StdfFile
     const string filename;
     StdfRecord[] records;
     private const bool ignoreMiscHeaderItems;
+    private const string optionString;
 
     /**
       Options needed:
@@ -179,6 +181,7 @@ struct StdfFile
      */
     this(string filename, CmdOptions options)
     {
+        optionString = options.options;
         this.filename = filename;
         this.ignoreMiscHeaderItems = !options.noIgnoreMiscHeader; 
     }
@@ -219,8 +222,9 @@ struct StdfFile
         string sblot = mir.SBLOT_ID;
         string device = mir.PART_TYP;
         string wafer = (wir is null) ? "" : wir.WAFER_ID;
-//      writeln("WAFER = ", wafer);
         string[string] miscFields;
+        miscFields["stdf2xlsx options"] = optionString;
+        miscFields["stdf2xlsx version"] = CmdOptions.stdf2xlsx_version;
         foreach (dtr; dtrs)
         {
             string rec = strip(dtr.TEXT_DAT);
@@ -260,12 +264,15 @@ struct StdfFile
                 }
             }
         }
-        HeaderInfo hdr = new HeaderInfo(ignoreMiscHeaderItems, step, temp, lot, sblot, wafer, device);
+        HeaderInfo hdr = new HeaderInfo(ignoreMiscHeaderItems, step, temp, lot, sblot, wafer, device, optionString);
         foreach (key; miscFields.keys)
         {
             auto value = miscFields.get(key, "");
             hdr.headerItems[key] = value;
+            auto v = hdr.headerItems[key];
         }
+        import std.array;
+        writeln("hdrItems = ", hdr.headerItems);
         return hdr;
     }
 

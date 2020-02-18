@@ -88,15 +88,15 @@ public class DefaultValueDatabase
 
     public float getDefaultLoLimit(Record_t type, uint testNumber, string testName, uint dupNumber)
     {
-        auto v = defaultLoLimits.get(float.nan, type, testNumber, testName, dupNumber);
-        if (v == float.nan) v = NdefaultLoLimits.get(float.nan, type, testNumber, dupNumber);
+        auto v = defaultLoLimits.get(float.max, type, testNumber, testName, dupNumber);
+        if (v == float.max) v = NdefaultLoLimits.get(float.max, type, testNumber, dupNumber);
         return v;
     }
 
     public float getDefaultHiLimit(Record_t type, uint testNumber, string testName, uint dupNumber)
     {
-        auto v = defaultHiLimits.get(float.nan, type, testNumber, testName, dupNumber);
-        if (v == float.nan) v = NdefaultHiLimits.get(float.nan, type, testNumber, dupNumber);
+        auto v = defaultHiLimits.get(float.max, type, testNumber, testName, dupNumber);
+        if (v == float.max) v = NdefaultHiLimits.get(float.max, type, testNumber, dupNumber);
         return v;
     }
 
@@ -184,10 +184,6 @@ public class DefaultValueDatabase
         }
         if ((!ptr.HI_LIMIT.isEmpty()) && (NdefaultHiLimits.get(float.max, ptr.recordType, ptr.TEST_NUM, dup) == float.max))
         {
-            defaultHiLimits.put(ptr.HI_LIMIT, ptr.recordType, ptr.TEST_NUM, tname, dup);
-        }
-        if (!ptr.HI_LIMIT.isEmpty() && NdefaultHiLimits.get(float.nan, ptr.recordType, ptr.TEST_NUM, dup) == float.nan)
-        {
             NdefaultHiLimits.put(ptr.HI_LIMIT, ptr.recordType, ptr.TEST_NUM, dup);
         }
 
@@ -272,6 +268,7 @@ public class DefaultValueDatabase
         {
             NdefaultUnits.put(mpr.UNITS, mpr.recordType, mpr.TEST_NUM, dup);
         }
+
         if (!mpr.RTN_INDX.isEmpty() && mpr.RTN_INDX.length != 0 && defaultPinIndicies.get(none, mpr.recordType, mpr.TEST_NUM, tname, dup) == none)
         {
             defaultPinIndicies.put(mpr.RTN_INDX.getValue(), mpr.recordType, mpr.TEST_NUM, tname, dup);

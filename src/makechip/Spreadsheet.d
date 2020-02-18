@@ -194,7 +194,6 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         // determine the total number of unique TestIDs:
         foreach (d, dev; devices)
         {
-            writeln("dev.tests.length = ", dev.tests.length);
             foreach (t, test; dev.tests)
             {
                 tmpmap[test.id] = "1"; 
@@ -203,11 +202,9 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         size_t totalIds = tmpmap.length;
         TestRecord[const(TestID)][] normList;
         normList.length = totalIds;
-        writeln("totalIds = ", totalIds);
         // Now find the number of different tests at each point in the flow:
         foreach (d, dev; devices)
         {
-            writeln("dev.tests.length = ", dev.tests.length);
             foreach (t, test; dev.tests)
             {
                 normList[t][test.id] = test;
@@ -257,7 +254,6 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
                 }
             }
         }
-        writeln("testList.length = ", testList.length);
 /*
         for (size_t j=0; j<devices[maxLoc].tests.length; j++)
         {
@@ -315,7 +311,6 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         */
         // If there are dynamicLimits, then insert test headers for the upper and lower limits where appropriate
         TestRecord[] newCompTests;
-        writeln("testList.length = ", testList.length);
         if (!options.noDynamicLimits)
         {
             foreach(test; testList)
@@ -349,7 +344,6 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
             rc++;
         }
         //for (size_t n=0; n<devices.length; n++) devices[n].tests = newTests[n];
-        writeln("filename = ", wb.filename);
         writeSheet(options, wb, rowOrColMap, key, devices, config);
         wb.close();
     } 
