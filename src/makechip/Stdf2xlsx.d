@@ -101,7 +101,6 @@ public void loadDb(CmdOptions options)
                             float hl2 = fabs(test.hiLimit);
                             if (hl > (1.001 * hl2) || hl < (0.999 * hl2))
                             {
-                                writeln("hl = ", hl, " hl2 = ", hl2);
                                 if (!dynHiLims.contains(hdr, id)) dynHiLims.put(true, hdr, id);
                             }
                         }
@@ -120,10 +119,11 @@ public void loadDb(CmdOptions options)
                 bool foundFirst = false;
                 foreach (test; dev.tests)
                 {
+                    writeln("test.id = ", test.id); stdout.flush();
                     const TestID id = test.id;
                     if (id.type == Record_t.MPR)
                     {
-                        if (id.sameMPRTest(cast(const TestID) lastid)) continue;
+                        if ((lastid !is null) && id.sameMPRTest(cast(const TestID) lastid)) continue;
                         if (dynLoLims.contains(hdr, id) && !foundFirst)
                         {
                             if (options.verbosityLevel > 1) writeln("Warning: dynamic low limit found: ", id);
@@ -136,7 +136,7 @@ public void loadDb(CmdOptions options)
                             if (dynHiLims.contains(hdr, id))
                             {
                                 if (options.verbosityLevel > 1) writeln("Warning: dynamic high limit found: ", id);
-                                lastTest.dynamicHiLimit = true;
+                                if (lastTest !is null) lastTest.dynamicHiLimit = true;
                                 lastid = cast(TestID) id;
                                 foundFirst = false;
                             }

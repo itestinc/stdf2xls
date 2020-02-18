@@ -107,6 +107,7 @@ import std.regex;
 import makechip.StdfFile;
 class CmdOptions
 {
+    public static immutable string stdf2xlsx_version = "5.0.0";
     bool textDump = false;
     bool byteDump = false;
     bool extractPin = true;
@@ -132,7 +133,8 @@ class CmdOptions
     string hfile = "<device>_historgrams.pdf";
     string wfile = "<device>_<lot>_<wafer>.xlsx";
     BinCategory_t category = BinCategory_t.NONE;
-
+    const string options;
+    
     string[] stdfFiles;
     Modifier[] modifiers;
     char[] delims;
@@ -143,6 +145,7 @@ class CmdOptions
     {
         success = true;
         modifiers = null;
+        string[] optargs = args.dup;
         auto rslt = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.passThrough,
@@ -178,6 +181,14 @@ class CmdOptions
             "noIgnoreMiscHeader", "Don't ignore custom user header items when comparing headers from different STDF files", &noIgnoreMiscHeader);
         if (delims.length == 0) delims ~= '@';
         stdfFiles.length = args.length-1;
+        string firstNonOpt = args[1];
+        string opts;
+        for (int i=1; i<optargs.length; i++)
+        {
+            if (optargs[i] == firstNonOpt) break;
+            opts ~= optargs[i] ~ " ";
+        }
+        options = opts;
         for (int i=1; i<args.length; i++) stdfFiles[i-1] = args[i];
         if (rslt.helpWanted)
         {

@@ -536,9 +536,6 @@ class StdfDB
                     ubyte parmFlags = ptr.PARM_FLG;
                     float loLimit = ((optFlags & 16) || ptr.LO_LIMIT.isEmpty()) ? dvd.getDefaultLoLimit(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.LO_LIMIT;
                     float hiLimit = ((optFlags & 32) || ptr.HI_LIMIT.isEmpty()) ? dvd.getDefaultHiLimit(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.HI_LIMIT;
-//                  writeln("ptr.LO_LIMIT.isEmpty() = ", ptr.LO_LIMIT.isEmpty());
-//                  writeln("optFlags = ", optFlags, " loLimit = ", loLimit, " TEST_NUM = ", ptr.TEST_NUM, " testName = ", testName);
-//                  writeln("optFlags = ", optFlags, " hiLimit = ", hiLimit, " TEST_NUM = ", ptr.TEST_NUM, " testName = ", testName);
                     float result = ptr.RESULT;
                     string units = ptr.UNITS.isEmpty() ? dvd.getDefaultUnits(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.UNITS;
                     byte resScal = ptr.RES_SCAL.isEmpty() ? dvd.getDefaultResScal(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.RES_SCAL;
@@ -722,7 +719,6 @@ class StdfDB
                 case Record_t.PRR.ordinal:
                     dupNums = new MultiMap!(uint, Record_t, TestNumber_t, TestName_t, Site_t, Head_t)();
                     Record!(PRR) prr = cast(Record!(PRR)) rec;
-//                  writeln("serial_number = ", serial_number, " isWafersort = ", stdf.hdr.isWafersort());
                     if (serial_number == "")
                     {
                         if (stdf.hdr.isWafersort())
@@ -747,7 +743,6 @@ class StdfDB
                     dr[site - minSite][head - minHead].hwbin = prr.HARD_BIN;
                     dr[site - minSite][head - minHead].swbin = prr.SOFT_BIN;
                     devices ~= dr[site - minSite][head - minHead];
-//                  writeln("devices[$].tests.length = ", devices[$-1].tests.length);
                     dr[site - minSite][head - minHead].tests.length = 0;
                     seq = 0;
                     break;
@@ -763,7 +758,6 @@ class StdfDB
             device.goodDevice = false;
             foreach(passBin; passingHWBins)
             {
-//              writeln("passBin = ", passBin, " id = ", device.devId, " hwbin = ", device.hwbin);
                 if (passBin == device.hwbin)
                 {
                     device.goodDevice = true;
@@ -908,7 +902,10 @@ private int findScale(TestRecord tr)
 {
     import std.math;
     float val = 0.0f;
-    if (tr.hiLimit == float.nan && tr.loLimit == float.nan) return(0);
+    if (tr.hiLimit == float.nan && tr.loLimit == float.nan) 
+    {
+        return(0);
+    }
     if (tr.loLimit == float.nan) val = fabs(tr.hiLimit);
     else if (tr.hiLimit == float.nan) val = fabs(tr.loLimit);
     else val = (fabs(tr.hiLimit) > fabs(tr.loLimit)) ? fabs(tr.hiLimit) : fabs(tr.loLimit);

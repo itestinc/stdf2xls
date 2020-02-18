@@ -313,7 +313,7 @@ class Config
         cfgMap[ss_logo_font_name]                 = "Arial";
         cfgMap[ss_logo_font_size]                 = "8";
         cfgMap[ss_logo_font_style]                = "normal";
-        cfgMap[ss_title_bg_color]                 = "2A98FF";
+        cfgMap[ss_title_bg_color]                 = "15B8D7";
         cfgMap[ss_title_text_color]               = "FFFFFF";
         cfgMap[ss_title_font_name]                = "Arial";
         cfgMap[ss_title_font_size]                = "16";
