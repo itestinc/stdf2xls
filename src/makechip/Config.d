@@ -229,6 +229,24 @@ class Config
     static immutable string wafer_header_text_color             = "wafer.header.text_color";
     static immutable string wafer_label_bg_color                = "wafer.label.bg_color";
     static immutable string wafer_label_text_color              = "wafer.label.text_color";
+    static immutable string wafer_bin01_bg_color                 = "wafer.bin01.bg_color";
+    static immutable string wafer_bin02_bg_color                 = "wafer.bin02.bg_color";
+    static immutable string wafer_bin03_bg_color                 = "wafer.bin03.bg_color";
+    static immutable string wafer_bin04_bg_color                 = "wafer.bin04.bg_color";
+    static immutable string wafer_bin05_bg_color                 = "wafer.bin05.bg_color";
+    static immutable string wafer_bin06_bg_color                 = "wafer.bin06.bg_color";
+    static immutable string wafer_bin07_bg_color                 = "wafer.bin07.bg_color";
+    static immutable string wafer_bin08_bg_color                 = "wafer.bin08.bg_color";
+    static immutable string wafer_bin09_bg_color                 = "wafer.bin09.bg_color";
+    static immutable string wafer_bin10_bg_color                 = "wafer.bin10.bg_color";
+    static immutable string wafer_bin11_bg_color                 = "wafer.bin11.bg_color";
+    static immutable string wafer_bin12_bg_color                 = "wafer.bin12.bg_color";
+    static immutable string wafer_bin13_bg_color                 = "wafer.bin13.bg_color";
+    static immutable string wafer_bin14_bg_color                 = "wafer.bin14.bg_color";
+    static immutable string wafer_bin15_bg_color                 = "wafer.bin15.bg_color";
+    static immutable string wafer_bin16_bg_color                 = "wafer.bin16.bg_color";
+
+    
 
     public this()
     {
@@ -519,13 +537,58 @@ class Config
         cfgMap[ss_fail_data_value_font_size]      = "8";
         cfgMap[ss_fail_data_value_font_style]     = "normal";
         cfgMap[wafer_fail_bg_color]               = "BF0000";
-        cfgMap[wafer_empty_bg_color]              = "666666";
+        cfgMap[wafer_empty_bg_color]              = "333333";
         cfgMap[wafer_pass_bg_color]               = "22C600";
         cfgMap[wafer_pass_text_color]             = "000000";
         cfgMap[wafer_header_bg_color]             = "DEE6EF";
         cfgMap[wafer_header_text_color]           = "000000";
-        cfgMap[wafer_label_bg_color]              = "999999";
+        cfgMap[wafer_label_bg_color]              = "DEE6EF";
         cfgMap[wafer_label_text_color]            = "000000";
+        cfgMap[wafer_bin01_bg_color]              = "ffffff";
+        cfgMap[wafer_bin02_bg_color]              = "eeeeee";
+        cfgMap[wafer_bin03_bg_color]              = "dddddd";
+        cfgMap[wafer_bin04_bg_color]              = "cccccc";
+        cfgMap[wafer_bin05_bg_color]              = "bbbbbb";
+        cfgMap[wafer_bin06_bg_color]              = "aaaaaa";
+        cfgMap[wafer_bin07_bg_color]              = "999999";
+        cfgMap[wafer_bin08_bg_color]              = "888888";
+        cfgMap[wafer_bin09_bg_color]              = "777777";
+        cfgMap[wafer_bin10_bg_color]              = "666666";
+        cfgMap[wafer_bin11_bg_color]              = "555555";
+        cfgMap[wafer_bin12_bg_color]              = "444444";
+        cfgMap[wafer_bin13_bg_color]              = "333333";
+        cfgMap[wafer_bin14_bg_color]              = "222222";
+        cfgMap[wafer_bin15_bg_color]              = "111111";
+        cfgMap[wafer_bin16_bg_color]              = "000000";
+
+        /* palette for colorblindness
+        black       (0,0,0)
+        orange      (230,159,0)     e69f00
+        cyan        (86,180,233)    56b4e9
+        blue green  (0,158,115)     009e73
+        yellow      (240,228,66)    f0e442
+        blue        (0,114,178)     0072b2
+        vermillion  (213,94,0)      d55e00
+        magenta     (204,121,167)   cc79a7
+        */
+
+        /*
+        cfgMap[wafer_bin02_bg_color]              = "d04a4a";
+        cfgMap[wafer_bin03_bg_color]              = "F38C16";
+        cfgMap[wafer_bin04_bg_color]              = "d1C710";
+        cfgMap[wafer_bin05_bg_color]              = "61E7F7";
+        cfgMap[wafer_bin06_bg_color]              = "D77FFB";
+        cfgMap[wafer_bin07_bg_color]              = "707cde";
+        cfgMap[wafer_bin08_bg_color]              = "d870de";
+        cfgMap[wafer_bin09_bg_color]              = "de7070";
+        cfgMap[wafer_bin10_bg_color]              = "de70dd";
+        cfgMap[wafer_bin11_bg_color]              = "a0a09c";
+        cfgMap[wafer_bin12_bg_color]              = "6d6e64";
+        cfgMap[wafer_bin13_bg_color]              = "915ff2";
+        cfgMap[wafer_bin14_bg_color]              = "7f6f4f";
+        cfgMap[wafer_bin15_bg_color]              = "79916d";
+        */
+
 
 
         string rc = std.path.expandTilde("~/.stdf2xlsxrc");

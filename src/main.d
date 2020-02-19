@@ -328,4 +328,3 @@ void modify(StdfRecord rec, Modifier m)
         default: throw new Exception("This bug can't happen: " ~ m.fieldName);
     }
 }
-
