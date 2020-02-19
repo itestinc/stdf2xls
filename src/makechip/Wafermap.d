@@ -275,22 +275,22 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		ws.write(34, 1, bin15, headerValueFmt);
 		ws.write(35, 1, bin16, headerValueFmt);
 
-		ws.write(20, 3, "", waferBin01Fmt);
-		ws.write(21, 3, "", waferBin02Fmt);
-		ws.write(22, 3, "", waferBin03Fmt);
-		ws.write(23, 3, "", waferBin04Fmt);
-		ws.write(24, 3, "", waferBin05Fmt);
-		ws.write(25, 3, "", waferBin06Fmt);
-		ws.write(26, 3, "", waferBin07Fmt);
-		ws.write(27, 3, "", waferBin08Fmt);
-		ws.write(28, 3, "", waferBin09Fmt);
-		ws.write(29, 3, "", waferBin10Fmt);
-		ws.write(30, 3, "", waferBin11Fmt);
-		ws.write(31, 3, "", waferBin12Fmt);
-		ws.write(32, 3, "", waferBin13Fmt);
-		ws.write(33, 3, "", waferBin14Fmt);
-		ws.write(34, 3, "", waferBin15Fmt);
-		ws.write(35, 3, "", waferBin16Fmt);
+		ws.write(20, 3, "1", waferBin01Fmt);
+		ws.write(21, 3, "2", waferBin02Fmt);
+		ws.write(22, 3, "3", waferBin03Fmt);
+		ws.write(23, 3, "4", waferBin04Fmt);
+		ws.write(24, 3, "5", waferBin05Fmt);
+		ws.write(25, 3, "6", waferBin06Fmt);
+		ws.write(26, 3, "7", waferBin07Fmt);
+		ws.write(27, 3, "8", waferBin08Fmt);
+		ws.write(28, 3, "9", waferBin09Fmt);
+		ws.write(29, 3, "10", waferBin10Fmt);
+		ws.write(30, 3, "11", waferBin11Fmt);
+		ws.write(31, 3, "12", waferBin12Fmt);
+		ws.write(32, 3, "13", waferBin13Fmt);
+		ws.write(33, 3, "14", waferBin14Fmt);
+		ws.write(34, 3, "15", waferBin15Fmt);
+		ws.write(35, 3, "other", waferBin16Fmt);
 
 		ws.mergeRange(20, 1, 20, 2, null);
 		ws.mergeRange(21, 1, 21, 2, null);
