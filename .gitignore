@@ -18,6 +18,5 @@ x.tmp
 *.tmp
 *.a
 .~lock*
-.idea/
-*.iml
 .vscode/
+*.code-workspace
