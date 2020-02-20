@@ -242,20 +242,20 @@ public class DefaultValueDatabase
             NdefaultHlmScals.put(mpr.HLM_SCAL, mpr.recordType, mpr.TEST_NUM, dup);
         }
 
-        if (!mpr.LO_LIMIT.isEmpty() && defaultLoLimits.get(float.nan, mpr.recordType, mpr.TEST_NUM, tname, dup) == float.nan)
+        if (!mpr.LO_LIMIT.isEmpty() && defaultLoLimits.get(float.max, mpr.recordType, mpr.TEST_NUM, tname, dup) == float.max)
         {
             defaultLoLimits.put(mpr.LO_LIMIT, mpr.recordType, mpr.TEST_NUM, tname, dup);
         }
-        if (!mpr.LO_LIMIT.isEmpty() && NdefaultLoLimits.get(float.nan, mpr.recordType, mpr.TEST_NUM, dup) == float.nan)
+        if (!mpr.LO_LIMIT.isEmpty() && NdefaultLoLimits.get(float.max, mpr.recordType, mpr.TEST_NUM, dup) == float.max)
         {
             NdefaultLoLimits.put(mpr.LO_LIMIT, mpr.recordType, mpr.TEST_NUM, dup);
         }
 
-        if (!mpr.HI_LIMIT.isEmpty() && defaultHiLimits.get(float.nan, mpr.recordType, mpr.TEST_NUM, tname, dup) == float.nan)
+        if (!mpr.HI_LIMIT.isEmpty() && defaultHiLimits.get(float.max, mpr.recordType, mpr.TEST_NUM, tname, dup) == float.max)
         {
             defaultHiLimits.put(mpr.HI_LIMIT, mpr.recordType, mpr.TEST_NUM, tname, dup);
         }
-        if (!mpr.HI_LIMIT.isEmpty() && NdefaultHiLimits.get(float.nan, mpr.recordType, mpr.TEST_NUM, dup) == float.nan)
+        if (!mpr.HI_LIMIT.isEmpty() && NdefaultHiLimits.get(float.max, mpr.recordType, mpr.TEST_NUM, dup) == float.max)
         {
             NdefaultHiLimits.put(mpr.HI_LIMIT, mpr.recordType, mpr.TEST_NUM, dup);
         }

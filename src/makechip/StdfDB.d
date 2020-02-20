@@ -388,7 +388,8 @@ class StdfPinData
 
     public string get(ubyte head, ubyte site, ushort index)
     {
-        return map.get("", head, site, index);
+        auto s = map.get("", head, site, index);
+        return s;
     }
 }
 
@@ -571,8 +572,8 @@ class StdfDB
                     }
                     ubyte optFlags = mpr.OPT_FLAG.isEmpty() ? dvd.getDefaultOptFlag(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.OPT_FLAG;
                     ubyte parmFlags = mpr.PARM_FLG;
-                    float loLimit = mpr.LO_LIMIT.isEmpty() ? dvd.getDefaultLoLimit(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.LO_LIMIT;
-                    float hiLimit = mpr.HI_LIMIT.isEmpty() ? dvd.getDefaultHiLimit(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.HI_LIMIT;
+                    float loLimit = ((optFlags & 16) || mpr.LO_LIMIT.isEmpty()) ? dvd.getDefaultLoLimit(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.LO_LIMIT;
+                    float hiLimit = ((optFlags & 32) || mpr.HI_LIMIT.isEmpty()) ? dvd.getDefaultHiLimit(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.HI_LIMIT;
                     string units = mpr.UNITS.isEmpty() ? dvd.getDefaultUnits(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.UNITS;
                     byte resScal = mpr.RES_SCAL.isEmpty() ? dvd.getDefaultResScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.RES_SCAL;
                     byte llmScal = mpr.LLM_SCAL.isEmpty() ? dvd.getDefaultLlmScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.LLM_SCAL;
@@ -592,7 +593,10 @@ class StdfDB
                         ushort pinIndex = indicies[i];
                         float result = mpr.RTN_RSLT.getValue()[i];
                         string pin = pinData.get(mpr.HEAD_NUM, mpr.SITE_NUM, pinIndex);
+                        if (pin == "") pin = pinData.get(mpr.HEAD_NUM, minSite, pinIndex);
+                        writeln("pin = ", pin);
                         TestID id = TestID.getTestID(Record_t.MPR, pin, mpr.TEST_NUM, testName, dup);
+                        writeln("AAAA: id = ", id);
                         TestRecord tr = new TestRecord(id, mpr.SITE_NUM, mpr.HEAD_NUM, mpr.TEST_FLG, optFlags, parmFlags, 
                                 loLimit, hiLimit, result, units, resScal, llmScal, hlmScal, seq);
                         normalizeValues(tr);
@@ -902,6 +906,7 @@ private int findScale(TestRecord tr)
 {
     import std.math;
     float val = 0.0f;
+    write("loLimit = ", tr.loLimit, " hiLimit = ", tr.hiLimit);
     if (tr.hiLimit == float.nan && tr.loLimit == float.nan) 
     {
         return(0);
@@ -910,6 +915,7 @@ private int findScale(TestRecord tr)
     else if (tr.hiLimit == float.nan) val = fabs(tr.loLimit);
     else val = (fabs(tr.hiLimit) > fabs(tr.loLimit)) ? fabs(tr.hiLimit) : fabs(tr.loLimit);
     int scale = 0;
+    if (val == 0.0f) return 0;
     if (val <= 1.0E-6f) scale = 9;
     else if (val <= 0.001f) scale = 6;
     else if (val <= 1.0f) scale = 3;
@@ -917,6 +923,7 @@ private int findScale(TestRecord tr)
     else if (val <= 1000000.0f) scale = -3;
     else if (val <= 1E9f) scale = -6;
     else scale = -9;
+    writeln("scale = ", scale);
     return(scale);
 }
 

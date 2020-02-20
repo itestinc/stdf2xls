@@ -181,14 +181,17 @@ class CmdOptions
             "noIgnoreMiscHeader", "Don't ignore custom user header items when comparing headers from different STDF files", &noIgnoreMiscHeader);
         if (delims.length == 0) delims ~= '@';
         stdfFiles.length = args.length-1;
-        string firstNonOpt = args[1];
-        string opts;
-        for (int i=1; i<optargs.length; i++)
+        if (args.length > 1)
         {
-            if (optargs[i] == firstNonOpt) break;
-            opts ~= optargs[i] ~ " ";
+            string firstNonOpt = args[1];
+            string opts;
+            for (int i=1; i<optargs.length; i++)
+            {
+                if (optargs[i] == firstNonOpt) break;
+                opts ~= optargs[i] ~ " ";
+            }
+            options = opts;
         }
-        options = opts;
         for (int i=1; i<args.length; i++) stdfFiles[i-1] = args[i];
         if (rslt.helpWanted)
         {
