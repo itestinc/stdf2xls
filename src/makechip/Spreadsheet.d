@@ -192,9 +192,9 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         // Now create the list of all tests in the test flow in the correct order. (Different devices may have slightly different test flows)
         string[const(TestID)] tmpmap;
         // determine the total number of unique TestIDs:
-        foreach (d, dev; devices)
+        foreach (dev; devices)
         {
-            foreach (t, test; dev.tests)
+            foreach (test; dev.tests)
             {
                 tmpmap[test.id] = "1"; 
             }
@@ -254,61 +254,6 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
                 }
             }
         }
-/*
-        for (size_t j=0; j<devices[maxLoc].tests.length; j++)
-        {
-            scan(j, devices[maxLoc].tests[j].id, devices[maxLoc].tests[j].type, devices, newTests);
-        }
-        // 1. First scan all newTests for tests that are not in newTests[maxLoc] and mark them with uflag.
-        for (size_t k=0; k<newTests.length; k++)
-        {
-            if (k == maxLoc) continue;
-            for (size_t l=0; l<newTests[k].length; l++)
-            {
-                if (newTests[k][l] is null) continue;
-                bool found;
-                for (size_t m=0; m<newTests[maxLoc].length; m++)
-                {
-                    if (newTests[maxLoc][m].id == newTests[k][l].id && newTests[maxLoc][m].type == newTests[k][l].type)
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) newTests[k][l].uflag = true;
-            }
-        } 
-        // Now create a dummy composite list that has all unique tests and no nulls:
-        TestRecord[] compTests;
-        for (size_t m=0; m<newTests[maxLoc].length; m++)
-        {
-            //compTests ~= newTests[maxLoc][m];
-            for (size_t n=0; n<newTests.length; n++)
-            {
-                for (size_t o=m; o<newTests[n].length; o++)
-                {
-                    if (newTests[n][o] !is null && !newTests[n][o].uflag) 
-                    {
-                        bool found = false;
-                        for (size_t p=0; p<compTests.length; p++)
-                        {
-                            if (newTests[n][o].id == compTests[p].id && newTests[n][o].type == compTests[p].type)
-                            {
-                                newTests[n][o].uflag = true;
-                                found = true;
-                            }
-                        }
-                        if (!found)
-                        {
-                            compTests ~= newTests[n][o];
-                            newTests[n][o].uflag = false;
-                        }
-                    }
-                    if (newTests[n][o] !is null) break;
-                }
-            }
-        }
-        */
         // If there are dynamicLimits, then insert test headers for the upper and lower limits where appropriate
         TestRecord[] newCompTests;
         if (!options.noDynamicLimits)

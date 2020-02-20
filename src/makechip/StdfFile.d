@@ -271,7 +271,6 @@ struct StdfFile
             auto v = hdr.headerItems[key];
         }
         import std.array;
-        writeln("hdrItems = ", hdr.headerItems);
         return hdr;
     }
 
