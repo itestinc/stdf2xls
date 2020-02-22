@@ -5,6 +5,7 @@ import makechip.Config;
 import makechip.logo;
 import makechip.WafermapFormat;
 import libxlsxd.workbook;
+import libxlsxd.worksheet;
 import std.stdio;
 
 /**
@@ -122,18 +123,19 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		}
 
 		Workbook wb = newWorkbook(fname);
-		auto ws = wb.addWorksheet("Sheet1");
+		Worksheet ws = wb.addWorksheet("Wafermap");
+		Worksheet ws3 = wb.addWorksheet("Bin Filter");
 
 		// Draw logo (7 rows, 3 cols)
 		import libxlsxd.xlsxwrap : lxw_image_options, lxw_object_position;
 		lxw_image_options img_options;
 		const double ss_width = 449 * 0.350;
 		const double ss_height = 245 * 0.324;
-		img_options.x_scale = (4.0 * 70.0) / ss_width;
-		img_options.y_scale = (8.0 * 20.0) / ss_height;
+		img_options.x_scale = (2.5 * 70.0) / ss_width;
+		img_options.y_scale = (5.0 * 20.0) / ss_height;
 		ws.mergeRange(0, 0, 7, 3, null);
 		img_options.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
-		ws.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, img.dup.ptr, img.length, &img_options);
+		ws.insertImageBufferOpt(cast(uint) 0, cast(ushort) 1, img.dup.ptr, img.length, &img_options);
 
 		// Write headers to excel
 		initWaferFormats(wb, options, config);
@@ -175,12 +177,12 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		ws.mergeRange(19, 1, 19, 3, null);
 
 		// Set widths so that each bin cell is a square.
-		const double colWidth = 2.29;
-		const double rowWidth = 19.0;
+		const double colWidth = 1;
+		const double rowWidth = 9;
 
 		// Start drawing wafermap at defined offset cell position.
-		const ushort offset_row = 1;
-		const ushort offset_col = 5;
+		const ushort offset_row = 2;
+		const ushort offset_col = 6;
 
 		ushort bin1 = 0;
 		ushort bin2 = 0;
@@ -197,49 +199,76 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		ushort bin13 = 0;
 		ushort bin14 = 0;
 		ushort bin15 = 0;
-		ushort bin16 = 0;
+		ushort bin16 = 0;	// other bins
 
 		foreach(i, row_arr; matrix) {
-			ws.setRow(cast(uint)(i + offset_row + 1), rowWidth);
+			ws.setRow(cast(uint)(i + offset_row), rowWidth);
+			ws3.setRow(cast(uint)(i + offset_row), rowWidth);
 
 			// Label row numbers on each side of the wafermap.
-			ws.write(cast(uint)(i + offset_row + 1), cast(ushort)(offset_col), i, waferRowNumberFmt);
-			ws.write(cast(uint)(i + offset_row + 1), cast(ushort)(col + offset_col + 1), i, waferRowNumberFmt);
+			ws.write(cast(uint)(i + offset_row), cast(ushort)(offset_col - 1), i, waferRowNumberFmt);
+			ws.write(cast(uint)(i + offset_row), cast(ushort)(col + offset_col), i, waferRowNumberFmt);
+
+			ws3.write(cast(uint)(i + offset_row), cast(ushort)(offset_col - 1), i, waferRowNumberFmt);
+			ws3.write(cast(uint)(i + offset_row), cast(ushort)(col + offset_col), i, waferRowNumberFmt);
 
 			foreach(j, val; row_arr) {
+				import std.conv : to;
+				//ws.mergeRange(0, cast(ushort)(j + offset_col), 1, cast(ushort)(j + offset_col), to!string(j), waferColNumberFmt);
+
 				// Label column numbers on top and bottom of the wafermap.
-				ws.write(cast(uint)(offset_row), cast(ushort)(j + offset_col + 1), j, waferColNumberFmt);
-				ws.write(cast(uint)(row + offset_row + 1), cast(ushort)(j + offset_col + 1), j, waferColNumberFmt);
+				ws.write(cast(uint)(offset_row - 1), cast(ushort)(j + offset_col), j, waferColNumberFmt);
+				ws.write(cast(uint)(row + offset_row), cast(ushort)(j + offset_col), j, waferColNumberFmt);
+
+				ws3.write(cast(uint)(offset_row - 1), cast(ushort)(j + offset_col), j, waferColNumberFmt);
+				ws3.write(cast(uint)(row + offset_row), cast(ushort)(j + offset_col), j, waferColNumberFmt);
 
 				switch(val) {
-					case  0: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), "", waferEmptyFmt); break;    //+1 to write bins after row & col numbering
-					case  1: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferBin01Fmt); bin1++; break;
-					case  2: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferBin02Fmt); bin2++; break;
-					case  3: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferBin03Fmt); bin3++; break;
-					case  4: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferBin04Fmt); bin4++; break;
-					case  5: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferBin05Fmt); bin5++; break;
-					case  6: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferBin06Fmt); bin6++; break;
-					case  7: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferBin07Fmt); bin7++; break;
-					case  8: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferBin08Fmt); bin8++; break;
-					case  9: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferBin09Fmt); bin9++; break;
-					case 10: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferBin10Fmt); bin10++; break;
-					case 11: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferBin11Fmt); bin11++; break;
-					case 12: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferBin12Fmt); bin12++; break;
-					case 13: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferBin13Fmt); bin13++; break;
-					case 14: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferBin14Fmt); bin14++; break;
-					case 15: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferBin15Fmt); bin15++; break;
-					default: ws.write(cast(uint)(i + offset_row +1), cast(ushort)(j + offset_col+1), val, waferFailFmt); bin16++; break;
+					case  0: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferEmptyFmt); break;
+					case  1: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin01Fmt); bin1++; break;
+					case  2: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin02Fmt); bin2++; break;
+					case  3: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin03Fmt); bin3++; break;
+					case  4: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin04Fmt); bin4++; break;
+					case  5: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin05Fmt); bin5++; break;
+					case  6: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin06Fmt); bin6++; break;
+					case  7: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin07Fmt); bin7++; break;
+					case  8: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin08Fmt); bin8++; break;
+					case  9: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin09Fmt); bin9++; break;
+					case 10: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin10Fmt); bin10++; break;
+					case 11: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin11Fmt); bin11++; break;
+					case 12: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin12Fmt); bin12++; break;
+					case 13: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin13Fmt); bin13++; break;
+					case 14: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin14Fmt); bin14++; break;
+					case 15:ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col),  val, waferBin15Fmt); bin15++; break;
+					case 65535: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), -1, waferBin16Fmt); bin16++; break;
+						// throw new Exception("TEL Prober error: Hard Bin = -1");	
+					default: ws.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin16Fmt); bin16++;
 						// throw new Exception("Unknown bin numbering - shouldn't happen");
 				}
+
+				switch(val) {
+					case  0: ws3.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), "", waferEmptyFmt); break;
+					default: ws3.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), "", blankBinFmt);
+						// throw new Exception("Unknown bin numbering - shouldn't happen");
+				}
+
 				// TO DO:
 				// add die color legend
 				// !!: header location with respect to logo WILL change with different wafer sizes, due to changing row/col size
 			}
 		}
 		// Set cell widths for row/col numbering cells.
-		ws.setColumn(offset_col, cast(ushort) (col + offset_col + 1) , colWidth);
-		ws.setRow(cast(uint)(offset_row), rowWidth);
-		ws.setRow(cast(uint)(row + offset_row + 1), rowWidth);		// why setting column is (first, last) ; setting row is just (one row) ??
+		ws.setColumn(offset_col, cast(ushort) (col + offset_col - 1), colWidth);
+		ws.setRow(cast(uint)(offset_row - 1), 16);
+		ws.setRow(cast(uint)(row + offset_row), 16);		// why setting column is (first, last) ; setting row is just (one row) ??
+		ws.setColumn(offset_col -1 , offset_col -1 , colWidth+2);
+		ws.setColumn(cast(ushort) (col + offset_col), cast(ushort) (col + offset_col), colWidth+2);
+
+		ws3.setColumn(offset_col, cast(ushort) (col + offset_col - 1), colWidth);
+		ws3.setRow(cast(uint)(offset_row - 1), 16);
+		ws3.setRow(cast(uint)(row + offset_row), 16);
+		ws3.setColumn(offset_col -1 , offset_col -1 , colWidth+2);
+		ws3.setColumn(cast(ushort) (col + offset_col), cast(ushort) (col + offset_col), colWidth+2);
 
 		ws.write(20, 0, "bin 1:", headerNameFmt);
 		ws.write(21, 0, "bin 2:", headerNameFmt);
@@ -275,21 +304,21 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		ws.write(34, 1, bin15, headerValueFmt);
 		ws.write(35, 1, bin16, headerValueFmt);
 
-		ws.write(20, 3, "1", waferBin01Fmt);
-		ws.write(21, 3, "2", waferBin02Fmt);
-		ws.write(22, 3, "3", waferBin03Fmt);
-		ws.write(23, 3, "4", waferBin04Fmt);
-		ws.write(24, 3, "5", waferBin05Fmt);
-		ws.write(25, 3, "6", waferBin06Fmt);
-		ws.write(26, 3, "7", waferBin07Fmt);
-		ws.write(27, 3, "8", waferBin08Fmt);
-		ws.write(28, 3, "9", waferBin09Fmt);
-		ws.write(29, 3, "10", waferBin10Fmt);
-		ws.write(30, 3, "11", waferBin11Fmt);
-		ws.write(31, 3, "12", waferBin12Fmt);
-		ws.write(32, 3, "13", waferBin13Fmt);
-		ws.write(33, 3, "14", waferBin14Fmt);
-		ws.write(34, 3, "15", waferBin15Fmt);
+		ws.write(20, 3, 1, waferBin01Fmt);
+		ws.write(21, 3, 2, waferBin02Fmt);
+		ws.write(22, 3, 3, waferBin03Fmt);
+		ws.write(23, 3, 4, waferBin04Fmt);
+		ws.write(24, 3, 5, waferBin05Fmt);
+		ws.write(25, 3, 6, waferBin06Fmt);
+		ws.write(26, 3, 7, waferBin07Fmt);
+		ws.write(27, 3, 8, waferBin08Fmt);
+		ws.write(28, 3, 9, waferBin09Fmt);
+		ws.write(29, 3, 10, waferBin10Fmt);
+		ws.write(30, 3, 11, waferBin11Fmt);
+		ws.write(31, 3, 12, waferBin12Fmt);
+		ws.write(32, 3, 13, waferBin13Fmt);
+		ws.write(33, 3, 14, waferBin14Fmt);
+		ws.write(34, 3, 15, waferBin15Fmt);
 		ws.write(35, 3, "other", waferBin16Fmt);
 
 		ws.mergeRange(20, 1, 20, 2, null);
@@ -308,6 +337,18 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		ws.mergeRange(33, 1, 33, 2, null);
 		ws.mergeRange(34, 1, 34, 2, null);
 		ws.mergeRange(35, 1, 35, 2, null);
+
+		ws3.mergeRange(5, 0, 5, 3, "2. Enter the desired bin number to filter:", headerNameFmt);
+		//ws3.write(5, 3, "2. Enter the desired bin number to filter:", headerNameFmt);
+		ws3.write(6, 3, 1, blankBinFmt);
+
+		ws3.mergeRange(offset_row, cast(ushort)(offset_col - 3), offset_row, cast(ushort)(offset_col - 1), "1. Apply this formula →", headerNameFmt);
+		//ws3.write(offset_row, cast(ushort)(offset_col - 1), "1. Apply this formula ->", headerNameFmt);
+		string formula = "=IF(Wafermap!G3:BY73=$D$7, $D$7, \"\")";
+		ws3.writeArrayFormula(offset_row, offset_col, offset_row, offset_col, formula, waferBin01Fmt);
+		//ws3.writeFormulaNumImpl(offset_row, offset_col, "=IF(Colored!G3:BY73=$A$2, $A$2, \"\")", -999, waferEmptyFmt);	// both works.
+		//ws2.write(2, 6, "=IF(Sheet1!G10:BY80=$A$2, $A$2, \"\")", headerValueFmt);	// only works in Microsoft Excel. Not working on libreoffice/openoffice.
+		//ws3.write(2, 6, "=IF(Colored!G3:BY73=$A$2, $A$2, \"\")", waferEmptyFmt);
 
 		wb.close();
 
@@ -331,7 +372,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 					switch(val) {
 						case 0: write("."); break;
 						case 1: write("1"); break;
-						default: write("X"); break;
+						default: write("X");
 					}
 				}
 				write("\n");
