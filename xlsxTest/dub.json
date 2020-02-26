@@ -4,23 +4,22 @@
 	],
 	"copyright": "Copyright © 2019, eric",
 	"description": "Test for xlsxd",
+	"importPaths": [
+		"src/"
+	],
+	"lflags-posix": [
+		"-L$PACKAGE_DIR/src/xlsxd/libxlsxwriter/build/"
+	],
+	"libs-posix": [
+		"xlsxwriter"
+	],
 	"license": "GPL 3.0",
+	"mainSourceFile": "src/app.d",
 	"name": "xlsxtest",
-    "importPaths": [
-        "src/"
-    ],
-   "lflags-posix": [
-        "-L$PACKAGE_DIR/src/xlsxd/libxlsxwriter/build/"
-    ],  
-    "libs-posix": [
-        "xlsxwriter"
-    ],  
-    "preBuildCommands-posix": [
-        "make -C $PACKAGE_DIR/src/xlsxd/libxlsxwriter"
-    ],
-    "sourcePaths": [
-        "src/"
-    ],
-    "TargetType" : "executable",
-    "mainSourceFile" : "src/app.d"
+	"preBuildCommands-posix": [
+		"make -C $PACKAGE_DIR/src/xlsxd/libxlsxwriter"
+	],
+	"sourcePaths": [
+		"src/"
+	]
 }
