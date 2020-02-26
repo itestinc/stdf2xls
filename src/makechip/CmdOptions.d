@@ -122,7 +122,8 @@ class CmdOptions
     bool generateRC = false;
     bool limit1k = false;
     bool noDynamicLimits = false;
-    bool asciiDump = true;
+    bool asciiDump = false;
+    bool pattern = false;
     Notch notch = Notch.bottom;
     Sort_t sortType = Sort_t.SN_UP_TIME_UP; 
     private string[] modify;
@@ -167,6 +168,7 @@ class CmdOptions
 
             "genWafermaps|w", "Generate wafer map(s)", &genWafermap,
             "wo|W", "Wafermap output filename(s); name may contain variables for device, wafer, and/or lot\nDefault = ${device}_${lot}_${wafer}.{pdf,txt}", &wfile,
+            "pattern|P", "fill wafermap bins with patterns instead of colors", &pattern,
             "dumpAscii|A", "dump the wafer map in ASCII form", &asciiDump,
             "notch|n", "Rotate the wafer map for desired notch position: top|bottom|left|right.", &notch,
 

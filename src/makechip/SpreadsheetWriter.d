@@ -11,7 +11,7 @@ import std.stdio;
 import makechip.StdfDB:Point;
 
 private MultiMap!(Point, string, string, size_t) sizeMap;
-
+/*
 static this()
 {
     sizeMap.put(Point(3.0, 5.0), "Arial", "normal", 4);
@@ -1192,7 +1192,7 @@ static this()
     sizeMap.put(Point(22.0, 38.0), "Calibri", "bold_italic_underline", 31);
 
 }
-
+*/
 static Format logoFmt; 
 static Format titleFmt;
 static Format hdrNameFmt;
