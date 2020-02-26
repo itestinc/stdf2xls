@@ -223,6 +223,7 @@ class Config
     static immutable string ss_fail_data_value_font_style       = "ss.fail.data.value.font_style";
     static immutable string wafer_fail_bg_color                 = "wafer.fail.bg_color";
     static immutable string wafer_empty_bg_color                = "wafer.empty.bg_color";
+    static immutable string wafer_empty_text_color              = "wafer.empty.text_color";
     static immutable string wafer_pass_bg_color                 = "wafer.pass.bg_color";
     static immutable string wafer_pass_text_color               = "wafer.pass.text_color";
     static immutable string wafer_header_bg_color               = "wafer.header.bg_color";
@@ -538,6 +539,7 @@ class Config
         cfgMap[ss_fail_data_value_font_style]     = "normal";
         cfgMap[wafer_fail_bg_color]               = "BF0000";
         cfgMap[wafer_empty_bg_color]              = "FFFFFF";
+        cfgMap[wafer_empty_text_color]            = "FFFFFF";
         cfgMap[wafer_pass_bg_color]               = "22C600";
         cfgMap[wafer_pass_text_color]             = "000000";
         cfgMap[wafer_header_bg_color]             = "DEE6EF";
