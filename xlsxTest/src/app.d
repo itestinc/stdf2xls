@@ -154,6 +154,7 @@ void main()
             foreach(size; sizes)
             {
                 Format fmt = setFormat(wb, font, style, size);
+                //writeln("font = ", fmt.font_name);
                 string str = font ~ " " ~ style ~ " " ~ to!string(size) ~ " " ~ s1;
                 double cw = getColumnWidth(str, 96, font, style, size);
                 double rh = getRowHeight(96, font, style, size);

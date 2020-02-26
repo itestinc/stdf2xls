@@ -1548,6 +1548,11 @@ extern(C)
     lxw_border* lxw_format_get_border_key(lxw_format*) @nogc nothrow;
     lxw_fill* lxw_format_get_fill_key(lxw_format*) @nogc nothrow;
     int lxw_format_check_color(int) @nogc nothrow;
+    char* format_get_font_name(lxw_format*) @nogc nothrow;
+    double format_get_font_size(lxw_format*) @nogc nothrow;
+    ubyte format_get_bold(lxw_format*) @nogc nothrow;
+    ubyte format_get_italic(lxw_format*) @nogc nothrow;
+    ubyte format_get_underline(lxw_format*) @nogc nothrow;
     void format_set_font_name(lxw_format*, const(char)*) @nogc nothrow;
     void format_set_font_size(lxw_format*, double) @nogc nothrow;
     void format_set_font_color(lxw_format*, int) @nogc nothrow;
