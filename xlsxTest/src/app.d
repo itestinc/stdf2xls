@@ -147,6 +147,7 @@ void main()
     ws.setColumn(2, 2, cw);
     */ 
     
+    /*
     foreach(font; fonts)
     {
         foreach(style; styles)
@@ -165,6 +166,13 @@ void main()
                 col++;
             }
         }
+    }
+    */
+    double w = 3.05;
+    for (ushort c=0; c<20; c++)
+    {
+        ws.setColumn(c, c, w);
+        w += 0.05;
     }
     
     wb.close();
