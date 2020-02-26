@@ -7,6 +7,8 @@ import std.stdio;
 class Config
 {
     private LinkedMap!(string, string) cfgMap;
+    static immutable string monitor_x_dpi                       = "monitor_x_dpi";
+    static immutable string monitor_y_dpi                       = "monitor_y_dpi";
     static immutable string ss_logo_x_scale                     = "ss.logo.x_scale";
     static immutable string ss_logo_y_scale                     = "ss.logo.y_scale";
     static immutable string ss_logo_file_path                   = "ss.logo.file_path";
@@ -254,6 +256,16 @@ class Config
         cfgMap = new LinkedMap!(string, string)();
     }
 
+    public uint getMonitorXDpi()
+    {
+        return to!(uint)(cfgMap.get(monitor_x_dpi, ""));
+    }
+
+    public uint getMonitorYDpi()
+    {
+        return to!(uint)(cfgMap.get(monitor_y_dpi, ""));
+    }
+
     public string getLogoPath()
     {
         string path = cfgMap.get(ss_logo_file_path, "");
@@ -323,6 +335,8 @@ class Config
         import std.string;
         import std.stdio;
 
+        cfgMap[monitor_x_dpi]                     = "96";
+        cfgMap[monitor_y_dpi]                     = "96";
         cfgMap[ss_logo_x_scale]                   = "0_0";
         cfgMap[ss_logo_y_scale]                   = "0_0";
         cfgMap[ss_logo_file_path]                 = "";
@@ -598,6 +612,8 @@ class Config
         string rc = expandTilde("~/stdf2xlsxrc");
         auto f = File(rc, "w");
         writeln("# font styles: normal | bold | italic | underline | bold_italic | bold_underline | italic_underline | bold_italic_underline");
+        writeln("# supported fonts: Times | Arial | Courrier");
+        writeln("# legal font sizes: 6 to 32 (integers only)");
         foreach (key; cfgMap.keys)
         {
             auto value = cfgMap[key];

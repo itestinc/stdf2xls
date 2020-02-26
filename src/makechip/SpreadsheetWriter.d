@@ -9,6 +9,7 @@ import makechip.Config;
 import makechip.CmdOptions;
 import std.stdio;
 import makechip.StdfDB:Point;
+import makechip.fonts;
 
 static Format logoFmt; 
 static Format titleFmt;
@@ -52,6 +53,59 @@ static Format passDataIntFmt;
 static Format passDataHexFmt;
 static Format passDataStringFmt;
 static Format failDataFmt;
+
+static uint x_dpi;
+static uint y_dpi;
+
+static size_t[string] sindex;
+
+static this()
+{
+    sindex["normal"] = 0;
+    sindex["bold"] = 1;
+    sindex["italic"] = 2;
+    sindex["bold_italic"] = 3;
+    sindex["underline"] = 0;
+    sindex["bold_underline"] = 1;
+    sindex["italic_underline"] = 2;
+    sindex["bold_italic_underline"] = 3;
+}
+
+private double getColumnWidth(string s, uint dpi, string fontName, string fontStyle, size_t fontSize)
+{
+    double[][][] cw = fmapw[fontName];
+
+    size_t style = sindex[fontStyle];
+    double w = 0.0;
+    for (size_t i=0; i<s.length; i++) w += cast(double) (cast(int) (cw[fontSize][style][s[i]] + 0.5));
+    return (w / 6.00) * (96.0 / dpi);
+}
+
+private double getRowHeight(uint dpi, string fontName, string fontStyle, size_t fontSize)
+{
+    ubyte[][] ch = fmaph[fontName];
+    size_t style = sindex[fontStyle];
+    double h = ch[fontSize][style];
+    return (h * 96.0) / dpi;
+}
+
+double[uint] maxRowHeights;
+double[ushort] maxColWidths;
+
+private void updateColWidth(string s, ushort col, Format fmt)
+{
+    string style = "";
+    if (fmt.getBold() && fmt.getItalic() && fmt.getUnderline()) style = "bold_italic_underline";
+    else if (fmt.getItalic() && fmt.getUnderline()) style = "italic_underline";
+    else if (fmt.getBold() && fmt.getUnderline()) style = "bold_underline";
+    else if (fmt.getBold() && fmt.getItalic()) style = "bold_italic";
+    else if (fmt.getUnderline()) style = "underline";
+    else if (fmt.getItalic()) style = "italic";
+    else if (fmt.getBold()) style = "bold";
+    else style = "normal";
+    double cw = getColumnWidth(s, x_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize());
+}
+
 
 immutable size_t defaultRowHeight = 20;
 immutable size_t defaultColWidth = 70;
@@ -413,6 +467,8 @@ void initFormats(Workbook wb, CmdOptions options, Config config)
 
 public void writeSheet(CmdOptions options, Workbook wb, LinkedMap!(const TestID, uint) rowOrColMap, HeaderInfo hdr, DeviceResult[] devices, Config config)
 {
+    x_dpi = config.getMonitorXDpi();
+    y_dpi = config.getMonitorYDpi();
     if (options.verbosityLevel > 9) 
     {
         writeln("writeSheet()");

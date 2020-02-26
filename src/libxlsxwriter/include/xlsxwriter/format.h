@@ -491,6 +491,12 @@ lxw_font *lxw_format_get_font_key(lxw_format *format);
 lxw_border *lxw_format_get_border_key(lxw_format *format);
 lxw_fill *lxw_format_get_fill_key(lxw_format *format);
 
+char* format_get_font_name(lxw_format *format);
+double format_get_font_size(lxw_format *format);
+uint8_t format_get_bold(lxw_format *format);
+uint8_t format_get_italic(lxw_format *format);
+uint8_t format_get_underline(lxw_format *format);
+
 /**
  * @brief Set the font used in the cell.
  *

@@ -235,6 +235,21 @@ mem_error:
     return NULL;
 }
 
+char*
+format_get_font_name(lxw_format *self) { return self->font_name; }
+
+double 
+format_get_font_size(lxw_format *self) { return self->font_size; }
+
+uint8_t
+format_get_bold(lxw_format *self) { return self->bold; }
+
+uint8_t
+format_get_italic(lxw_format *self) { return self->italic; }
+
+uint8_t
+format_get_underline(lxw_format *self) { return self->underline; }
+
 /*
  * Returns the XF index number used by Excel to identify a format.
  */

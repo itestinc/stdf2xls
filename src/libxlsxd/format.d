@@ -37,6 +37,27 @@ struct Format {
 //	static lxw_color_t checkColor(lxw_color_t color) @nogc nothrow {
 //		return lxw_format_check_color(color);
 //	}
+   
+    string getFontName() nothrow {
+        import std.conv;
+        return to!string(format_get_font_name(this.handle));
+    }
+
+    double getFontSize() nothrow {
+        return format_get_font_size(this.handle);
+    }
+
+    bool getBold() nothrow {
+        return format_get_bold(this.handle) != 0;
+    }
+
+    bool getItalic() nothrow {
+        return format_get_italic(this.handle) != 0;
+    }
+
+    bool getUnderline() nothrow {
+        return format_get_underline(this.handle) != 0;
+    }
 
 	void setFontName(string fontname) nothrow {
 		format_set_font_name(this.handle, toStringz(fontname));
