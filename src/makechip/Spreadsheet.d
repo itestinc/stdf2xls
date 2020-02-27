@@ -308,6 +308,27 @@ const(TestID)[] getTestIDs(HeaderInfo hdr)
     return ts;
 }
 
+double[] getResults(HeaderInfo hdr, const(TestID) testId)
+{
+    double[] r;
+
+    return r;
+}
+
+double[] getResults(HeaderInfo hdr, const(TestID) testId, ubyte site)
+{
+    double[] r;
+
+    return r;
+}
+
+ubyte[] getSites()
+{
+    ubyte[] s;
+
+    return s;
+}
+
 private void scan(size_t tnum, const TestID id, const TestType type, DeviceResult[] devices, TestRecord[][] newTests)
 {
     bool diff = false;

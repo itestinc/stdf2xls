@@ -20,6 +20,6 @@ double[] getResults(HeaderInfo hdr, const(TestID) testId);
 double[] getResults(HeaderInfo hdr, const(TestID) testId, ubyte site);
 
 /**
-
+    Get an array of valid site numbers.
 */
 ubyte[] getSites(HeaderInfo hdr);
