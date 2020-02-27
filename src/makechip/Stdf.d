@@ -1073,6 +1073,7 @@ struct FieldArray(T) if (is(T == U2) || is(T == U1) || is(T == U4))
     }
 }
 
+/*
 unittest
 {
     import core.stdc.stdlib;
@@ -1104,6 +1105,7 @@ unittest
         writeln("write/diff test passes for ", name);
     }
 }
+*/
 
 private string getDeclString(const FieldType f) pure
 {

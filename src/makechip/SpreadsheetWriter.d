@@ -700,8 +700,8 @@ private void setLogo(CmdOptions options, Config config, Worksheet w)
     if (logoPath == "") // use ITest logo
     {
         import makechip.logo;
-        double ss_width = 449 * 0.350;
-        double ss_height = 245 * 0.324;
+        double ss_width = 449 * 0.360 * 25.29 / lcol;
+        double ss_height = 245 * 0.324 * 105.0 / lrow;
         opts.x_scale = (3.0 * 70.0) / ss_width;
         opts.y_scale = (7.0 * 20.0) / ss_height;
         opts.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
@@ -876,7 +876,7 @@ private void setTableHeaders(CmdOptions options, Config config, Worksheet w, Fla
         writeString(w, 7, 10, "Units", unitsHdrFmt);
         mergeRange(w, 7, 11, 7, 15, "Pin", pinHdrFmt);
         // device id header
-        if (wafersort) writeString(w, 0, 15, "X, Y", snxyHdrFmt); else writeString(w, 0, 15, "S/N", snxyHdrFmt);
+        if (wafersort) writeString(w, 0, 15, "X : Y", snxyHdrFmt); else writeString(w, 0, 15, "S/N", snxyHdrFmt);
         writeString(w, 1, 15, "Temp", tempHdrFmt);
         writeString(w, 2, 15, "Time", timeHdrFmt);
         writeString(w, 3, 15, "HW Bin", hwbinHdrFmt);
@@ -894,7 +894,7 @@ private void setTableHeaders(CmdOptions options, Config config, Worksheet w, Fla
         writeString(w, 15, 7, "Hi Limit", hiLimitHdrFmt);
         writeString(w, 16, 7, "Units", unitsHdrFmt);
         mergeRange(w, 17, 7, 23, 7, "Pin", pinHdrFmt);
-        if (wafersort) writeString(w, 24, 0, "X, Y", snxyHdrFmt); else writeString(w, 24, 0, "S/N", snxyHdrFmt);
+        if (wafersort) writeString(w, 24, 0, "X : Y", snxyHdrFmt); else writeString(w, 24, 0, "S/N", snxyHdrFmt);
         writeString(w, 24, 1, "Temp", tempHdrFmt);
         writeString(w, 24, 2, "Time", timeHdrFmt);
         writeString(w, 24, 3, "HW Bin", hwbinHdrFmt);

@@ -599,7 +599,12 @@ class Config
                 if (l[0] == '#') continue;
                 string[] x = cast(string[]) split(l);
                 if (x.length == 1) cfgMap[x[0]] = "";
-                else cfgMap[x[0].idup] = x[1].idup;
+                else 
+                {
+                    if (x[1] == "Courrier") x[1] = "Courrier New";
+                    else if (x[1] == "Times") x[1] = "Times New Roman";
+                    cfgMap[x[0].idup] = x[1].idup;
+                }
             }
             f.close();
         }
