@@ -23,3 +23,8 @@ double[] getResults(HeaderInfo hdr, const(TestID) testId, ubyte site);
     Get an array of valid site numbers.
 */
 ubyte[] getSites(HeaderInfo hdr);
+
+/**
+    Get the Cpk.
+*/
+double getCpk(HeaderInfo hdr, const(TestID) testId);
