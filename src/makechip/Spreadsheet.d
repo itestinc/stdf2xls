@@ -10,9 +10,17 @@ import makechip.SpreadsheetWriter;
 import makechip.Util;
 
 LinkedMap!(const TestID, uint)[HeaderInfo] rowOrColMapTable;
+ubyte[][HeaderInfo] sitesMap;
+StdfDB db;
+DeviceResult[][HeaderInfo] deviceResults;
+alias DeviceID = string;
+MultiMap!(double, HeaderInfo, DeviceID, const(TestID), ubyte) rsltMap;
 
 public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
 {
+    rsltMap = new MultiMap!(double, HeaderInfo, DeviceID, const(TestID), ubyte);
+    db = stdfdb;
+    sitesMap = stdfdb.sitesMap;
     Workbook dummyWb = newWorkbook("");
     import std.array;
     import std.algorithm.sorting;
@@ -292,6 +300,15 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         }
         rowOrColMapTable[key] = rowOrColMap;
         //for (size_t n=0; n<devices.length; n++) devices[n].tests = newTests[n];
+        deviceResults[key] = devices;
+        foreach(dev; devices)
+        {
+            foreach(tr; dev.tests)
+            {
+                if (tr.type != TestType.FUNCTIONAL && tr.type != TestType.FLOAT) continue;
+                rsltMap.put(tr.result.f, key, dev.devId.getID(), tr.id, tr.site);
+            }
+        }
         writeSheet(options, wb, rowOrColMap, key, devices, config);
         wb.close();
     } 
@@ -311,22 +328,33 @@ const(TestID)[] getTestIDs(HeaderInfo hdr)
 double[] getResults(HeaderInfo hdr, const(TestID) testId)
 {
     double[] r;
-
+    DeviceResult[] dr = deviceResults[hdr];
+    ubyte[] sites = sitesMap[hdr];
+    foreach(s; sites)
+    {
+        foreach(d; dr)
+        {
+            r ~= rsltMap.get(-9999.0, hdr, d.devId.getID(), testId, s);
+        }
+    }
     return r;
 }
 
 double[] getResults(HeaderInfo hdr, const(TestID) testId, ubyte site)
 {
     double[] r;
+    DeviceResult[] dr = deviceResults[hdr];
+    foreach(d; dr)
+    {
+        r ~= rsltMap.get(-9999.0, hdr, d.devId.getID(), testId, site);
+    }
 
     return r;
 }
 
-ubyte[] getSites()
+ubyte[] getSites(HeaderInfo hdr)
 {
-    ubyte[] s;
-
-    return s;
+    return sitesMap[hdr];
 }
 
 private void scan(size_t tnum, const TestID id, const TestType type, DeviceResult[] devices, TestRecord[][] newTests)
