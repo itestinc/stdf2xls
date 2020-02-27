@@ -397,6 +397,7 @@ class StdfDB
 {
     private StdfPinData[HeaderInfo] pinDataMap;
     DeviceResult[][HeaderInfo] deviceMap;
+    ubyte[][HeaderInfo] sitesMap;
     private CmdOptions options;
 
     this(CmdOptions options)
@@ -464,6 +465,9 @@ class StdfDB
                 if (prr.HEAD_NUM > maxHead) maxHead = prr.HEAD_NUM;
             }
         }
+        ubyte[] _sites;
+        foreach(s; sites.keys) _sites ~= s;
+        sitesMap[stdf.hdr] = _sites.dup;
         numHeads = 1 + maxHead - minHead;
         numSites = 1 + maxSite - minSite;
         import std.stdio;
