@@ -9,6 +9,8 @@ import libxlsxd.workbook;
 import makechip.SpreadsheetWriter;
 import makechip.Util;
 
+LinkedMap!(const TestID, uint)[HeaderInfo] rowOrColMapTable;
+
 public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
 {
     Workbook dummyWb = newWorkbook("");
@@ -288,10 +290,22 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
             rowOrColMap[test.id] = rc;
             rc++;
         }
+        rowOrColMapTable[key] = rowOrColMap;
         //for (size_t n=0; n<devices.length; n++) devices[n].tests = newTests[n];
         writeSheet(options, wb, rowOrColMap, key, devices, config);
         wb.close();
     } 
+}
+
+const(TestID)[] getTestIDs(HeaderInfo hdr)
+{
+    const(TestID)[] ts;
+    LinkedMap!(const(TestID), uint) m = rowOrColMapTable[hdr];
+    foreach(t; m.keys)
+    {
+        ts ~= t;
+    }
+    return ts;
 }
 
 private void scan(size_t tnum, const TestID id, const TestType type, DeviceResult[] devices, TestRecord[][] newTests)

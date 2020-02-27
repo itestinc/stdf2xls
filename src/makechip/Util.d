@@ -327,6 +327,18 @@ class MultiMap(V, K...) if (K.length > 1)
         }   
     }   
 
+    public V[] getValues()
+    {
+        V[] v;
+        foreach (k; map.keys)
+        {
+            writeln("k = ", k);
+            MultiMap!(V, K[1..$]) m = map[k];
+            v ~= m.getValues();
+        }
+        return v;
+    }
+    
     public V get(V defaultValue, K k)
     {   
         if (k[0] in map)
@@ -364,6 +376,27 @@ class MultiMap(V, K...) if (K.length > 1)
 
 }
 
+unittest
+{
+    writeln("MultiMap TEST..."); stdout.flush;
+    MultiMap!(string, uint, char, string) map = new MultiMap!(string, uint, char, string)();
+    map.put("a0", 0, 'a', "0");
+    map.put("a1", 1, 'a', "0");
+    map.put("a2", 2, 'a', "t");
+    map.put("b0", 0, 'b', "f");
+    map.put("b1", 1, 'b', "s");
+    map.put("b2", 2, 'b', "0");
+    map.put("c0", 0, 'c', "h");
+    map.put("c1", 1, 'c', "d");
+    map.put("c2", 2, 'c', "w");
+
+    string[] arr = map.getValues();
+    foreach (v; arr) 
+    {
+        writeln("Multimap Value = ", v);
+    }
+}
+
 class MultiMap(V, K...) if (K.length == 1)
 {
     private V[K[0]] map;
@@ -372,6 +405,17 @@ class MultiMap(V, K...) if (K.length == 1)
     {   
         map[k[0]] = v;
     }   
+
+    public V[] getValues()
+    {
+        V[] v;
+        foreach(k; map.keys) 
+        {
+            writeln("k = ", k);
+            v ~= map[k];
+        }
+        return v;
+    }
 
     public V get(V defaultValue, K k)
     {   
