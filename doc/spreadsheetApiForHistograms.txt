@@ -1,6 +1,15 @@
 
 In Spreadhseet.d:
 
+struct HistoData
+{
+    const(TestID) id;
+    double stdDev;
+    double mean;
+    double cpk;
+    double[] values;
+}
+
 /**
 
     Get the complete list of TestIDs in testflow order.
@@ -12,12 +21,12 @@ const(TestID)[] getTestIDs(HeaderInfo hdr);
     Get all of the results for a specific test.
 
 */
-double[] getResults(HeaderInfo hdr, const(TestID) testId);
+HistoData getResults(HeaderInfo hdr, const(TestID) testId);
 
 /**
     Get all of the results for specific test and site
 */
-double[] getResults(HeaderInfo hdr, const(TestID) testId, ubyte site);
+HistoData getResults(HeaderInfo hdr, const(TestID) testId, ubyte site);
 
 /**
     Get an array of valid site numbers.
