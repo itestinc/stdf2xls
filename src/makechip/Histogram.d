@@ -41,8 +41,13 @@ mark limit on the histogram
 
     foreach(hdr; stdfdb.deviceMap.keys) {
 
+        foreach(i, dr; stdfdb.deviceMap[hdr]) {
+			TestRecord[] tests = dr.tests;
+		}
+
+
         import std.algorithm: canFind;
-        string hfile = options.hfile;	// "<device>_historgrams.pdf"
+        string hfile = options.hfile;	// "<device>_histograms.pdf"
         const bool separateFileForDevice = canFind(hfile, "<device>");
 
         import std.array : replace;
@@ -58,31 +63,65 @@ mark limit on the histogram
             // ...
         }
 
-        // 1. create worksheet
         string sheet1 = "Sheet1";
         Workbook wb = newWorkbook(fname);
         Worksheet ws = wb.addWorksheet(sheet1);
 
-        // 2. get data
-        // a. get each test ID, see if it is parametric test.
-        
+
         const TestID[] ids = getTestIDs(hdr);
         ubyte[] sites = getSites(hdr);
+
+        const string step = hdr.step;
+        writeln(step);
+
+        uint row = 0;
+        ushort col = 0;
+        uint prevNumber = -1;
+        uint num_of_tests = 0;
+
         foreach(id; ids) {
+
             const Record_t type = id.type;
+            const string pin = id.pin;
+            //const uint testNumber = id.testNumber;
+            const string testName = id.testName;
+            const uint dup = id.dup;
+
             if(type == Record_t.PTR) {
-                // b. get results from each test ID, from each site.
+                const uint testNumber = id.testNumber;
+
                 foreach(site; sites) {
+                    //writeln("site = ", site);
                     double[] results = getResults(hdr, id, site);
+                    writeln("id = ", id);
+                    writeln("results = ", results);
 
                     foreach(result; results) {
-                        writeln(result);
+
                     }
-
+                    if(testNumber == prevNumber) {
+                        ws.write(row, col, results[0]);
+                        row +=1;
+                    }
+                    else {
+                        row = 1;
+                        col +=1;
+                        ws.write(0, col, testName);
+                        ws.write(row, col, results[0]);
+                        num_of_tests++;
+                    }
+                    prevNumber = testNumber;
                 }
+                
             }
-        }
 
+        }
+        writeln("num of tests = ", num_of_tests);
+        /** 
+            - add cpk
+        */
+
+        /*
         // dummy data
         string[] pins = ["pin1", "pin2", "pin3", "pin4", "pin5", "pin6", "pin7", "pin8"];
         int[] b = [7, 3, 4, 2, 1, 9, 3, 7];
@@ -107,7 +146,6 @@ mark limit on the histogram
         }
 
 
-
         string categories = "=Sheet1!$A$2:$A$9"; // pin names
 
         // write data to spreadsheet
@@ -118,8 +156,7 @@ mark limit on the histogram
         const ushort categories_lastCol = 0;
 
         // create chart
-
-        Chart ch = wb.addChart(LXW_CHART_COLUMN);
+        Chart ch = wb.addChart(LXW_CHART_BAR);
         Chart ch2 = wb.addChart(LXW_CHART_LINE);
         ch.titleSetName("testname");
 
@@ -151,13 +188,10 @@ mark limit on the histogram
         lineseries.setName("Line Series");
         lineseries.setCategories(sheet1, categories_firstRow, categories_firstCol, categories_lastRow, categories_lastCol);
 
-        //ch.
-
         // insert chart
-        const uint row = 5;
-        const uint col = 5;
-        ws.insertChart(row, col, ch);
-        ws.insertChart(22, col, ch2);
+        ws.insertChart(5, 5, ch);
+        ws.insertChart(22, 5, ch2);
+        */
 
         wb.close();
     }

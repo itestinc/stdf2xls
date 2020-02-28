@@ -354,12 +354,12 @@ class Config
         cfgMap[ss_header_name_bg_color]           = "F6F9D4";
         cfgMap[ss_header_name_text_color]         = "000000";
         cfgMap[ss_header_name_font_name]          = "Arial";
-        cfgMap[ss_header_name_font_size]          = "8   ";
+        cfgMap[ss_header_name_font_size]          = "8";
         cfgMap[ss_header_name_font_style]         = "bold";
         cfgMap[ss_header_value_bg_color]          = "F6F9D4";
         cfgMap[ss_header_value_text_color]        = "000000";
         cfgMap[ss_header_value_font_name]         = "Arial";
-        cfgMap[ss_header_value_font_size]         = "8   ";
+        cfgMap[ss_header_value_font_size]         = "8";
         cfgMap[ss_header_value_font_style]        = "normal";
         cfgMap[ss_test_name_header_bg_color]      = "DEE6EF";
         cfgMap[ss_test_name_header_text_color]    = "000000";
