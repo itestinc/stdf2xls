@@ -24,6 +24,14 @@ struct HistoData
     double mean;
     double cpk;
     double[] values;
+
+    string toString() const
+    {
+        import std.array;
+        import std.conv;
+        string s = "id = " ~ id.toString() ~ " mean = " ~ to!string(mean) ~ " stdDev = " ~ to!string(stdDev) ~ " Cpk = " ~ to!string(cpk) ~ "\n    " ~ to!string(values);
+        return s;
+    }
 }
 
 struct RsltData
@@ -322,7 +330,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         {
             foreach(tr; dev.tests)
             {
-                if (tr.type != TestType.FUNCTIONAL && tr.type != TestType.FLOAT) continue;
+                if (tr.type != TestType.PARAMETRIC && tr.type != TestType.FLOAT) continue;
                 if (options.genHistogram)
                 {
                     rsltMap.put(RsltData(tr.result.f, tr.loLimit, tr.hiLimit), key, dev.devId.getID(), tr.id, tr.site);
@@ -355,7 +363,7 @@ const(TestID)[] getTestIDs(HeaderInfo hdr)
 unittest
 {
     import makechip.Stdf2xls;
-    CmdOptions options = new CmdOptions(["stdf2xls", "-a", "-r", "-w", "stdf/rif2g.stdf"]);
+    CmdOptions options = new CmdOptions(["stdf2xls", "-a", "-r", "-h", "stdf/rif2g.stdf"]);
     Config config = new Config();
     config.load();
     StdfFile[][HeaderInfo] stdfs = processStdf(options);
@@ -365,7 +373,8 @@ unittest
     {
         foreach(id; getTestIDs(hdr))
         {
-            writeln("id = ", id);
+            HistoData d = getResults(hdr, id);
+            writeln(d.toString());
         }
     }
 }
@@ -385,6 +394,7 @@ HistoData getResults(HeaderInfo hdr, const(TestID) testId)
         {
             auto rslt = rsltMap.get(dummy, hdr, d.devId.getID(), testId, s);
             if (rslt == dummy) continue;
+            writeln("devID = ", d.devId.getID(), " testID = ", testId, " rslt = ", rslt.rslt);
             r ~= rslt.rslt;
             sum += rslt.rslt;
             n++;

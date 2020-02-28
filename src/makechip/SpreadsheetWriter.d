@@ -1145,7 +1145,7 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                     {
                         writeString(w, row-1, 8, "", dynLoLimitHdrFmt);
                         writeString(w, row-1, 9, "", dynLoLimitHdrFmt);
-                        writeString(w, row-1, 10, tr.units, dynLoLimitHdrFmt);
+                        writeString(w, row-1, 10, tr.units, unitsValueFmt);
                     }                       
                     writeNumber(w, row, 8, tr.loLimit, loLimitValueFmt);
                     writeNumber(w, row, 9, tr.hiLimit, loLimitValueFmt);
@@ -1153,7 +1153,7 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                     {
                         writeString(w, row+1, 8, "", dynHiLimitHdrFmt);
                         writeString(w, row+1, 9, "", dynHiLimitHdrFmt);
-                        writeString(w, row+1, 10, tr.units, dynHiLimitHdrFmt);
+                        writeString(w, row+1, 10, tr.units, unitsValueFmt);
                     }
                 }
                 lmap[row] = true;
