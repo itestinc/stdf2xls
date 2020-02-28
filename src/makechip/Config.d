@@ -411,7 +411,7 @@ class Config
         cfgMap[ss_hi_limit_value_font_name]       = "Arial";
         cfgMap[ss_hi_limit_value_font_size]       = "8";
         cfgMap[ss_hi_limit_value_font_style]      = "normal";
-        cfgMap[ss_dyn_lo_limit_header_bg_color]   = "DEE6EF";
+        cfgMap[ss_dyn_lo_limit_header_bg_color]   = "FFE994";
         cfgMap[ss_dyn_lo_limit_header_text_color] = "000000";
         cfgMap[ss_dyn_lo_limit_header_font_name]  = "Arial";
         cfgMap[ss_dyn_lo_limit_header_font_size]  = "8";
@@ -421,7 +421,7 @@ class Config
         cfgMap[ss_dyn_lo_limit_value_font_name]   = "Arial";
         cfgMap[ss_dyn_lo_limit_value_font_size]   = "8";
         cfgMap[ss_dyn_lo_limit_value_font_style]  = "normal";
-        cfgMap[ss_dyn_hi_limit_header_bg_color]   = "DEE6EF";
+        cfgMap[ss_dyn_hi_limit_header_bg_color]   = "FFE994";
         cfgMap[ss_dyn_hi_limit_header_text_color] = "000000";
         cfgMap[ss_dyn_hi_limit_header_font_name]  = "Arial";
         cfgMap[ss_dyn_hi_limit_header_font_size]  = "8";
