@@ -518,6 +518,7 @@ void initFormats(Workbook wb, CmdOptions options, Config config)
     dynLoLimitValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
     dynLoLimitValueFmt.setBorderColor(0x1000000);
     dynLoLimitValueFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    dynLoLimitValueFmt.setNumFormat("0.000");
 
     dynHiLimitHdrFmt = setFormat(wb, Config.ss_dyn_hi_limit_header_bg_color, config);
     dynHiLimitHdrFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -530,6 +531,7 @@ void initFormats(Workbook wb, CmdOptions options, Config config)
     dynHiLimitValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
     dynHiLimitValueFmt.setBorderColor(0x1000000);
     dynHiLimitValueFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
+    dynHiLimitValueFmt.setNumFormat("0.000");
 
 }
 
@@ -1139,8 +1141,20 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                 }
                 else
                 {
+                    if (tr.dynamicLoLimit)
+                    {
+                        writeString(w, row-1, 8, "", dynLoLimitHdrFmt);
+                        writeString(w, row-1, 9, "", dynLoLimitHdrFmt);
+                        writeString(w, row-1, 10, tr.units, dynLoLimitHdrFmt);
+                    }                       
                     writeNumber(w, row, 8, tr.loLimit, loLimitValueFmt);
                     writeNumber(w, row, 9, tr.hiLimit, loLimitValueFmt);
+                    if (tr.dynamicHiLimit)
+                    {
+                        writeString(w, row+1, 8, "", dynHiLimitHdrFmt);
+                        writeString(w, row+1, 9, "", dynHiLimitHdrFmt);
+                        writeString(w, row+1, 10, tr.units, dynHiLimitHdrFmt);
+                    }
                 }
                 lmap[row] = true;
             }
@@ -1152,8 +1166,10 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                 break;
             case PARAMETRIC: goto case;
             case FLOAT:
+                if (tr.dynamicLoLimit) writeNumber(w, row-1, lcol, tr.loLimit, dynLoLimitValueFmt);
                 if ((tr.testFlags & 0x80) == 0x80) writeNumber(w, row, lcol, tr.result.f, failDataFmt);
                 else writeNumber(w, row, lcol, tr.result.f, passDataFloatFmt);
+                if (tr.dynamicHiLimit) writeNumber(w, row+1, lcol, tr.hiLimit, dynHiLimitValueFmt);
                 break;
             case HEX_INT:
                 string value = to!string(tr.result.u);

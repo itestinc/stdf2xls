@@ -73,11 +73,11 @@ mark limit on the histogram
             if(type == Record_t.PTR) {
                 // b. get results from each test ID, from each site.
                 foreach(site; sites) {
-                    double[] results = getResults(hdr, id, site);
+                    //double[] results = getResults(hdr, id, site);
 
-                    foreach(result; results) {
-                        writeln(result);
-                    }
+                    //foreach(result; results) {
+                    //    writeln(result);
+                    //}
 
                 }
             }
