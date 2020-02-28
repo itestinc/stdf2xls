@@ -91,12 +91,20 @@ mark limit on the histogram
                 const uint testNumber = id.testNumber;
 
                 foreach(site; sites) {
+<<<<<<< HEAD
                     //writeln("site = ", site);
                     double[] results = getResults(hdr, id, site);
                     writeln("id = ", id);
                     writeln("results = ", results);
 
                     foreach(result; results) {
+=======
+                    //double[] results = getResults(hdr, id, site);
+
+                    //foreach(result; results) {
+                    //    writeln(result);
+                    //}
+>>>>>>> 4fe31b0c04b0e59524c23487bb017c3ea8200666
 
                     }
                     if(testNumber == prevNumber) {

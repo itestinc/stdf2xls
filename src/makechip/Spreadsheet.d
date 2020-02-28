@@ -14,11 +14,28 @@ ubyte[][HeaderInfo] sitesMap;
 StdfDB db;
 DeviceResult[][HeaderInfo] deviceResults;
 alias DeviceID = string;
-MultiMap!(double, HeaderInfo, DeviceID, const(TestID), ubyte) rsltMap;
+MultiMap!(RsltData, HeaderInfo, DeviceID, const(TestID), ubyte) rsltMap;
+bool[const(TestID)] dynMap;
+
+struct HistoData
+{
+    const(TestID) id;
+    double stdDev;
+    double mean;
+    double cpk;
+    double[] values;
+}
+
+struct RsltData
+{
+    float rslt;
+    float lolimit;
+    float hilimit;
+}
 
 public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
 {
-    rsltMap = new MultiMap!(double, HeaderInfo, DeviceID, const(TestID), ubyte);
+    if (options.genHistogram) rsltMap = new MultiMap!(RsltData, HeaderInfo, DeviceID, const(TestID), ubyte);
     db = stdfdb;
     sitesMap = stdfdb.sitesMap;
     Workbook dummyWb = newWorkbook("");
@@ -306,7 +323,14 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
             foreach(tr; dev.tests)
             {
                 if (tr.type != TestType.FUNCTIONAL && tr.type != TestType.FLOAT) continue;
-                rsltMap.put(tr.result.f, key, dev.devId.getID(), tr.id, tr.site);
+                if (options.genHistogram)
+                {
+                    rsltMap.put(RsltData(tr.result.f, tr.loLimit, tr.hiLimit), key, dev.devId.getID(), tr.id, tr.site);
+                    if (tr.id !in dynMap)
+                    {
+                        if (tr.dynamicLoLimit || tr.dynamicHiLimit) dynMap[tr.id] = true;
+                    }
+                }
             }
         }
         if (options.genSpreadsheet)
@@ -346,31 +370,140 @@ unittest
     }
 }
 
-double[] getResults(HeaderInfo hdr, const(TestID) testId)
+HistoData getResults(HeaderInfo hdr, const(TestID) testId)
 {
+    import std.math;
     double[] r;
     DeviceResult[] dr = deviceResults[hdr];
     ubyte[] sites = sitesMap[hdr];
+    double sum = 0.0;
+    uint n = 0;
+    RsltData dummy = RsltData(-999999.0, -999999.0, -999999.0);
     foreach(s; sites)
     {
         foreach(d; dr)
         {
-            r ~= rsltMap.get(-9999.0, hdr, d.devId.getID(), testId, s);
+            auto rslt = rsltMap.get(dummy, hdr, d.devId.getID(), testId, s);
+            if (rslt == dummy) continue;
+            r ~= rslt.rslt;
+            sum += rslt.rslt;
+            n++;
         }
     }
-    return r;
+    double mean = sum / n;
+    sum = 0.0;
+    foreach (v; r) sum += (v - mean) * (v - mean);
+    double stdDev = sqrt(sum / (n - 1));
+    // compute Cpk:
+    double Cpk;
+    double sl = 0.0;
+    double sh = 0.0;
+    double llmean = 0.0;
+    double hlmean = 0.0;
+    if (testId in dynMap) // dynamic limits
+    {
+        foreach(s; sites)
+        {
+            foreach(d; dr)
+            {
+                auto rslt = rsltMap.get(dummy, hdr, d.devId.getID(), testId, s);
+                if (rslt == dummy) continue;
+                llmean += (mean - rslt.lolimit);
+                hlmean += (rslt.hilimit - mean);
+            }
+        }
+        double llave = llmean / n;
+        double hlave = hlmean / n;
+        double cpk1 = llave / (3.0 * stdDev);
+        double cpk2 = hlave / (3.0 * stdDev);
+        Cpk = (cpk1 < cpk2) ? cpk1 : cpk2;
+        return HistoData(testId, stdDev, mean, Cpk, r);
+    }
+    else
+    {
+        double ll;
+        double hl;
+        foreach(s; sites)
+        {
+            bool exit = false;
+            foreach(d; dr)
+            {
+                auto rslt = rsltMap.get(dummy, hdr, d.devId.getID(), testId, s);
+                if (rslt == dummy) continue;
+                ll = rslt.lolimit;
+                hl = rslt.hilimit;
+                exit = true;
+                break;
+            }
+            if (exit) break;
+        }
+        double cpk1 = (mean - ll) / (3.0 * stdDev);
+        double cpk2 = (hl - mean) / (3.0 * stdDev);
+        Cpk = (cpk1 < cpk2) ? cpk1 : cpk2;
+    }
+    return HistoData(testId, stdDev, mean, Cpk, r);
 }
 
-double[] getResults(HeaderInfo hdr, const(TestID) testId, ubyte site)
+HistoData getResults(HeaderInfo hdr, const(TestID) testId, ubyte site)
 {
+    import std.math;
     double[] r;
     DeviceResult[] dr = deviceResults[hdr];
+    ubyte[] sites = sitesMap[hdr];
+    double sum = 0.0;
+    uint n = 0;
+    RsltData dummy = RsltData(-999999.0, -999999.0, -999999.0);
     foreach(d; dr)
     {
-        r ~= rsltMap.get(-9999.0, hdr, d.devId.getID(), testId, site);
+        auto rslt = rsltMap.get(dummy, hdr, d.devId.getID(), testId, site);
+        if (rslt == dummy) continue;
+        r ~= rslt.rslt;
+        sum += rslt.rslt;
+        n++;
     }
-
-    return r;
+    double mean = sum / n;
+    sum = 0.0;
+    foreach (v; r) sum += (v - mean) * (v - mean);
+    double stdDev = sqrt(sum / (n - 1));
+    // compute Cpk:
+    double Cpk;
+    double sl = 0.0;
+    double sh = 0.0;
+    double llmean = 0.0;
+    double hlmean = 0.0;
+    if (testId in dynMap) // dynamic limits
+    {
+        foreach(d; dr)
+        {
+            auto rslt = rsltMap.get(dummy, hdr, d.devId.getID(), testId, site);
+            if (rslt == dummy) continue;
+            llmean += (mean - rslt.lolimit);
+            hlmean += (rslt.hilimit - mean);
+        }
+        double llave = llmean / n;
+        double hlave = hlmean / n;
+        double cpk1 = llave / (3.0 * stdDev);
+        double cpk2 = hlave / (3.0 * stdDev);
+        Cpk = (cpk1 < cpk2) ? cpk1 : cpk2;
+        return HistoData(testId, stdDev, mean, Cpk, r);
+    }
+    else
+    {
+        double ll;
+        double hl;
+        foreach(d; dr)
+        {
+            auto rslt = rsltMap.get(dummy, hdr, d.devId.getID(), testId, site);
+            if (rslt == dummy) continue;
+            ll = rslt.lolimit;
+            hl = rslt.hilimit;
+            break;
+        }
+        double cpk1 = (mean - ll) / (3.0 * stdDev);
+        double cpk2 = (hl - mean) / (3.0 * stdDev);
+        Cpk = (cpk1 < cpk2) ? cpk1 : cpk2;
+    }
+    return HistoData(testId, stdDev, mean, Cpk, r);
 }
 
 ubyte[] getSites(HeaderInfo hdr)
