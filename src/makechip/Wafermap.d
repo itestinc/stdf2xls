@@ -8,6 +8,8 @@ import libxlsxd.workbook;
 import libxlsxd.worksheet;
 import std.stdio;
 
+import makechip.Spreadsheet;
+
 /**
 	Read from the STDF database to generate a wafer map in excel.
 	- option to dump wafer map in ascii ASE format
@@ -114,13 +116,14 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		import std.array : replace;
 		string fname = replace(wfile, "<device>", hdr.devName).replace("<lot>", hdr.lot_id).replace("<wafer>", hdr.wafer_id);
 
+		/*
 		if(separateFileForDevice && separateFileForLot && separateFileForWafer) {
 			import std.array : replace;
 			fname = replace(wfile, "<device>", hdr.devName).replace("<lot>", hdr.lot_id).replace("<wafer>", hdr.wafer_id);
 		}
 		else {
 			// ...
-		}
+		}*/
 
 		Workbook wb = newWorkbook(fname);
 		Worksheet ws = wb.addWorksheet("Wafermap");
@@ -368,11 +371,22 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 			writeln("notch = ", options.notch);
 
 			foreach(i, row_arr; matrix) {
+				write("RowData:");
 				foreach(j, val; row_arr) {
-					switch(val) {
+					/*switch(val) {
 						case 0: write("."); break;
 						case 1: write("1"); break;
 						default: write("X");
+					}*/
+					switch(val) {
+						case 0: write("___ "); break;
+						case 1: write("000 "); break;
+						case 2: write("002 "); break;
+						case 3: write("003 "); break;
+						case 4: write("004 "); break;
+						case 5: write("005 "); break;
+						case 6: write("006 "); break;
+						default: write("___ ");
 					}
 				}
 				write("\n");

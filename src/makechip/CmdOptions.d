@@ -124,14 +124,14 @@ class CmdOptions
     bool noDynamicLimits = false;
     bool asciiDump = false;
     bool pattern = false;
-    Notch notch = Notch.bottom;
+    Notch notch = Notch.right;
     Sort_t sortType = Sort_t.SN_UP_TIME_UP; 
     private string[] modify;
     PMRNameType channelType = PMRNameType.AUTO;
     uint verbosityLevel = 1;
     string outputDir = "";
     string sfile = "<device>_<lot>.xlsx";
-    string hfile = "<device>_historgrams.pdf";
+    string hfile = "<device>_historgrams.xlsx";
     string wfile = "<device>_<lot>_<wafer>.xlsx";
     BinCategory_t category = BinCategory_t.NONE;
     const string options;
