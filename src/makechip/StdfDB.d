@@ -910,7 +910,7 @@ private int findScale(TestRecord tr)
 {
     import std.math;
     float val = 0.0f;
-    write("loLimit = ", tr.loLimit, " hiLimit = ", tr.hiLimit);
+//    write("loLimit = ", tr.loLimit, " hiLimit = ", tr.hiLimit);
     if (tr.hiLimit == float.nan && tr.loLimit == float.nan) 
     {
         return(0);
@@ -927,7 +927,7 @@ private int findScale(TestRecord tr)
     else if (val <= 1000000.0f) scale = -3;
     else if (val <= 1E9f) scale = -6;
     else scale = -9;
-    writeln("scale = ", scale);
+//    writeln("scale = ", scale);
     return(scale);
 }
 
