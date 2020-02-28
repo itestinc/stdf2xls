@@ -111,7 +111,7 @@ int main(string[] args)
     // prepare to process test data
     if (options.summarize || options.genSpreadsheet || options.genWafermap || options.genHistogram) loadDb(options);
     if (options.summarize) summarize();
-    if (options.genSpreadsheet || options.genWafermap) genSpreadsheet(options, config);
+    if (options.genSpreadsheet || options.genHistogram) genSpreadsheet(options, config);
     if (options.genWafermap) genWafermap(options, config);
     if (options.genHistogram) genHistogram(options, config);
     return 0;
