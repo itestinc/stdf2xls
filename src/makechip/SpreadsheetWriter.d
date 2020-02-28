@@ -1113,20 +1113,34 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
             TestRecord tr = devices[j].tests[i];
             uint seqNum = rowOrColMap[tr.id];
             uint row = seqNum + 8;
+            writeln("row = ", row, " dynHiLimit = ", tr.dynamicHiLimit, " dynLoLimit = ", tr.dynamicLoLimit);
             if (row !in lmap)
             {
-                if (tr.type == TestType.FLOAT || tr.type == TestType.HEX_INT || tr.type == TestType.DEC_INT ||
-                    tr.type == TestType.DYNAMIC_LOLIMIT || tr.type == TestType.DYNAMIC_HILIMIT || tr.type == TestType.STRING)
+                writeString(w, row, 10, tr.units, unitsValueFmt);
+                if (tr.type == TestType.FLOAT || tr.type == TestType.HEX_INT || tr.type == TestType.DEC_INT || tr.type == TestType.STRING)
                 {
                     writeString(w, row, 8, "", loLimitValueFmt);
                     writeString(w, row, 9, "", hiLimitValueFmt);
-                    writeString(w, row, 10, tr.units, unitsValueFmt);
+                }
+                else if (tr.type == TestType.DYNAMIC_LOLIMIT || tr.type == TestType.DYNAMIC_HILIMIT)
+                {
+                    if (tr.type == TestType.DYNAMIC_LOLIMIT)
+                    {
+                        writeString(w, row-1, 8, "", loLimitValueFmt);
+                        writeString(w, row-1, 9, "", hiLimitValueFmt);
+                        writeString(w, row-1, 10, tr.units, unitsValueFmt);
+                    }
+                    if (tr.type == TestType.DYNAMIC_HILIMIT)
+                    {
+                        writeString(w, row+1, 8, "", loLimitValueFmt);
+                        writeString(w, row+1, 9, "", hiLimitValueFmt);
+                        writeString(w, row+1, 10, tr.units, unitsValueFmt);
+                    }
                 }
                 else
                 {
                     writeNumber(w, row, 8, tr.loLimit, loLimitValueFmt);
                     writeNumber(w, row, 9, tr.hiLimit, loLimitValueFmt);
-                    writeString(w, row, 10, tr.units, unitsValueFmt);
                 }
                 lmap[row] = true;
             }

@@ -309,8 +309,11 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
                 rsltMap.put(tr.result.f, key, dev.devId.getID(), tr.id, tr.site);
             }
         }
-        writeSheet(options, wb, rowOrColMap, key, devices, config);
-        wb.close();
+        if (options.genSpreadsheet)
+        {
+            writeSheet(options, wb, rowOrColMap, key, devices, config);
+            wb.close();
+        }
     } 
 }
 
@@ -323,6 +326,24 @@ const(TestID)[] getTestIDs(HeaderInfo hdr)
         ts ~= t;
     }
     return ts;
+}
+
+unittest
+{
+    import makechip.Stdf2xls;
+    CmdOptions options = new CmdOptions(["stdf2xls", "-a", "-r", "-w", "stdf/rif2g.stdf"]);
+    Config config = new Config();
+    config.load();
+    StdfFile[][HeaderInfo] stdfs = processStdf(options);
+    StdfDB stdfdb = loadDb(options);
+    genSpreadsheet(options, stdfdb, config);
+    foreach (hdr; stdfdb.deviceMap.keys)
+    {
+        foreach(id; getTestIDs(hdr))
+        {
+            writeln("id = ", id);
+        }
+    }
 }
 
 double[] getResults(HeaderInfo hdr, const(TestID) testId)

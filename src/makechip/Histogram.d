@@ -151,7 +151,7 @@ mark limit on the histogram
         lineseries.setName("Line Series");
         lineseries.setCategories(sheet1, categories_firstRow, categories_firstCol, categories_lastRow, categories_lastCol);
 
-        ch.
+        //ch.
 
         // insert chart
         const uint row = 5;

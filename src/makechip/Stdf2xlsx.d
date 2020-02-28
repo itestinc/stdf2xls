@@ -42,7 +42,7 @@ public StdfFile[][HeaderInfo] processStdf(CmdOptions options)
     return stdfFiles;
 }
 
-public void loadDb(CmdOptions options)
+public StdfDB loadDb(CmdOptions options)
 {
     if (stdfdb is null) stdfdb = new StdfDB(options);
     // build test results lists here
@@ -159,6 +159,7 @@ public void loadDb(CmdOptions options)
             }
         }
     }
+    return stdfdb;
 }
 
 public void genSpreadsheet(CmdOptions options, Config config)
