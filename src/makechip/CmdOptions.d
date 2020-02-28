@@ -131,7 +131,7 @@ class CmdOptions
     uint verbosityLevel = 1;
     string outputDir = "";
     string sfile = "<device>_<lot>.xlsx";
-    string hfile = "<device>_historgrams.xlsx";
+    string hfile = "<device>_histograms.xlsx";
     string wfile = "<device>_<lot>_<wafer>.xlsx";
     BinCategory_t category = BinCategory_t.NONE;
     const string options;
