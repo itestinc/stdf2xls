@@ -20,7 +20,9 @@ import makechip.Spreadsheet;
 import libxlsxd.chart;
 import libxlsxd.chartaxis;
 import libxlsxd.chartseries;
-// import libxlsd.chartsheet;
+//import libxlsxd.chartsheet;
+
+import makechip.WafermapFormat;
 
 /**
 */
@@ -39,7 +41,7 @@ testID = single instance class, immutable. Located in 'StdfDB.d'
 
 mark limit on the histogram
 */
-
+bool once = true;
 
     foreach(hdr; stdfdb.deviceMap.keys) {
 
@@ -64,19 +66,43 @@ mark limit on the histogram
         }
 
         string sheet1 = "Sheet1";
-        string sheet2 = "Sheet2";
+        string sheet2 = "Frequency";
+        string sheet3 = "Value";
+        string sheet4 = "debug";
         Workbook wb = newWorkbook(fname);
         Worksheet ws1 = wb.addWorksheet(sheet1);
         Worksheet ws2 = wb.addWorksheet(sheet2);
+        Worksheet ws3 = wb.addWorksheet(sheet3);
+        Worksheet ws4 = wb.addWorksheet(sheet4);
 
-
-        const TestID[] ids = getTestIDs(hdr);
-        ubyte[] sites = getSites(hdr);
+        // logo
+        import libxlsxd.xlsxwrap : lxw_image_options, lxw_object_position;
+		lxw_image_options img_options;
+		const double ss_width = 449 * 0.350;
+		const double ss_height = 245 * 0.324;
+		img_options.x_scale = (2.5 * 70.0) / ss_width;
+		img_options.y_scale = (5.0 * 20.0) / ss_height;
+		ws1.mergeRange(0, 0, 7, 3, null);
+		img_options.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
+		ws1.insertImageBufferOpt(cast(uint) 0, cast(ushort) 1, img.dup.ptr, img.length, &img_options);
 
         // useful headers
-        const string step = hdr.step;
-        const string temp = hdr.temperature;
-        const string devName = hdr.devName;
+        initWaferFormats(wb, options, config);
+		ws1.write( 9, 0, "lot_id:", headerNameFmt);
+		ws1.write(10, 0, "sublot_id:", headerNameFmt);
+		ws1.write(11, 0, "devName:", headerNameFmt);
+		ws1.write(12, 0, "temperature:", headerNameFmt);
+		ws1.write(13, 0, "step:", headerNameFmt);
+		ws1.write( 9, 1, hdr.lot_id, headerValueFmt);
+		ws1.write(10, 1, hdr.sublot_id, headerValueFmt);
+		ws1.write(11, 1, hdr.devName, headerValueFmt);
+		ws1.write(12, 1, hdr.temperature, headerValueFmt);
+		ws1.write(13, 1, hdr.step, headerValueFmt);
+		ws1.mergeRange( 9, 1,  9, 3, null);
+		ws1.mergeRange(10, 1, 10, 3, null);
+		ws1.mergeRange(11, 1, 11, 3, null);
+		ws1.mergeRange(12, 1, 12, 3, null);
+		ws1.mergeRange(13, 1, 13, 3, null);
 
         uint row = 0;
         ushort col = 0;
@@ -86,78 +112,196 @@ mark limit on the histogram
         uint value_count = 0;
 
         uint ch_row = 0;
-        ushort ch_col = 0;
+        ushort ch_col = 6;
         double prevVal = 0;
         double min_val = 0;
         double max_val = 0;
 
-        foreach(id; ids) {
+        const TestID[] ids = getTestIDs(hdr);
+        ubyte[] sites = getSites(hdr);
+        writeln("sites = ", sites);
 
-            if(id.type == Record_t.PTR) {
+        // NOT WAFER
+        if(hdr.wafer_id == "") {
+            foreach(id; ids) {
 
-                //const Record_t type = id.type;
-                //const string pin = id.pin;
-                const uint testNumber = id.testNumber;
-                const string testName = id.testName;
-                //const uint dup = id.dup;
+                if(id.type == Record_t.PTR) {
 
-                foreach(site; sites) {
-                    HistoData histdata = getResults(hdr, id, site);
-                    writeln("id = ", id);
-                    writeln("histdata = ", histdata);
-                    double value = histdata.values[0];
+                    //const Record_t type = id.type;
+                    //const string pin = id.pin;
+                    const uint testNumber = id.testNumber;
+                    const string testName = id.testName;
+                    //const uint dup = id.dup;
 
-                    if(histdata.values.length > 1) {
-                        throw new Exception("longer values");
-                    }
+                    foreach(site; sites) {
+                        HistoData histdata = getResults(hdr, id, site);
+                        writeln("id = ", id);
+                        writeln("histdata = ", histdata);
+                        double value = histdata.values[0];
 
-                    if(testNumber == prevNumber) {
-                        ws2.write(row, col, value);
-                        row +=1;
-                        value_count++;
-
-                        max_val = (prevVal > value) ? prevVal:value;
-                        min_val = (prevVal < value) ? prevVal:value;
-                    }
-                    else {
-                        // new test name, test number
-                        if(col > 0) {
-                            // write the PREVIOUS dataset to chart
-                            Chart ch = wb.addChart(LXW_CHART_BAR);
-                            ch.titleSetName(prevName);
-                            Chartseries series = ch.addChartseries(null, null);
-                            series.setName("Step "~step~" ("~temp~"C)");
-                            series.setValues(sheet2, 1, cast(ushort)(col), value_count, cast(ushort)(col));
-                            //series.setCategories();
-                            //series.setLabels();
-                            //series.setLabelsPosition(LXW_CHART_LABEL_POSITION_OUTSIDE_END);
-                            Chartaxis x_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_X);
-                            Chartaxis y_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_Y);
-                            y_axis.setName("x-axis");
-                            x_axis.setName("y-axis");
-                            //x_axis.setName("mean: "~to!string(histdata.mean)~", cpk: "~to!string(histdata.cpk)~", stdDev: "~to!string(histdata.stdDev));
-                            ws1.insertChart(ch_row, ch_col, ch);
-                            ch_row = cast(uint)(ch_row + 16);
+                        if(histdata.values.length > 1) {
+                            throw new Exception("longer values");
                         }
-                        // initialize new dataset
-                        col +=1;
-                        ws2.write(0, col, testName);
-                        row = 1;
-                        value_count = 1;
-                        ws2.write(1, col, value);
-                        num_of_tests++;
 
-                        
-                       
+                        if(testNumber == prevNumber) {
+                            ws2.write(row, col, value);
+                            row +=1;
+                            value_count++;
+
+                            max_val = (prevVal > value) ? prevVal:value;
+                            min_val = (prevVal < value) ? prevVal:value;
+                        }
+                        else {
+                            // new test name, test number
+                            if(col > 0) {
+                                // write the PREVIOUS dataset to chart
+                                Chart ch = wb.addChart(LXW_CHART_BAR);
+                                ch.titleSetName(prevName);
+                                Chartseries series = ch.addChartseries(null, null);
+                                series.setName("Step "~hdr.step~" ("~hdr.temperature~"C)");
+                                series.setValues(sheet2, 1, cast(ushort)(col), value_count, cast(ushort)(col));
+                                //series.setCategories();
+                                //series.setLabels();
+                                //series.setLabelsPosition(LXW_CHART_LABEL_POSITION_OUTSIDE_END);
+                                Chartaxis x_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_X);
+                                Chartaxis y_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_Y);
+                                x_axis.setName("x-axis");
+                                y_axis.setName("y-axis");
+                                //x_axis.setName("mean: "~to!string(histdata.mean)~", cpk: "~to!string(histdata.cpk)~", stdDev: "~to!string(histdata.stdDev));
+                                ws1.insertChart(ch_row, ch_col, ch);
+                                ch_row = cast(uint)(ch_row + 15);
+                            }
+                            // initialize new dataset
+                            col +=1;
+                            ws2.write(0, col, testName);
+                            row = 1;
+                            value_count = 1;
+                            ws2.write(1, col, value);
+                            num_of_tests++;
+
+                        }
+                        prevNumber = testNumber;
+                        prevName = testName;
+                        prevVal = value;
                     }
-                    prevNumber = testNumber;
-                    prevName = testName;
-                    prevVal = value;
+                }
+            }
+            writeln("num of tests = ", num_of_tests);
+            wb.close();
+        }
+        // WAFER
+        else {
+
+            uint sh4_row = 0;
+            ushort sh4_col = 0;
+
+            uint sh3_row = 0;
+            ushort sh3_col = 0;
+
+            uint sh2_row = 0;
+            ushort sh2_col = 0;
+
+            const uint underflow_bin_count = 0;
+            const uint overflow_bin_count = 0;
+
+            foreach(id; ids) {
+                if(id.type == Record_t.PTR) {
+
+                    // setup chart for each PTR
+                    Chart ch = wb.addChart(LXW_CHART_COLUMN);
+                    ch.titleSetName(id.testName);
+                    Chartseries[] series;
+
+                    double[] bin_values_allsites;
+                    uint bva = 0;       // keep track of bin values for all sites
+                    import std.algorithm.iteration : uniq;
+                    import std.algorithm.sorting : sort;
+                    sh2_row = 0;
+                    sh3_row = 0;
+                    ws2.write(sh2_row, sh2_col, id.testName);
+                    ws3.write(sh3_row, sh3_col, id.testName);
+                    sh2_row++;
+                    sh3_row++;
+
+                    // write data for each site
+                    foreach(s, site; sites) {
+                        HistoData histodata = getResults(hdr, id, site);
+
+                        // SHEET 2: BIN FREQ
+                        ws2.write(sh2_row, sh2_col, "site "~to!string(site));
+                        sh2_row++;
+
+                        // quantize raw values into bins, then store into bin_values array.
+                        const double bin_width = 0.1;
+                        double[] bin_values;
+                        foreach(v, val; histodata.values) {
+                            ws4.write(sh4_row, sh4_col, val);   //write raw values for debug
+                            sh4_row++;
+
+                            bin_values.length +=1;
+                            bin_values[v] = val.quantize(bin_width);
+                            //ws2.write(sh2_row, sh2_col, bin_values[v]);     // write bin values
+                            //sh2_row++;
+
+                            // store bins to master array containing bins for all sites
+                            bin_values_allsites.length +=1;
+                            bin_values_allsites[bva] = bin_values[v]; bva++;
+                        }
+                        sh4_col++;
+                        sh4_row = 0;
+
+                        // calculate bin frequency
+                        uint[] bin_counts;
+                        uint v = 0;
+                        import std.algorithm.searching : count;
+                        foreach(val; uniq( sort(bin_values) )) {
+                            bin_counts.length +=1;
+                            bin_counts[v] = cast(uint)count(bin_values, val);
+                            //ws2.write(r, c, val);
+                            ws2.write(sh2_row, sh2_col, bin_counts[v]);     // write bin frequencies
+                            sh2_row++;
+                            v++;
+                        }             
+
+                        series.length++;
+                        series[s] = ch.addChartseries(null, null);
+                        series[s].setName("site "~to!string(site));
+                        //series[s].setValues(sheet2, cast(uint)1, c, cast(uint)(histodata.values.length+2), c);
+                        //series[s].setCategories(sheet2, cast(uint)1, c, cast(uint)(bin_counts.length+2), c);
+                        series[s].setValues(sheet2, cast(uint)2, sh2_col, cast(uint)(bin_counts.length+1), sh2_col);
+
+                        sh2_col++;        
+                        sh2_row = 1; 
+                    }
+                    
+                    // SHEET 3: BIN VALUES UNIQUE
+                    uint bva_uniq = 0;
+                    foreach(val; uniq( sort(bin_values_allsites) ) ) {
+                        ws3.write(sh3_row, sh3_col, val);     // write unique bin values
+                        sh3_row++;
+                        bva_uniq++;
+                    }
+
+                    // set chart categories as the unique bin values across all sites.
+                    foreach(i, s; series) {
+                        series[i].setCategories(sheet3, cast(uint)1, sh3_col, cast(uint)bva_uniq, sh3_col);
+                    }
+                    sh3_col++;
+                    sh3_row = 0;
+
+                    Chartaxis x_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_X);
+                    Chartaxis y_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_Y);
+                    x_axis.setName("value");
+                    y_axis.setName("frequency");
+                    ws1.insertChart(ch_row, ch_col, ch);
+                    ch_row = cast(uint)(ch_row + 15);      
                 }
             }
 
+            wb.close();
         }
-        writeln("num of tests = ", num_of_tests);
+        
+        
         /** 
             - add cpk
             - format axis scale min/max values to min/max values of dataset
@@ -172,7 +316,6 @@ mark limit on the histogram
             - for each column, plot first to last row; test name; cpk; high/low limits
         */
 
-        wb.close();
     }
 }
 

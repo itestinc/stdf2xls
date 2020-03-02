@@ -598,9 +598,9 @@ class StdfDB
                         float result = mpr.RTN_RSLT.getValue()[i];
                         string pin = pinData.get(mpr.HEAD_NUM, mpr.SITE_NUM, pinIndex);
                         if (pin == "") pin = pinData.get(mpr.HEAD_NUM, minSite, pinIndex);
-                        writeln("pin = ", pin);
+//                        writeln("pin = ", pin);
                         TestID id = TestID.getTestID(Record_t.MPR, pin, mpr.TEST_NUM, testName, dup);
-                        writeln("AAAA: id = ", id);
+//                        writeln("AAAA: id = ", id);
                         TestRecord tr = new TestRecord(id, mpr.SITE_NUM, mpr.HEAD_NUM, mpr.TEST_FLG, optFlags, parmFlags, 
                                 loLimit, hiLimit, result, units, resScal, llmScal, hlmScal, seq);
                         normalizeValues(tr);
