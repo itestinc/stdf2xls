@@ -1551,6 +1551,7 @@ extern(C)
     char* format_get_font_name(lxw_format*) @nogc nothrow;
     double format_get_font_size(lxw_format*) @nogc nothrow;
     ubyte format_get_bold(lxw_format*) @nogc nothrow;
+    short format_get_rotation(lxw_format*) @nogc nothrow;
     ubyte format_get_italic(lxw_format*) @nogc nothrow;
     ubyte format_get_underline(lxw_format*) @nogc nothrow;
     void format_set_font_name(lxw_format*, const(char)*) @nogc nothrow;
