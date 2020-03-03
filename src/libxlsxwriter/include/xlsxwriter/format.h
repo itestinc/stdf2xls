@@ -917,6 +917,8 @@ void format_set_text_wrap(lxw_format *format);
  */
 void format_set_rotation(lxw_format *format, int16_t angle);
 
+int16_t format_get_rotation(lxw_format *format);
+
 /**
  * @brief Set the cell text indentation level.
  *

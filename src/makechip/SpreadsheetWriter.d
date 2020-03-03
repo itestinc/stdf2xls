@@ -72,8 +72,9 @@ static this()
     sindex["bold_italic_underline"] = 3;
 }
 
-private double getColumnWidth(string s, uint dpi, string fontName, string fontStyle, size_t fontSize)
+private double getColumnWidth(string s, uint dpi, string fontName, string fontStyle, size_t fontSize, bool textIsRotated)
 {
+    if (textIsRotated) return 5.0;
     double[][][] cw = fmapw[fontName];
 
     size_t style = sindex[fontStyle];
@@ -82,11 +83,17 @@ private double getColumnWidth(string s, uint dpi, string fontName, string fontSt
     return (w / 6.00) * (96.0 / dpi);
 }
 
-private double getRowHeight(uint dpi, string fontName, string fontStyle, size_t fontSize)
+private double getRowHeight(string s, uint dpi, string fontName, string fontStyle, size_t fontSize, bool textIsRotated)
 {
     ubyte[][] ch = fmaph[fontName];
     size_t style = sindex[fontStyle];
     double h = ch[fontSize][style];
+    if (textIsRotated)
+    {
+        double w = getColumnWidth(s, dpi, fontName, fontStyle, fontSize, false);
+        h = 15.0 * w / 8.43;
+    }
+    if (h < 15.0) h = 14.0;
     return (h * 96.0) / dpi;
 }
 
@@ -110,14 +117,14 @@ private string getStyle(Format fmt)
 private void updateCellSize(string s, uint row, ushort col, Format fmt)
 {
     string style = getStyle(fmt);
-    double cw = getColumnWidth(s, x_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize());
+    double cw = getColumnWidth(s, x_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize(), fmt.getRotation() >= 45.0);
     if (col !in maxColWidths) maxColWidths[col] = cw;
     else
     {
         double cm = maxColWidths[col];
         if (cw > cm) maxColWidths[col] = cw;
     }
-    double rh = getRowHeight(y_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize());
+    double rh = getRowHeight(s, y_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize(), fmt.getRotation() >= 45.0);
     if (row !in maxRowHeights) maxRowHeights[row] = rh;
     else
     {
@@ -129,8 +136,11 @@ private void updateCellSize(string s, uint row, ushort col, Format fmt)
 private void mergeRange(Worksheet w, uint row0, ushort col0, uint row1, ushort col1, string value, Format fmt)
 {
     string style = getStyle(fmt);
-    double cw = getColumnWidth(value, x_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize());
-    double rh = getRowHeight(y_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize());
+    //writeln("style = ", style);
+    //writeln("fontSize = ", fmt.getFontSize());
+    //writeln("fontName = ", fmt.getFontName());
+    double cw = getColumnWidth(value, x_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize(), fmt.getRotation() >= 45.0);
+    double rh = getRowHeight(value, y_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize(), fmt.getRotation() >= 45.0);
     uint cols = 1 + (col1 - col0);
     uint rows = 1 + (row1 - row0);
     cw /= cols;
@@ -146,6 +156,7 @@ private void mergeRange(Worksheet w, uint row0, ushort col0, uint row1, ushort c
     }
     for (uint row=row0; row<=row1; row++)
     {
+        if (row == 7) writeln("mergeRange: rh = ", rh, " c0 = ", col0, " c1 = ", col1);
         if (row !in maxRowHeights) maxRowHeights[row] = rh;
         else
         {
@@ -592,7 +603,6 @@ private Worksheet[] createSheetsRotated(CmdOptions options, Config config, Workb
             if (c < 3) lcol += maxColWidths[c];
             ws[i].setColumn(c, c, maxColWidths[c]);
         }
-        writeln("lrow = ", lrow, " lcol = ", lcol);
         setLogo(options, config, ws[i]);
     }
     return ws;
@@ -628,13 +638,13 @@ private Worksheet[] createSheets(CmdOptions options, Config config, Workbook wb,
         {
             if (row < 7) lrow += maxRowHeights[row];
             ws[i].setRow(row, maxRowHeights[row]);
+            if (row == 7) writeln("rowHeight = ", maxRowHeights[row]);
         }
         foreach (c; maxColWidths.keys)
         {
             if (c < 3) lcol += maxColWidths[c];
             ws[i].setColumn(c, c, maxColWidths[c]);
         }
-        writeln("lrow = ", lrow, " lcol = ", lcol);
         setLogo(options, config, ws[i]);
     }
     return ws;
@@ -659,30 +669,30 @@ private void setTitle(Worksheet w, HeaderInfo hdr, bool rotated)
 {
     if (rotated)
     {
-        w.mergeRange(0, 3, 2, 6, hdr.devName, titleFmt);
+        mergeRange(w, 0, 3, 2, 6, hdr.devName, titleFmt);
         if (hdr.isWafersort())
         {
-            w.mergeRange(3, 3, 4, 6, "Lot: " ~ hdr.lot_id, titleFmt);
-            w.mergeRange(5, 3, 6, 6, "Wafer: " ~ hdr.wafer_id, titleFmt);
+            mergeRange(w, 3, 3, 4, 6, "Lot: " ~ hdr.lot_id, titleFmt);
+            mergeRange(w, 5, 3, 6, 6, "Wafer: " ~ hdr.wafer_id, titleFmt);
         }
         else
         {
-            w.mergeRange(3, 3, 4, 6, "Step: " ~ hdr.step, titleFmt);
-            w.mergeRange(5, 3, 6, 6, "Temp: " ~ hdr.temperature, titleFmt);
+            mergeRange(w, 3, 3, 4, 6, "Step: " ~ hdr.step, titleFmt);
+            mergeRange(w, 5, 3, 6, 6, "Temp: " ~ hdr.temperature, titleFmt);
         }
     }
     else
     {
-        w.mergeRange(0, 3, 2, 6, hdr.devName, titleFmt);
+        mergeRange(w, 0, 3, 2, 6, hdr.devName, titleFmt);
         if (hdr.isWafersort())
         {
-            w.mergeRange(3, 3, 4, 6, "Lot: " ~ hdr.lot_id, titleFmt);
-            w.mergeRange(5, 3, 6, 6, "Wafer: " ~ hdr.wafer_id, titleFmt);
+            mergeRange(w, 3, 3, 4, 6, "Lot: " ~ hdr.lot_id, titleFmt);
+            mergeRange(w, 5, 3, 6, 6, "Wafer: " ~ hdr.wafer_id, titleFmt);
         }
         else
         {
-            w.mergeRange(3, 3, 4, 6, "Step: " ~ hdr.step, titleFmt);
-            w.mergeRange(5, 3, 6, 6, "Temp: " ~ hdr.temperature, titleFmt);
+            mergeRange(w, 3, 3, 4, 6, "Step: " ~ hdr.step, titleFmt);
+            mergeRange(w, 5, 3, 6, 6, "Temp: " ~ hdr.temperature, titleFmt);
         }
     }
 }
@@ -748,53 +758,53 @@ private void setDeviceHeader(CmdOptions options, Config config, Worksheet w, Hea
         {
             for (ushort c=7; c<15; c+=4)
             {
-                w.mergeRange(r, c, r, cast(ushort) (c+1), "", hdrNameFmt);
-                w.mergeRange(r, cast(ushort) (c+2), r, cast(ushort) (c+3), "", hdrValueFmt);
+                mergeRange(w, r, c, r, cast(ushort) (c+1), "", hdrNameFmt);
+                mergeRange(w, r, cast(ushort) (c+2), r, cast(ushort) (c+3), "", hdrValueFmt);
             }
         }
         int r = 0;
         if (hdr.step != "")
         {
-            w.mergeRange(r, 7, r, 8, "STEP #:", hdrNameFmt);
-            w.mergeRange(r, 9, r, 10, hdr.step, hdrValueFmt);
+            mergeRange(w, r, 7, r, 8, "STEP #:", hdrNameFmt);
+            mergeRange(w, r, 9, r, 10, hdr.step, hdrValueFmt);
             r++;
         }
         if (hdr.temperature != "")
         {
-            w.mergeRange(r, 7, r, 8, "Temperature:", hdrNameFmt);
-            w.mergeRange(r, 9, r, 10, hdr.temperature, hdrValueFmt);
+            mergeRange(w, r, 7, r, 8, "Temperature:", hdrNameFmt);
+            mergeRange(w, r, 9, r, 10, hdr.temperature, hdrValueFmt);
             r++;
         }
         if (hdr.lot_id != "")
         {
-            w.mergeRange(r, 7, r, 8, "Lot #:", hdrNameFmt);
-            w.mergeRange(r, 9, r, 10, hdr.lot_id, hdrValueFmt);
+            mergeRange(w, r, 7, r, 8, "Lot #:", hdrNameFmt);
+            mergeRange(w, r, 9, r, 10, hdr.lot_id, hdrValueFmt);
             r++;
         }
         if (hdr.sublot_id != "")
         {
-            w.mergeRange(r, 7, r, 8, "SubLot #:", hdrNameFmt);
-            w.mergeRange(r, 9, r, 10, hdr.sublot_id, hdrValueFmt);
+            mergeRange(w, r, 7, r, 8, "SubLot #:", hdrNameFmt);
+            mergeRange(w, r, 9, r, 10, hdr.sublot_id, hdrValueFmt);
             r++;
         }
         if (hdr.wafer_id != "")
         {
-            w.mergeRange(r, 7, r, 8, "Wafer #:", hdrNameFmt);
-            w.mergeRange(r, 9, r, 10, hdr.wafer_id, hdrValueFmt);
+            mergeRange(w, r, 7, r, 8, "Wafer #:", hdrNameFmt);
+            mergeRange(w, r, 9, r, 10, hdr.wafer_id, hdrValueFmt);
             r++;
         }
         if (hdr.devName != "")
         {
-            w.mergeRange(r, 7, r, 8, "Device:", hdrNameFmt);
-            w.mergeRange(r, 9, r, 10, hdr.devName, hdrValueFmt);
+            mergeRange(w, r, 7, r, 8, "Device:", hdrNameFmt);
+            mergeRange(w, r, 9, r, 10, hdr.devName, hdrValueFmt);
             r++;
         }
         auto map = hdr.getHeaderItems();
         ushort c = 7;
         foreach (key; map.keys)
         {
-            w.mergeRange(r, c, r, cast(ushort) (c+1), key, hdrNameFmt);
-            w.mergeRange(r, cast(ushort) (c+2), r, cast(ushort) (c+3), map[key], hdrValueFmt);
+            mergeRange(w, r, c, r, cast(ushort) (c+1), key, hdrNameFmt);
+            mergeRange(w, r, cast(ushort) (c+2), r, cast(ushort) (c+3), map[key], hdrValueFmt);
             r++;
             if (r == 7)
             {
@@ -806,53 +816,54 @@ private void setDeviceHeader(CmdOptions options, Config config, Worksheet w, Hea
     }
     else
     {
+        writeln("hdrNameFmt = ", hdrNameFmt, " hdrValueFmt = ", hdrValueFmt);
         for (uint r=7; r<24; r++)
         {
-            w.mergeRange(r, 0, r, cast(ushort) 2, "", hdrNameFmt);
-            w.mergeRange(r, cast(ushort) 3, r, cast(ushort) 6, "", hdrValueFmt);
+            mergeRange(w, r, 0, r, cast(ushort) 2, "", hdrNameFmt);
+            mergeRange(w, r, cast(ushort) 3, r, cast(ushort) 6, "", hdrValueFmt);
         }
         int r = 7;
         if (hdr.step != "")
         {
-            w.mergeRange(r, 0, r, 2, "STEP #:", hdrNameFmt);
-            w.mergeRange(r, 3, r, 6, hdr.step, hdrValueFmt);
+            mergeRange(w, r, 0, r, 2, "STEP #:", hdrNameFmt);
+            mergeRange(w, r, 3, r, 6, hdr.step, hdrValueFmt);
             r++;
         }
         if (hdr.temperature != "")
         {
-            w.mergeRange(r, 0, r, 2, "Temperature:", hdrNameFmt);
-            w.mergeRange(r, 3, r, 6, hdr.temperature, hdrValueFmt);
+            mergeRange(w, r, 0, r, 2, "Temperature:", hdrNameFmt);
+            mergeRange(w, r, 3, r, 6, hdr.temperature, hdrValueFmt);
             r++;
         }
         if (hdr.lot_id != "")
         {
-            w.mergeRange(r, 0, r, 2, "Lot #:", hdrNameFmt);
-            w.mergeRange(r, 3, r, 6, hdr.lot_id, hdrValueFmt);
+            mergeRange(w, r, 0, r, 2, "Lot #:", hdrNameFmt);
+            mergeRange(w, r, 3, r, 6, hdr.lot_id, hdrValueFmt);
             r++;
         }
         if (hdr.sublot_id != "")
         {
-            w.mergeRange(r, 0, r, 2, "SubLot #:", hdrNameFmt);
-            w.mergeRange(r, 3, r, 6, hdr.sublot_id, hdrValueFmt);
+            mergeRange(w, r, 0, r, 2, "SubLot #:", hdrNameFmt);
+            mergeRange(w, r, 3, r, 6, hdr.sublot_id, hdrValueFmt);
             r++;
         }
         if (hdr.wafer_id != "")
         {
-            w.mergeRange(r, 0, r, 2, "Wafer #:", hdrNameFmt);
-            w.mergeRange(r, 3, r, 6, hdr.wafer_id, hdrValueFmt);
+            mergeRange(w, r, 0, r, 2, "Wafer #:", hdrNameFmt);
+            mergeRange(w, r, 3, r, 6, hdr.wafer_id, hdrValueFmt);
             r++;
         }
         if (hdr.devName != "")
         {
-            w.mergeRange(r, 0, r, 2, "Device:", hdrNameFmt);
-            w.mergeRange(r, 3, r, 6, hdr.devName, hdrValueFmt);
+            mergeRange(w, r, 0, r, 2, "Device:", hdrNameFmt);
+            mergeRange(w, r, 3, r, 6, hdr.devName, hdrValueFmt);
             r++;
         }
         auto map = hdr.getHeaderItems();
         foreach (key; map.keys)
         {
-            w.mergeRange(r, 0, r, 2, key, hdrNameFmt);
-            w.mergeRange(r, 3, r, 6, map[key], hdrValueFmt);
+            mergeRange(w, r, 0, r, 2, key, hdrNameFmt);
+            mergeRange(w, r, 3, r, 6, map[key], hdrValueFmt);
             r++;
             if (r > 23) break;
         }
