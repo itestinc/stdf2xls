@@ -28,26 +28,7 @@ import makechip.WafermapFormat;
 */
 public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 {
-
-/* parametric tests to plot:
-Series -> site, steps
-Categories -> steps/temperatures
-Values -> parametric test results
-
-combine multiple pins into one histogram
-
-pass testID (comprised of test number, name, duplicate number) to Eric's spreadsheet. Receive back range of values in terms of cell numberings.
-testID = single instance class, immutable. Located in 'StdfDB.d'
-
-mark limit on the histogram
-*/
-bool once = true;
-
     foreach(hdr; stdfdb.deviceMap.keys) {
-
-        foreach(i, dr; stdfdb.deviceMap[hdr]) {
-			// TestRecord[] tests = dr.tests;
-		}
 
         import std.algorithm: canFind;
         string hfile = options.hfile;	// "<device>_histograms.pdf"
@@ -65,10 +46,10 @@ bool once = true;
             // ...
         }
 
-        string sheet1 = "Sheet1";
-        string sheet2 = "Frequency";
-        string sheet3 = "Value";
-        string sheet4 = "debug";
+        string sheet1 = "Histograms";
+        string sheet2 = "Occurrences";
+        string sheet3 = "Bin Values";
+        string sheet4 = "Raw Values";
         Workbook wb = newWorkbook(fname);
         Worksheet ws1 = wb.addWorksheet(sheet1);
         Worksheet ws2 = wb.addWorksheet(sheet2);
@@ -104,25 +85,26 @@ bool once = true;
 		ws1.mergeRange(12, 1, 12, 3, null);
 		ws1.mergeRange(13, 1, 13, 3, null);
 
-        uint row = 0;
-        ushort col = 0;
-        uint prevNumber = -1;
-        string prevName = "";
-        uint num_of_tests = 0;
-        uint value_count = 0;
-
         uint ch_row = 0;
         ushort ch_col = 6;
-        double prevVal = 0;
-        double min_val = 0;
-        double max_val = 0;
-
-        const TestID[] ids = getTestIDs(hdr);
-        ubyte[] sites = getSites(hdr);
-        writeln("sites = ", sites);
 
         // NOT WAFER
         if(hdr.wafer_id == "") {
+            uint row = 0;
+            ushort col = 0;
+            uint prevNumber = -1;
+            string prevName = "";
+            uint num_of_tests = 0;
+            uint value_count = 0;
+
+            double prevVal = 0;
+            double min_val = 0;
+            double max_val = 0;
+
+            ubyte[] sites = getSites(hdr);
+            writeln("sites = ", sites);
+
+            const TestID[] ids = getTestIDs(hdr);
             foreach(id; ids) {
 
                 if(id.type == Record_t.PTR) {
@@ -155,7 +137,7 @@ bool once = true;
                             // new test name, test number
                             if(col > 0) {
                                 // write the PREVIOUS dataset to chart
-                                Chart ch = wb.addChart(LXW_CHART_BAR);
+                                Chart ch = wb.addChart(LXW_CHART_COLUMN);
                                 ch.titleSetName(prevName);
                                 Chartseries series = ch.addChartseries(null, null);
                                 series.setName("Step "~hdr.step~" ("~hdr.temperature~"C)");
@@ -204,6 +186,7 @@ bool once = true;
             const uint underflow_bin_count = 0;
             const uint overflow_bin_count = 0;
 
+            const TestID[] ids = getTestIDs(hdr);
             foreach(id; ids) {
                 if(id.type == Record_t.PTR) {
 
@@ -224,6 +207,7 @@ bool once = true;
                     sh3_row++;
 
                     // write data for each site
+                    ubyte[] sites = getSites(hdr);
                     foreach(s, site; sites) {
                         HistoData histodata = getResults(hdr, id, site);
 
@@ -232,7 +216,9 @@ bool once = true;
                         sh2_row++;
 
                         // quantize raw values into bins, then store into bin_values array.
-                        const double bin_width = 0.1;
+                        const ulong n = histodata.values.length;    // total number of data points
+                        writeln(n);
+                        const double bin_width = 3.5*histodata.stdDev/pow(n, 3);       // Scott's normal reference formula to determine bin width
                         double[] bin_values;
                         foreach(v, val; histodata.values) {
                             ws4.write(sh4_row, sh4_col, val);   //write raw values for debug
@@ -240,9 +226,6 @@ bool once = true;
 
                             bin_values.length +=1;
                             bin_values[v] = val.quantize(bin_width);
-                            //ws2.write(sh2_row, sh2_col, bin_values[v]);     // write bin values
-                            //sh2_row++;
-
                             // store bins to master array containing bins for all sites
                             bin_values_allsites.length +=1;
                             bin_values_allsites[bva] = bin_values[v]; bva++;
@@ -257,7 +240,6 @@ bool once = true;
                         foreach(val; uniq( sort(bin_values) )) {
                             bin_counts.length +=1;
                             bin_counts[v] = cast(uint)count(bin_values, val);
-                            //ws2.write(r, c, val);
                             ws2.write(sh2_row, sh2_col, bin_counts[v]);     // write bin frequencies
                             sh2_row++;
                             v++;
@@ -265,9 +247,7 @@ bool once = true;
 
                         series.length++;
                         series[s] = ch.addChartseries(null, null);
-                        series[s].setName("site "~to!string(site));
-                        //series[s].setValues(sheet2, cast(uint)1, c, cast(uint)(histodata.values.length+2), c);
-                        //series[s].setCategories(sheet2, cast(uint)1, c, cast(uint)(bin_counts.length+2), c);
+                        series[s].setName("site "~to!string(site)~" (std="~to!string(histodata.stdDev)~")");
                         series[s].setValues(sheet2, cast(uint)2, sh2_col, cast(uint)(bin_counts.length+1), sh2_col);
 
                         sh2_col++;        
@@ -291,31 +271,14 @@ bool once = true;
 
                     Chartaxis x_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_X);
                     Chartaxis y_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_Y);
-                    x_axis.setName("value");
-                    y_axis.setName("frequency");
+                    x_axis.setName("value bins");
+                    y_axis.setName("number of occurrences");
                     ws1.insertChart(ch_row, ch_col, ch);
                     ch_row = cast(uint)(ch_row + 15);      
                 }
             }
-
             wb.close();
         }
-        
-        
-        /** 
-            - add cpk
-            - format axis scale min/max values to min/max values of dataset
-            - format axis scale reverse direction when negative
-            - add high/low limit indicators on histogram
-            - data series name? include step#, temperature
-
-            - write each data value per test name [series]
-            - keep track of start+end cells for each dataset
-
-            - generate chart after writing all data values:
-            - for each column, plot first to last row; test name; cpk; high/low limits
-        */
-
     }
 }
 
