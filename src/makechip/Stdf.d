@@ -1073,7 +1073,6 @@ struct FieldArray(T) if (is(T == U2) || is(T == U1) || is(T == U4))
     }
 }
 
-/*
 unittest
 {
     import core.stdc.stdlib;
@@ -1085,11 +1084,14 @@ unittest
     foreach(s; rr) files ~= s;
     foreach(string name; parallel(files, 18))
     {
+        writeln("Reading STDF file: ", name); stdout.flush();
         StdfReader stdf = new StdfReader(name);
         stdf.read();
         stdf.close();
+        writeln("Done."); stdout.flush();
         StdfRecord[] rs = stdf.getRecords();
         File f = File(name ~ ".tmp", "w");
+        writeln("Writing STDF file: ", name, ".tmp"); stdout.flush();
         foreach (StdfRecord r; rs)
         {
             auto type = r.recordType;
@@ -1098,14 +1100,14 @@ unittest
         }
         f.close();
         string cmd = "./bdiff " ~ name ~ ".tmp " ~ name;
+        writeln("DIFF: ", cmd); stdout.flush();
         int rv = system(toStringz(cmd));
         if (rv != 0) writeln("FILE = ", name);
         assert(rv == 0);
         remove(name ~ ".tmp");
-        writeln("write/diff test passes for ", name);
+        writeln("write/diff test passes for ", name); stdout.flush();
     }
 }
-*/
 
 private string getDeclString(const FieldType f) pure
 {
