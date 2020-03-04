@@ -1082,7 +1082,7 @@ unittest
     auto rr = dirEntries("stdf", SpanMode.depth);
     string[] files;
     foreach(s; rr) files ~= s;
-    foreach(string name; parallel(files, 18))
+    foreach(string name; files)
     {
         writeln("Reading STDF file: ", name); stdout.flush();
         StdfReader stdf = new StdfReader(name);
