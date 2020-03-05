@@ -136,9 +136,6 @@ private void updateCellSize(string s, uint row, ushort col, Format fmt)
 private void mergeRange(Worksheet w, uint row0, ushort col0, uint row1, ushort col1, string value, Format fmt)
 {
     string style = getStyle(fmt);
-    //writeln("style = ", style);
-    //writeln("fontSize = ", fmt.getFontSize());
-    //writeln("fontName = ", fmt.getFontName());
     double cw = getColumnWidth(value, x_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize(), fmt.getRotation() >= 45.0);
     double rh = getRowHeight(value, y_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize(), fmt.getRotation() >= 45.0);
     uint cols = 1 + (col1 - col0);
@@ -156,7 +153,6 @@ private void mergeRange(Worksheet w, uint row0, ushort col0, uint row1, ushort c
     }
     for (uint row=row0; row<=row1; row++)
     {
-        if (row == 7) writeln("mergeRange: rh = ", rh, " c0 = ", col0, " c1 = ", col1);
         if (row !in maxRowHeights) maxRowHeights[row] = rh;
         else
         {
@@ -584,7 +580,6 @@ private Worksheet[] createSheetsRotated(CmdOptions options, Config config, Workb
         string title = getTitle(options, hdr, i);
         if (title.length > 31) title = title[0..31];
         Worksheet w = wb.addWorksheet(title);
-        writeln("w = ", w);
         ws ~= w;
         setTitle(ws[i], hdr, Yes.rotated);
         setDeviceHeader(options, config, ws[i], hdr, Yes.rotated);
@@ -638,7 +633,6 @@ private Worksheet[] createSheets(CmdOptions options, Config config, Workbook wb,
         {
             if (row < 7) lrow += maxRowHeights[row];
             ws[i].setRow(row, maxRowHeights[row]);
-            if (row == 7) writeln("rowHeight = ", maxRowHeights[row]);
         }
         foreach (c; maxColWidths.keys)
         {
@@ -816,7 +810,6 @@ private void setDeviceHeader(CmdOptions options, Config config, Worksheet w, Hea
     }
     else
     {
-        writeln("hdrNameFmt = ", hdrNameFmt, " hdrValueFmt = ", hdrValueFmt);
         for (uint r=7; r<24; r++)
         {
             mergeRange(w, r, 0, r, cast(ushort) 2, "", hdrNameFmt);
@@ -936,7 +929,7 @@ private void setTestNameHeaders(CmdOptions options, Config config, Worksheet w, 
     }
     else
     {
-        for (size_t i=col; i<tests.length(); i++)
+        for (size_t i=col; i<tests.length() && i<col+maxCols; i++)
         {
             auto id = ids[i];       
             ushort lcol = cast(ushort) ((i-col) + 8);
@@ -956,7 +949,7 @@ private void setDeviceNameHeader(CmdOptions options, Config config, Worksheet w,
     {
         writeString(w, 0, cast(ushort) rowOrCol, device.devId.getID(), snxyValueFmt);
         writeString(w, 1, cast(ushort) rowOrCol, temp, tempValueFmt);
-        writeNumber(w, 2, cast(ushort) rowOrCol, device.tstamp - tmin, timeValueFmt);
+        writeNumber(w, 2, cast(ushort) rowOrCol, device.tstamp, timeValueFmt);
         writeNumber(w, 3, cast(ushort) rowOrCol, device.hwbin, hwbinValueFmt);
         writeNumber(w, 4, cast(ushort) rowOrCol, device.swbin, swbinValueFmt);
         writeNumber(w, 5, cast(ushort) rowOrCol, device.site, siteValueFmt);
@@ -967,7 +960,7 @@ private void setDeviceNameHeader(CmdOptions options, Config config, Worksheet w,
     {
         writeString(w, rowOrCol, 0, device.devId.getID(), snxyValueFmt);
         writeString(w, rowOrCol, 1, temp, tempValueFmt);
-        writeNumber(w, rowOrCol, 2, device.tstamp - tmin, timeValueFmt);
+        writeNumber(w, rowOrCol, 2, device.tstamp, timeValueFmt);
         writeNumber(w, rowOrCol, 3, device.hwbin, hwbinValueFmt);
         writeNumber(w, rowOrCol, 4, device.swbin, swbinValueFmt);
         writeNumber(w, rowOrCol, 5, device.site, siteValueFmt);
@@ -1003,8 +996,7 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
             {
                 if (cast(ushort) (lcol+col) !in cmap)
                 {
-                    if (tr.type == TestType.FLOAT || tr.type == TestType.HEX_INT || tr.type == TestType.DEC_INT ||
-                        tr.type == TestType.DYNAMIC_LOLIMIT || tr.type == TestType.DYNAMIC_HILIMIT || tr.type == TestType.STRING)
+                    if (tr.type == TestType.FLOAT || tr.type == TestType.HEX_INT || tr.type == TestType.DEC_INT || tr.type == TestType.STRING)
                     {
                         writeString(w, 14, lcol, "", loLimitValueFmt);
                         writeString(w, 15, lcol, "", hiLimitValueFmt);
@@ -1012,9 +1004,23 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                     }
                     else
                     {
-                        writeNumber(w, 14, lcol, tr.loLimit, loLimitValueFmt);
+                        if (tr.dynamicLoLimit)
+                        {
+                            writeString(w, 14, cast(ushort) (lcol-1), "", dynLoLimitHdrFmt);
+                            writeString(w, 15, cast(ushort) (lcol-1), "", dynLoLimitHdrFmt);
+                            writeString(w, 16, cast(ushort) (lcol-1), tr.units, unitsValueFmt);
+                        }                       
+                        if (tr.loLimit > 1E28) writeString(w, 14, lcol, "", loLimitValueFmt); 
+                        else writeNumber(w, 14, lcol, tr.loLimit, loLimitValueFmt);
+                        if (tr.hiLimit > 1E28) writeString(w, 15, lcol, "", hiLimitValueFmt);
                         writeNumber(w, 15, lcol, tr.hiLimit, hiLimitValueFmt);
                         writeString(w, 16, lcol, tr.units, unitsValueFmt);
+                        if (tr.dynamicHiLimit)
+                        {
+                            writeString(w, 14, cast(ushort) (lcol+1), "", dynHiLimitHdrFmt);
+                            writeString(w, 15, cast(ushort) (lcol+1), "", dynHiLimitHdrFmt);
+                            writeString(w, 16, cast(ushort) (lcol+1), tr.units, unitsValueFmt);
+                        }
                     }
                     cmap[cast(ushort) (lcol+col)] = true;
                 }
@@ -1026,34 +1032,35 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                         break;
                     case PARAMETRIC: goto case;
                     case FLOAT:
-                         if ((tr.testFlags & 0x80) == 0x80) writeNumber(w, row, lcol, tr.result.f, failDataFmt);
-                         else writeNumber(w, row, lcol, tr.result.f, passDataFloatFmt);
-                         break;
+                        if (tr.dynamicLoLimit) writeNumber(w, row, cast(ushort) (lcol-1), tr.loLimit, dynLoLimitValueFmt);
+                        if ((tr.testFlags & 0x80) == 0x80) writeNumber(w, row, lcol, tr.result.f, failDataFmt);
+                        else writeNumber(w, row, lcol, tr.result.f, passDataFloatFmt);
+                        if (tr.dynamicHiLimit) writeNumber(w, row, cast(ushort) (lcol+1), tr.hiLimit, dynHiLimitValueFmt);
+                        break;
                     case HEX_INT:
-                         string value = to!string(tr.result.u);
-                         if ((tr.testFlags & 0x80) == 0x80) writeFormula(w, row, lcol, "=DEC2HEX(" ~ value ~ "; 8)", failDataFmt);
-                         else writeFormula(w, row, lcol, "=DEC2HEX(" ~ value ~ "; 8)", passDataHexFmt);
-                         break;
+                        string value = to!string(tr.result.u);
+                        if ((tr.testFlags & 0x80) == 0x80) writeFormula(w, row, lcol, "=DEC2HEX(" ~ value ~ "; 8)", failDataFmt);
+                        else writeFormula(w, row, lcol, "=DEC2HEX(" ~ value ~ "; 8)", passDataHexFmt);
+                        break;
                     case DEC_INT:
-                         if ((tr.testFlags & 0x80) == 0x80) writeNumber(w, row, lcol, tr.result.l, failDataFmt);
-                         else writeNumber(w, row, lcol, tr.result.l, passDataIntFmt);
-                         break;
+                        if ((tr.testFlags & 0x80) == 0x80) writeNumber(w, row, lcol, tr.result.l, failDataFmt);
+                        else writeNumber(w, row, lcol, tr.result.l, passDataIntFmt);
+                        break;
                     case DYNAMIC_LOLIMIT:
-                         writeNumber(w, row, lcol, tr.result.f, dynLoLimitValueFmt);
-                         break;
+                        writeNumber(w, row, lcol, tr.result.f, dynLoLimitValueFmt);
+                        break;
                     case DYNAMIC_HILIMIT:
-                         writeNumber(w, row, lcol, tr.result.f, dynHiLimitValueFmt);
-                         break;
+                        writeNumber(w, row, lcol, tr.result.f, dynHiLimitValueFmt);
+                        break;
                     default: // STRING
-                         if ((tr.testFlags & 0x80) == 0x80) writeString(w, row, lcol, tr.result.s, failDataFmt);
-                         else writeString(w, row, lcol, tr.result.s, passDataStringFmt);
-                         break;
+                        if ((tr.testFlags & 0x80) == 0x80) writeString(w, row, lcol, tr.result.s, failDataFmt);
+                        else writeString(w, row, lcol, tr.result.s, passDataStringFmt);
+                        break;
                 }
             }
             if (cast(ushort) (lcol+col) !in cmap)
             {
-                if (tr.type == TestType.FLOAT || tr.type == TestType.HEX_INT || tr.type == TestType.DEC_INT ||
-                    tr.type == TestType.DYNAMIC_LOLIMIT || tr.type == TestType.DYNAMIC_HILIMIT || tr.type == TestType.STRING)
+                if (tr.type == TestType.FLOAT || tr.type == TestType.HEX_INT || tr.type == TestType.DEC_INT || tr.type == TestType.STRING)
                 {
                     writeString(w, 14, lcol, "", loLimitValueFmt);
                     writeString(w, 15, lcol, "", hiLimitValueFmt);
@@ -1061,9 +1068,23 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                 }
                 else
                 {
-                    writeNumber(w, 14, lcol, tr.loLimit, loLimitValueFmt);
-                    writeNumber(w, 15, lcol, tr.hiLimit, hiLimitValueFmt);
+                    if (tr.dynamicLoLimit)
+                    {
+                        writeString(w, 14, cast(ushort) (lcol-1), "", dynLoLimitHdrFmt);
+                        writeString(w, 15, cast(ushort) (lcol-1), "", dynLoLimitHdrFmt);
+                        writeString(w, 16, cast(ushort) (lcol-1), tr.units, unitsValueFmt);
+                    }                       
+                    if (tr.loLimit > 1E28) writeString(w, 14, lcol, "", loLimitValueFmt);
+                    else writeNumber(w, 14, lcol, tr.loLimit, loLimitValueFmt);
+                    if (tr.hiLimit > 1E28) writeString(w, 15, lcol, "", hiLimitValueFmt);
+                    else writeNumber(w, 15, lcol, tr.hiLimit, hiLimitValueFmt);
                     writeString(w, 16, lcol, tr.units, unitsValueFmt);
+                    if (tr.dynamicHiLimit)
+                    {
+                        writeString(w, 14, cast(ushort) (lcol+1), "", dynHiLimitHdrFmt);
+                        writeString(w, 15, cast(ushort) (lcol+1), "", dynHiLimitHdrFmt);
+                        writeString(w, 16, cast(ushort) (lcol+1), tr.units, unitsValueFmt);
+                    }
                 }
                 cmap[cast(ushort) (lcol+col)] = true;
             }
@@ -1075,8 +1096,10 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                 break;
             case PARAMETRIC: goto case;
             case FLOAT:
+                if (tr.dynamicLoLimit) writeNumber(w, row, cast(ushort) (lcol-1), tr.loLimit, dynLoLimitValueFmt);
                 if ((tr.testFlags & 0x80) == 0x80) writeNumber(w, row, lcol, tr.result.f, failDataFmt);
                 else writeNumber(w, row, lcol, tr.result.f, passDataFloatFmt);
+                if (tr.dynamicHiLimit) writeNumber(w, row, cast(ushort) (lcol+1), tr.hiLimit, dynHiLimitValueFmt);
                 break;
             case HEX_INT:
                 string value = to!string(tr.result.u);
@@ -1126,7 +1149,6 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
             TestRecord tr = devices[j].tests[i];
             uint seqNum = rowOrColMap[tr.id];
             uint row = seqNum + 8;
-            writeln("row = ", row, " dynHiLimit = ", tr.dynamicHiLimit, " dynLoLimit = ", tr.dynamicLoLimit);
             if (row !in lmap)
             {
                 writeString(w, row, 10, tr.units, unitsValueFmt);
@@ -1134,21 +1156,6 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                 {
                     writeString(w, row, 8, "", loLimitValueFmt);
                     writeString(w, row, 9, "", hiLimitValueFmt);
-                }
-                else if (tr.type == TestType.DYNAMIC_LOLIMIT || tr.type == TestType.DYNAMIC_HILIMIT)
-                {
-                    if (tr.type == TestType.DYNAMIC_LOLIMIT)
-                    {
-                        writeString(w, row-1, 8, "", loLimitValueFmt);
-                        writeString(w, row-1, 9, "", hiLimitValueFmt);
-                        writeString(w, row-1, 10, tr.units, unitsValueFmt);
-                    }
-                    if (tr.type == TestType.DYNAMIC_HILIMIT)
-                    {
-                        writeString(w, row+1, 8, "", loLimitValueFmt);
-                        writeString(w, row+1, 9, "", hiLimitValueFmt);
-                        writeString(w, row+1, 10, tr.units, unitsValueFmt);
-                    }
                 }
                 else
                 {
@@ -1158,8 +1165,10 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                         writeString(w, row-1, 9, "", dynLoLimitHdrFmt);
                         writeString(w, row-1, 10, tr.units, unitsValueFmt);
                     }                       
-                    writeNumber(w, row, 8, tr.loLimit, loLimitValueFmt);
-                    writeNumber(w, row, 9, tr.hiLimit, loLimitValueFmt);
+                    if (tr.loLimit > 1E28) writeString(w, row, 8, "", loLimitValueFmt);
+                    else writeNumber(w, row, 8, tr.loLimit, loLimitValueFmt);
+                    if (tr.hiLimit > 1E28) writeString(w, row, 9, "", loLimitValueFmt);
+                    else writeNumber(w, row, 9, tr.hiLimit, loLimitValueFmt);
                     if (tr.dynamicHiLimit)
                     {
                         writeString(w, row+1, 8, "", dynHiLimitHdrFmt);
