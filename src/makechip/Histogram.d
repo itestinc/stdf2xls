@@ -4,35 +4,56 @@ import makechip.StdfFile;
 import makechip.Stdf;
 import makechip.CmdOptions;
 import makechip.Config;
-import std.stdio;
-import std.math;
-import std.conv;
+import makechip.logo;
+import makechip.Util;
+import makechip.SpreadsheetWriter;
+import makechip.Spreadsheet;
+import makechip.WafermapFormat;
 
 import libxlsxd.workbook;
 import libxlsxd.worksheet;
 import libxlsxd.format;
 import libxlsxd.xlsxwrap;
-import makechip.logo;
-import makechip.Util;
-import makechip.SpreadsheetWriter;
-import makechip.Spreadsheet;
-
 import libxlsxd.chart;
 import libxlsxd.chartaxis;
 import libxlsxd.chartseries;
 import libxlsxd.chartsheet;
 
-import makechip.WafermapFormat;
-
+import std.stdio;
+import std.math;
+import std.conv;
 import std.algorithm.iteration : uniq, mean;
 import std.algorithm.sorting : sort;
 import std.algorithm.searching : count;
 
 /**
 */
+
 public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 {
     uint MPR_count = 0;
+
+
+    lxw_chart_font TitleFont;
+    TitleFont.name = cast(char*)"Cambria";
+    TitleFont.size = 20;
+
+    lxw_chart_font LabelsFont;
+    LabelsFont.size = 8;
+    LabelsFont.rotation = -90;
+
+    lxw_chart_font LegendFont;
+    LegendFont.size = 9;
+
+    lxw_chart_font AxisNameFont;
+    AxisNameFont.size = 9;
+    AxisNameFont.bold = true;
+
+    lxw_chart_font AxisNumberFont;
+    AxisNumberFont.size = 9;
+
+    lxw_chart_line GridLine;
+    GridLine.color = 0xC8C8C8;
 
     foreach(hdr; stdfdb.deviceMap.keys) {
 
@@ -67,33 +88,37 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 		lxw_image_options img_options;
 		const double ss_width = 449 * 0.350;
 		const double ss_height = 245 * 0.324;
-		img_options.x_scale = (2.5 * 70.0) / ss_width;
-		img_options.y_scale = (5.0 * 20.0) / ss_height;
+		img_options.x_scale = (3.0 * 70.0) / ss_width;
+		img_options.y_scale = (7.0 * 20.0) / ss_height;
 		ws1.mergeRange(0, 0, 7, 3, null);
 		img_options.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
 		ws1.insertImageBufferOpt(cast(uint) 0, cast(ushort) 1, img.dup.ptr, img.length, &img_options);
 
         // global chart options
-		lxw_image_options ch_options;
-		ch_options.x_scale = 2;
-		ch_options.y_scale = 1.5;
-		ch_options.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
+		//lxw_image_options img_ch_options;
+		//img_ch_options.x_scale = 2;
+		//img_ch_options.y_scale = 1.5;
+		//img_ch_options.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
+
 
         uint ch_row = 0;
         ushort ch_col = 5;
 
         // useful headers
         initWaferFormats(wb, options, config);
+        ws1.write( 8, 0, "wafer_id:", headerNameFmt);
 		ws1.write( 9, 0, "lot_id:", headerNameFmt);
 		ws1.write(10, 0, "sublot_id:", headerNameFmt);
 		ws1.write(11, 0, "devName:", headerNameFmt);
-		ws1.write(12, 0, "temperature:", headerNameFmt);
+		ws1.write(12, 0, "temp:", headerNameFmt);
 		ws1.write(13, 0, "step:", headerNameFmt);
+        ws1.write( 8, 1, hdr.wafer_id, headerValueFmt);
 		ws1.write( 9, 1, hdr.lot_id, headerValueFmt);
 		ws1.write(10, 1, hdr.sublot_id, headerValueFmt);
 		ws1.write(11, 1, hdr.devName, headerValueFmt);
 		ws1.write(12, 1, hdr.temperature, headerValueFmt);
 		ws1.write(13, 1, hdr.step, headerValueFmt);
+        ws1.mergeRange( 8, 1,  8, 3, null);
 		ws1.mergeRange( 9, 1,  9, 3, null);
 		ws1.mergeRange(10, 1, 10, 3, null);
 		ws1.mergeRange(11, 1, 11, 3, null);
@@ -192,12 +217,12 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
             uint sh2_row = 0;
             ushort sh2_col = 0;
 
-            uint sh1_row = 14;
-            const ushort sh1_col = 0;
+            uint sh1_row = 1;
+            const ushort sh1_col = 5;
             ws1.write(sh1_row, sh1_col, "Test #", headerNameFmt2);
             ws1.write(sh1_row, cast(ushort)(sh1_col + 1), "Duplicate #", headerNameFmt2);
             ws1.write(sh1_row, cast(ushort)(sh1_col + 2), "Test Name", headerNameFmt2);
-            ws1.mergeRange( sh1_row, 2,  sh1_row, 4, null);
+            ws1.mergeRange( sh1_row, cast(ushort)(sh1_col + 2),  sh1_row, cast(ushort)(sh1_col + 6), null);
             sh1_row++;
 
             const TestID[] ids = getTestIDs(hdr);
@@ -207,7 +232,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                     ws1.write(sh1_row, sh1_col, id.testNumber, headerValueFmt);
                     ws1.write(sh1_row, cast(ushort)(sh1_col + 1), id.dup, headerValueFmt);
                     ws1.write(sh1_row, cast(ushort)(sh1_col + 2), id.testName, headerValueFmt);
-                    ws1.mergeRange( sh1_row, 2,  sh1_row, 4, null);
+                    ws1.mergeRange( sh1_row, cast(ushort)(sh1_col + 2),  sh1_row, cast(ushort)(sh1_col + 6), null);
                     sh1_row++;
 
                     sh2_row = 0;
@@ -223,8 +248,6 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 
                     if(histodata_allsites.values.length == 0) {       //when is this the case?
                         writeln("skipped; no value(s) in histodata.");
-                        //histvalues_allsites.length +=1;
-                        //histvalues_allsites[0] = -1;
                         continue;
                     }
 
@@ -236,17 +259,19 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                     // setup chart for each PTR
                     Chart ch = wb.addChart(LXW_CHART_COLUMN);
                     ch.titleSetName(id.testName);
+                    ch.titleSetNameFont(&TitleFont);
                     Chartsheet sh = wb.addChartsheet(to!string(id.testNumber)~"-"~to!string(id.dup));
                     Chartseries[] series;
                     
                     // quantize the array into bins
-                    double bin_width = (3.5*histodata_allsites.stdDev)/pow(histvalues_allsites.length, 1/3);
+                    double bin_width = (3.5*histodata_allsites.stdDev)/pow(histvalues_allsites.length, 1/3);    // Scott's normal reference formula (bin width is too wide for our case)
+                    bin_width = bin_width / 4;
                     //bin_width = round(bin_width*10_000)/10_000;
                     import std.algorithm.searching : maxElement, minElement;
                     histvalues_allsites.sort();
                     const double min_value = histvalues_allsites[0];
                     const double max_value = histvalues_allsites[$-1];
-                    uint num_of_bins =cast(uint)ceil( (max_value - min_value)/bin_width );
+                    uint num_of_bins =cast(uint)ceil( (max_value - min_value)/bin_width );  // general formula
 
                     if(num_of_bins == 0) {                 //when is this the case?
                         num_of_bins = 1;
@@ -260,7 +285,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                         // quantized_values[i] = round(value.quantize(bin_width)*1000)/1000;
                     }
 
-                    writeln("min = ", min_value, " | max = ", max_value, "| mean = ", mean(quantized_values));
+                    writeln(id.testNumber, " | min = ", min_value, " | max = ", max_value, " | mean = ", mean(quantized_values));
                     //writeln("quantized_values = ", quantized_values);
                     //writeln("bin width = ", bin_width);
 
@@ -318,6 +343,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                         series[s].setName("site "~to!string(site)~" (std="~to!string(histodata.stdDev)~")");
                         series[s].setValues(sheet2, cast(uint)(sh2_row - number_of_bins), sh2_col, cast(uint)(sh2_row-1), sh2_col);
                         series[s].setLabels();
+                        series[s].setLabelsFont(&LabelsFont);
                         series[s].setLabelsPosition(LXW_CHART_LABEL_POSITION_OUTSIDE_END);
 
                         
@@ -335,9 +361,16 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                     Chartaxis y_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_Y);
                     x_axis.setName("ranges of values");
                     y_axis.setName("number of occurrences");
+                    x_axis.setNameFont(&AxisNameFont);
+                    y_axis.setNameFont(&AxisNameFont);
+                    x_axis.setNumFont(&AxisNumberFont);
+                    y_axis.setNumFont(&AxisNumberFont);
                     x_axis.majorGridlinesSetVisible(true);
+                    x_axis.majorGridlinesSetLine(&GridLine);
+                    y_axis.majorGridlinesSetVisible(false);
                     ch.legendSetPosition(LXW_CHART_LEGEND_TOP);  
-
+                    ch.legendSetFont(&LegendFont);
+                    //ch.setStyle(37);
                     sh.setChart(ch);
                     sh.activate();
                 }
