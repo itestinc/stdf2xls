@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/xlsxtest
+xlsxtest.so
+xlsxtest.dylib
+xlsxtest.dll
+xlsxtest.a
+xlsxtest.lib
+xlsxtest-test-*
+*.exe
+*.o
+*.obj
+*.lst

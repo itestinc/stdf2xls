@@ -1,0 +1,30 @@
+{
+	"name" : "xlsxTest",
+    "buildTypes": {
+        "unittest": {
+            "buildOptions": ["unittests"]
+        },
+        "release": {
+            "buildOptions": ["releaseMode", "optimize"]
+        }
+    },
+	"description" : "test for xlsxd",
+    "importPaths": [
+        "src/"
+    ],  
+    "lflags-posix": [
+        "-Lsrc/libxlsxwriter/src"
+    ],  
+    "libs-posix": [
+        "xlsxwriter"
+    ],  
+    "preBuildCommands-posix": [
+        "make -C src/libxlsxwriter",
+        "rm src/libxlsxwriter/src/libxlsxwriter.so" 
+    ],  
+	"TargetType" : "executable",
+	"mainSourceFile" : "src/app.d",
+    "dependencies" : {
+        "printed": "~>0.0.10",
+    }
+}
