@@ -618,7 +618,7 @@ class Config
         auto f = File(rc, "w");
         writeln("# font styles: normal | bold | italic | underline | bold_italic | bold_underline | italic_underline | bold_italic_underline");
         writeln("# supported fonts: Times | Arial | Courrier");
-        writeln("# legal font sizes: 6 to 32 (integers only)");
+        writeln("# legal font sizes: 6 to 31 (integers only)");
         foreach (key; cfgMap.keys)
         {
             auto value = cfgMap[key];
