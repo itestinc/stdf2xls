@@ -41,6 +41,20 @@ struct RsltData
     float hilimit;
 }
 
+/*
+private string fixSpecialChars(string filename)
+{
+    import std.string;
+    auto p = filename.indexOf('/');
+    string name = filename;
+    if (p >= 0)
+    {
+        
+    }
+    return name;
+}
+*/
+
 public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
 {
     if (options.genHistogram) rsltMap = new MultiMap!(RsltData, HeaderInfo, DeviceID, const(TestID), ubyte);
@@ -51,8 +65,8 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
     import std.algorithm.sorting;
     import std.algorithm;
     string sfile = options.sfile;
-    const bool separateFileForDevice = canFind(sfile, "<device>");
-    const bool separateFileForLot = canFind(sfile, "<lot>");
+    const bool separateFileForDevice = canFind(sfile, "%device%");
+    const bool separateFileForLot = canFind(sfile, "%lot%");
     MultiMap!(Workbook, string, string) wbMap = new MultiMap!(Workbook, string, string)();
     foreach (key; stdfdb.deviceMap.keys)
     {
@@ -60,9 +74,11 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         import std.string;
         if (separateFileForDevice && separateFileForLot)
         {
-            string lot = key.lot_id;
-            string dev = key.devName;
-            string fname = replace(sfile, "<lot>", lot).replace("<device>", dev);
+            string lot = replace(key.lot_id, '/', '%');
+            string dev = replace(key.devName, '/', '%');
+            lot = replace(lot, ' ', '_');
+            dev = replace(dev, ' ', '_');
+            string fname = replace(sfile, "%lot%", lot).replace("%device%", dev);
             wb = wbMap.get(dummyWb, dev, lot);
             if (wb.filename == "")
             {
@@ -74,8 +90,9 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         else if (separateFileForDevice)
         {
             string lot = "";
-            string dev = key.devName;
-            string fname = replace(sfile, "<device>", dev);
+            string dev = replace(key.devName, '/', '%');
+            dev = replace(dev, ' ', '_');
+            string fname = replace(sfile, "%device%", dev);
             wb = wbMap.get(dummyWb, dev, lot);
             if (wb.filename == "")
             {
@@ -86,9 +103,10 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         }
         else if (separateFileForLot)
         {
-            string lot = key.lot_id;
+            string lot = replace(key.lot_id, '/', '%');
+            lot = replace(lot, ' ', '_');
             string dev = "";
-            string fname = replace(sfile, "<lot>", lot);
+            string fname = replace(sfile, "%lot%", lot);
             wb = wbMap.get(dummyWb, dev, lot);
             if (wb.filename == "")
             {
@@ -110,6 +128,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         LinkedMap!(const TestID, uint) rowOrColMap = new LinkedMap!(const TestID, uint);
         DeviceResult[] dr = stdfdb.deviceMap[key];
         bool removeDups = false;
+        writeln("options.sortType = ", options.sortType);
         switch (options.sortType) with (Sort_t)
         {
             case SN_UP_TIME_UP_NO_DUPS:
@@ -363,7 +382,7 @@ const(TestID)[] getTestIDs(HeaderInfo hdr)
 unittest
 {
     import makechip.Stdf2xls;
-    CmdOptions options = new CmdOptions(["stdf2xls", "-a", "-r", "-h", "stdf/rif2g.stdf"]);
+    CmdOptions options = new CmdOptions(["stdf2xls", "-a", "-r", "-h", "stdf/rabbi.stdf"]);
     Config config = new Config();
     config.load();
     StdfFile[][HeaderInfo] stdfs = processStdf(options);

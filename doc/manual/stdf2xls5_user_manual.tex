@@ -1,0 +1,259 @@
+\documentclass[letterpaper]{article}
+\usepackage[pdftex]{graphicx}
+\usepackage{tp}
+\usepackage{unitsdef}
+\usepackage{pifont}
+\usepackage{sectsty}
+\usepackage{amsmath}
+\usepackage{eso-pic}
+\usepackage[T1]{fontenc}
+\usepackage{varioref}
+\usepackage{caption}
+\usepackage{textcomp}
+\usepackage{float}
+\usepackage{epsfig}
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+%%\usepackage{ulem}
+\pagestyle{plain}
+\renewcommand{\arraystretch}{1.4}
+\begin{document}
+\usefont{T1}{ua1}{m}{n}\selectfont
+\newcommand{\tfont}{\usefont{T1}{ua1}{m}{n}\selectfont\footnotesize}
+\newcommand{\bfont}{\usefont{T1}{ua1}{b}{n}\selectfont\tiny}
+\newcommand{\xfont}{\usefont{T1}{ua1}{m}{n}\selectfont\scriptsize}
+\newcommand{\lfont}{\usefont{T1}{ua1}{m}{n}\selectfont\large}
+\renewcommand{\captionfont}{\it }
+\renewcommand{\date}{February 26, 2020}
+\newcommand{\ver}{V1.0}
+\newcommand{\tablecap}{\hline\end{tabular}\end{table}\end{center}}
+\renewcommand{\versionhistory}{
+\vspace*{1in}
+\begin{center}
+\begin{table}[H]\caption*{Revision History}
+\centering
+\xfont\begin{tabular}[H]{|c|c|c|c|}
+\hline
+{\bf Version} & {\bf Author} & {\bf Date} & {\bf Changes}\\
+\hline
+\hline
+1.0 & Eric West & 2/26/20 & Initial Release \\
+\hline
+\end{tabular}
+\end{table}
+\end{center}
+}
+\maketitle
+\setcounter{tocdepth}{2}
+\tableofcontents
+\clearpage
+\makebg
+
+\section{Introduction}
+stdf2xls 5.0 is a program that converts STDF files into spreadsheets, wafermaps, and/or histograms.
+It is natively compiled from the D-language and therefore it uses much less memory than the previous
+stdf2xls 4.0 java program, and is significantly faster too.  It has many new features:
+\begin{itemize}
+\item Spreadsheet and ASCII wafermaps
+\item Spreadsheet histograms
+\item Ability to display hex, integer, and string data values in the spreadsheet
+\item New algorithm correctly orders tests even if the testflow varies from device to device
+\item Spreadsheet colors and fonts are now customizable
+\item Improved spreadsheet layout
+\item Many ways to sort and order device data
+\item Ability to modifiy any STDF text field with regular expressions
+\item Ability to write out STDF files
+\end{itemize}
+
+\section{Getting the program}
+
+The source code is available on gitlab. The source code can be downloaded
+from gitlab with git, or just the exececutable for Windows or GNU/Linux
+may be copied from the gitlab web page.  This manual may also be copied
+from the gitlab webpage.\\
+\\
+clone the repository with the following command:
+\begin{verbatim}
+git clone https://github.com/makechip/stdf2xls4
+\end{verbatim}
+
+The jar file is in the stdf2xls4/dist directory.\\
+\\
+To compile the source code, import the project into eclipse as a git project.
+
+\section{Installation}
+
+Installation is just a matter of possibly copying the jar file to a more convenient
+directory.  Optionally a script can be made to actually run the jar file if desired.
+
+\section{Usage}
+
+\subsection{Generating a Spreadsheet}
+\begin{verbatim}
+java [-mx<M>] -jar <path_to_stdf2xls4_jar_file> [options] -x <spreadsheet_file> <stdf_files>
+\end{verbatim}
+\begin{itemize}
+\item <M> is the amount of memory to allocate to the java virtual machine for example, 4G, 500M, 12G.
+\item [options] are explained in the next section, and are optional.
+\item The spreadsheet\_file must have a suffix of ".xls" or ".xlsx".  The spreadsheet format is
+determined from this suffix.
+\item There can be one STDF file or many STDF files specified; also "*.std" or "*.stdf" will work.
+\end{itemize}
+
+\subsection{Converting STDF to ASCII}
+\begin{verbatim}
+java -jar <path_to_stdf2xls4_jar_file> -d <stdf_files>
+\end{verbatim}
+
+\subsection{Command Line Options}
+\begin{verbatim}
+java -jar <path_to_stdf2xls4_jar_file> --help
+\end{verbatim}
+
+\section{Command Line Options}
+Options can be specified as a single dash followed by a single character, or a double dash
+followed by multiple characters.
+\begin{itemize}
+\item -a [<char>] or --pin-suffix [<char>]\\
+This option tells the program that if a test name of a ParametricTestRecord has
+a character <char> in it then the characters following <char> are to be interpreted
+as a pin name for that test.  If <char> is not specified, then by default '@' will be used.
+The pin name is displayed on a separate row or column in the test header.
+\item -b or --one-page\\
+Normally STDF files from different wafers or test steps are displayed in different spreadsheets.
+This option will combine them all on one page with an additional row or column for the test
+step or wafer number.
+\item -c or --columns\\
+Specifying this option will increase the maximum number of columns in the spreadsheet
+from 1024 to 16384.  Note that with this option the spreadsheet will not be
+readable with Libreoffice.
+\item -d or --dump\\
+This option causes the STDF data to be dumped in ASCII format to STDOUT.
+\item -g or --gui\\
+This option will run the program from a GUI instead of the command line.  This option
+is experimental and will probably be deprecated in a future version.
+\item -h or --help\\
+Prints a summary of the command line options.
+\item -j or --jxl-xls-name\\
+This option specified to use the JExcel library instead of the Apache POI library
+for spreadsheet generation.  Sometimes the Apache library for "xls" format is problematic.
+The JExcel library can be tried to see if it resolves any formatting problems.  Note
+that this option has no effect when using "xlsx" or XML format, and XML format is
+recommended anyways.
+\item -l <file> or --logo <file>\\
+This option specifies a logo (PNG file) to include in the upper left
+corner of the spreadsheet.  The logo should have an aspect ratio of
+about 290(W) to 120(H).  It will be scaled to fit within the required area.
+\item -m or --modifier\\
+This is an experimental feature that can modify STDF fields on the fly as the STDF is loaded.
+Currently it is only enabled for DatalogTextRecords. This option has the form of:\\
+-m "R:Record\_t F:FieldDescriptor C:Condition\_t V:oldValue N:newValue"\\
+Where record type currently can only be DTR, the field descriptor can only be TEXT\_DAT, and
+Condition\_t can be EQUALS, CONTAINS, or TRUE.  Also, multiple modifiers may be specified by using multiple -m options.
+This implementation is lame, and will probably later be replaced by a regular expression engine.\\
+\begin{verbatim}
+-m "R:DTR F:TEXT_DAT C:CONTAINS V:2.00 N:2.0"
+\end{verbatim}
+This will check every DatalogTextRecord for the string "2.00", and
+if found, it will replace it with "2.0".  Currently whitespace in the
+string cannot be handled.  The Condition TRUE is currently useless. The EQUALS
+condition requires that the entire text field be equal to the oldValue for
+a replacement to occur.
+\item -n or --no-wrap-test-names\\
+When the the test names run horizontally across the spreadsheet they will be wrapped
+to keep the columns from getting too wide.  This option will prevent wrapping the test
+names, but can give very wide columns.
+\item -o or --no-overwrite\\
+Currently this option is not working.
+\item -p <integer> or --precision <integer>\\
+This option specifies how many digits will be to the right of the decimal
+point for floating point values.  The default is 3.
+\item -r or --rotate\\
+This option transposes the spreadsheet.  By default test names run horizontally across
+the spreadsheet and devices run vertically down the spreadsheet. With the -r option
+the test names will run vertically down the spreadsheet and devices will run horizontally
+across the spreadsheet.
+\item -s or --sort\\
+this options sorts the data by serial number or XY-coordinate (for wafersort).
+\item -v or --dont-skip-search-fails\\
+Verigy (AKA Advantest) testers can output bogus test data as tests related to searches.  By default
+these will be ignored.  This option will include them in the spreadsheet.
+\item -x <file.xls[x]> or --xls-name <file.xlsx[x]>\\
+This options specifies the name of the spreadsheet file and is required (unless using the -d option).
+If the suffix of the filename is ".xlsx" then the newer XML format will be used for the spreadsheet.
+Otherwise the older ".xls" format will be used.  In the future the xls format may be deprecated.
+\item -y or --dynamic limits\\
+If this option is used, then the high and low limits of all parametric tests are
+searched, and if they vary by more than 0.1\percent then the corresponding test will use dynamic limit
+which means that the column to the left of the test will be the lower limit used and the column to
+the right of the test will be the upper limit used.
+\end{itemize}
+\clearpage
+\section{Support for Alphanumeric Serial Numbers}
+For alpha-numeric serial numbers, print a text field to the datalog
+at the beginning of the test flow that looks like this:
+
+\begin{verbatim}
+TEXT_DATA: S/N : <serial_number>
+\end{verbatim}
+The strings "TEXT\_DATA" and "S/N" must match exactly what is shown here.  Whitespace
+around the colons is ignored.  The maximum length of any string printed to the datalogger
+must not exceed 255 characters.
+
+\section{Custom Spreadsheet Data Values}
+Arbitrary data for each device may be mapped to the spreadsheet as a test result along
+with the rest of the test data.  To get this information into the STDF file, print a 
+text field to the datalogger using the format:
+\begin{verbatim}
+TEXT_DATA : test_name : value [(units)] [ : test_number [ : site_number [ : head_number ]]]
+\end{verbatim}
+All fields after the value are optional.  Whitespace around the colons is ignored.
+
+\section{Spreadsheet Header Fields}
+It is often desirable to include header information in each spreadsheet.  The header information
+can be encoded into datalog text fields that are printed out for each device.  Note that it is
+expected that the header data be constant for an entire test session.  If the header information
+changes within a set of STDF files, then there will be multiple spreadsheets generated (within a workbook)
+with each spreadsheet having different header information.
+
+To generate a header field, print the field to the datalogger using this format:
+\begin{verbatim}
+>>> <header_name> : <header_value>
+\end{verbatim}
+The prefix "\gT\gT\gT" indicates a header field.  The header name can be any string (not containing a colon)
+and the header value can be any string.
+\clearpage
+\subsection{Legacy Header Fields}
+There were a set of fixed header fields that are still supported, but are now deprecated (don't use them on new test programs).
+These field were simply a header name followed by a header value.  The recognized header names
+are:
+\begin{itemize}
+\item CUSTOMER:
+\item DEVICE NUMBER:
+\item SOW:
+\item CUSTOMER PO\#:
+\item TESTER:
+\item TEST PROGRAM:
+\item LOADBOARD:
+\item CONTROL SERIAL \#s:
+\item JOB \#:
+\item LOT \#:
+\item STEP \#:
+\item TEMPERATURE:
+\end{itemize}
+
+These header names may be combined with the new header format if necessary.
+
+\section{Modifying STDF Text fields}
+
+\section{Wafermaps}
+
+
+\section{Histograms}
+
+
+\section{Look and Feel Customization}
+
+
+
+\end{document}
