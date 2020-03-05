@@ -394,7 +394,7 @@ HistoData getResults(HeaderInfo hdr, const(TestID) testId)
         {
             auto rslt = rsltMap.get(dummy, hdr, d.devId.getID(), testId, s);
             if (rslt == dummy) continue;
-            writeln("devID = ", d.devId.getID(), " testID = ", testId, " rslt = ", rslt.rslt);
+//            writeln("devID = ", d.devId.getID(), " testID = ", testId, " rslt = ", rslt.rslt);
             r ~= rslt.rslt;
             sum += rslt.rslt;
             n++;

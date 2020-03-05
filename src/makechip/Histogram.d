@@ -24,7 +24,7 @@ import libxlsxd.chartsheet;
 
 import makechip.WafermapFormat;
 
-import std.algorithm.iteration : uniq;
+import std.algorithm.iteration : uniq, mean;
 import std.algorithm.sorting : sort;
 import std.algorithm.searching : count;
 
@@ -53,13 +53,11 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
         string sheet1 = "Histograms";
         string sheet2 = "Occurrences";
         string sheet3 = "Bin Values";
-        //string sheet4 = "Raw Values";
         string sheet5 = "MPR";
         Workbook wb = newWorkbook(fname);
         Worksheet ws1 = wb.addWorksheet(sheet1);
         Worksheet ws2 = wb.addWorksheet(sheet2);
         Worksheet ws3 = wb.addWorksheet(sheet3);
-        //Worksheet ws4 = wb.addWorksheet(sheet4);
         Worksheet ws5 = wb.addWorksheet(sheet5);
 
         // logo
@@ -81,7 +79,6 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 
         uint ch_row = 0;
         ushort ch_col = 5;
-        const uint ch_row_offset = 22;
 
         // useful headers
         initWaferFormats(wb, options, config);
@@ -102,7 +99,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 		ws1.mergeRange(13, 1, 13, 3, null);
 
         // NOT WAFER
-        if(hdr.wafer_id == "") {
+        if(hdr.wafer_id == "deprecated") {
             uint row = 0;
             ushort col = 0;
             uint prevNumber = -1;
@@ -155,14 +152,10 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                                 Chartseries series = ch.addChartseries(null, null);
                                 series.setName("Step "~hdr.step~" ("~hdr.temperature~"C)");
                                 series.setValues(sheet2, 1, cast(ushort)(col), value_count, cast(ushort)(col));
-                                //series.setCategories();
-                                //series.setLabels();
-                                //series.setLabelsPosition(LXW_CHART_LABEL_POSITION_OUTSIDE_END);
                                 Chartaxis x_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_X);
                                 Chartaxis y_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_Y);
                                 x_axis.setName("x-axis");
                                 y_axis.setName("y-axis");
-                                //x_axis.setName("mean: "~to!string(histdata.mean)~", cpk: "~to!string(histdata.cpk)~", stdDev: "~to!string(histdata.stdDev));
                                 ws1.insertChart(ch_row, ch_col, ch);
                                 ch_row = cast(uint)(ch_row + 15);
                             }
@@ -191,9 +184,6 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
             uint sh5_row = 0;
             ushort sh5_col = 0;
 
-            uint sh4_row = 0;
-            ushort sh4_col = 0;
-
             uint sh3_row = 0;
             ushort sh3_col = 0;
 
@@ -207,31 +197,14 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
             ws1.mergeRange( sh1_row, 1,  sh1_row, 3, null);
             sh1_row++;
 
-            const uint underflow_bin_count = 0;
-            const uint overflow_bin_count = 0;
-
-            uint count_MPR = 0;
-
             const TestID[] ids = getTestIDs(hdr);
             foreach(id; ids) {
                 if(id.type == Record_t.PTR ) {
-
-                    count_MPR++;
 
                     ws1.write(sh1_row, sh1_col, id.testNumber, headerNameFmt);
                     ws1.write(sh1_row, cast(ushort)(sh1_col + 1), id.testName, headerValueFmt);
                     ws1.mergeRange( sh1_row, 1,  sh1_row, 3, null);
                     sh1_row++;
-
-                    // setup chart for each PTR
-                    Chart ch = wb.addChart(LXW_CHART_COLUMN);
-                    ch.titleSetName(id.testName);
-                    Chartsheet sh = wb.addChartsheet(to!string(id.testNumber));
-                    Chartseries[] series;
-
-                    double[] bin_values_allsites;
-                    ulong[double] bin_counts2;
-                    uint bva = 0;       // keep track of bin values for all sites
 
                     sh2_row = 0;
                     sh3_row = 0;
@@ -244,28 +217,54 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                     double[] histvalues_allsites;
                     HistoData histodata_allsites = getResults(hdr, id);
 
+                    if(id.testName == "OTP_VERIFY_MIN") {
+                        writeln("OTP_VERIFY_MIN: ", histodata_allsites.values);
+                    }
+
+                    if(histodata_allsites.values.length == 0) {       //when is this the case?
+                        writeln("skipped");
+                        //histvalues_allsites.length +=1;
+                        //histvalues_allsites[0] = -1;
+                        continue;
+                    }
+
                     foreach(i, value; histodata_allsites.values) {
                         histvalues_allsites.length +=1;
                         histvalues_allsites[i] = value;
                     }
+
+                    // setup chart for each PTR
+                    Chart ch = wb.addChart(LXW_CHART_COLUMN);
+                    ch.titleSetName(id.testName);
+                    Chartsheet sh = wb.addChartsheet(to!string(id.testName)~"_"~to!string(id.testNumber)~"_"~to!string(id.dup));
+                    Chartseries[] series;
                     
                     // quantize the array into bins
+                    double bin_width = (3.5*histodata_allsites.stdDev)/pow(histvalues_allsites.length, 1/3);
+                    //bin_width = round(bin_width*10_000)/10_000;
+                    import std.algorithm.searching : maxElement, minElement;
+                    histvalues_allsites.sort();
+                    const double min_value = histvalues_allsites[0];
+                    const double max_value = histvalues_allsites[$-1];
+                    uint num_of_bins =cast(uint)ceil( (max_value - min_value)/bin_width );
 
-                    double bin_width2 = (0.5*histodata_allsites.stdDev)/pow(histvalues_allsites.length, 1/3);
-                    bin_width2 = round(bin_width2*10_000)/10_000;
-                    //import std.algorithm.searching : maxElement, minElement;
-                    //double number_of_bins =( maxElement(histvalues_allsites) - minElement(histvalues_allsites) )/h;
-
-                    writeln("bin width2 = ", bin_width2);
-
-                    double[] quantized_values;
-                    foreach(i, value; histvalues_allsites) {
-                        quantized_values.length++;
-                        quantized_values[i] = value.quantize(bin_width2);
+                    if(num_of_bins == 0) {
+                        num_of_bins = 1;
                     }
-                    quantized_values.sort();
-                    quantized_values.uniq();
 
+                    // here, need to cut out the outliers, and zoom into denser frequencies
+                    double[] quantized_values = new double[](num_of_bins);
+                    foreach(i, value; quantized_values) {
+                        quantized_values[i] = ceil((bin_width*(i+1) + min_value)*1_000)/1_000;     // only works for even distribution
+                        //quantized_values[i]
+                        // quantized_values[i] = round(value.quantize(bin_width)*1000)/1000;
+                    }
+
+                    writeln("min = ", min_value, " | max = ", max_value, "| mean = ", mean(quantized_values));
+                    writeln("quantized_values = ", quantized_values);
+                    writeln("bin width = ", bin_width);
+
+                    quantized_values.sort();
                     double[] quantized_values_unique;
                     uint qvui = 0;
                     foreach(value; uniq(quantized_values)) {
@@ -293,6 +292,9 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                                     break;
                                 }
                                 else {
+                                    if(j == number_of_bins-1 ) {
+                                        bin_count[j]++;
+                                    }
                                     continue;
                                 }
                             }
@@ -310,85 +312,10 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                         series[s].setLabels();
                         series[s].setLabelsPosition(LXW_CHART_LABEL_POSITION_OUTSIDE_END);
 
-                        //ws2.write(sh2_row, sh2_col, "site "~to!string(site));
-
-                        // quantize raw values into bins, then store into bin_values array.
-                        const ulong n = histodata.values.length;    // total number of data points
-                        double bin_width = 3.5*histodata.stdDev/pow(n, 1/3);       // Scott's normal reference formula to determine bin width
-                       // bin_width = round(bin_width*10_000)/10_000;
-                        //writeln("bin width = ", bin_width);
-
-                        double[] bin_values;
-                        foreach(v, val; histodata.values) {
-                            //ws4.write(sh4_row, sh4_col, val);   //write raw values for debug
-                            //sh4_row++;
-
-                            bin_values.length +=1;
-                            bin_values[v] = val.quantize(bin_width);
-                            // store bins to master array containing bins for all sites
-                            bin_values_allsites.length +=1;
-                            bin_values_allsites[bva] = bin_values[v];
-                            bva++;
-                        }
-                        //sh4_col++;
-                        //sh4_row = 0;
-
-                        // calculate bin occurrences
-                        ulong[] bin_counts;
-                            // associative array key=value, out=count
-                        uint val_index = 0;
-                        //writeln("bin_values (sorted&unique) = ", uniq(sort(bin_values)));
-                        foreach(val; uniq( sort(bin_values) ) ) {
-                            bin_counts.length +=1;
-                            bin_counts[val_index] = count(bin_values, val);
-                            //ws2.write(sh2_row, sh2_col, bin_counts[val_index]);     // write bin occurrences
-                            //ws2.write(sh2_row, cast(ushort)(sh2_col+1), val);
-
-                            if(val in bin_counts2) {
-                                bin_counts2[val] += count(bin_values, val);
-                                //writeln("combined");
-                            }
-                            else {
-                                bin_counts2[val] = count(bin_values, val);
-                            }
-
-                            //sh2_row++;
-                            val_index++;
-                        }
-
-                       // series.length++;
-                       // series[s] = ch.addChartseries(null, null);
-                       // series[s].setName("site "~to!string(site)~" (std="~to!string(histodata.stdDev)~")");
-                      //  //series[s].setValues(sheet2, cast(uint)2, sh2_col, cast(uint)(bin_counts.length+1), sh2_col);
-                      //  series[s].setValues(sheet2, cast(uint)(sh2_row - val_index), sh2_col, cast(uint)(sh2_row-1), sh2_col);
-                     //   series[s].setLabels();
-                    //    series[s].setLabelsPosition(LXW_CHART_LABEL_POSITION_OUTSIDE_END);
-
-                       //sh2_row++;
-                       //sh2_row = 0;
-                       //sh2_col++;
+                        
                     }
-                    //sh2_row = 0;
-                    //sh2_col+=2;
                     sh2_col++;
                     sh2_row = 0;
-                    
-                    // SHEET 3: BIN VALUES UNIQUE
-                    const ulong n = bin_values_allsites.length;    // total number of data points
-                    //double bin_width = 3.5*histodata.stdDev/pow(n, 1/3);       // Scott's normal reference formula to determine bin width
-                    uint bva_uniq = 0;
-                    foreach(val; uniq( sort(bin_values_allsites) ) ) {
-                        //ws3.write(sh3_row, sh3_col, val);     // write unique bin values
-                        //sh3_row++;
-                        bva_uniq++;
-                    }
-                    // set chart categories as the unique bin values across all sites.
-                 //   foreach(i, s; series) {
-                //        series[i].setCategories(sheet3, cast(uint)1, sh3_col, cast(uint)bva_uniq, sh3_col);
-                 //   }
-                    //sh3_col++;
-                    //sh3_row = 0;
-
 
                     foreach(i, s; series) {
                         series[i].setCategories(sheet3, cast(uint)1, sh3_col, cast(uint)(number_of_bins), sh3_col);
@@ -396,32 +323,14 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                     sh3_col++;
                     sh3_row = 0;
 
-
-                    double[] bin_counts2_keys = bin_counts2.keys;
-                    bin_counts2_keys.sort();
-
-                    //foreach(key, value; bin_counts2) {
-                    foreach(key; bin_counts2_keys) {
-                        //ws5.write(sh5_row, sh5_col, key);
-                        //ws5.write(sh5_row, cast(ushort)(sh5_col+1), bin_counts2[key]);
-                        sh5_row++;
-                    }
-                    //sh5_col+=2;
-                    //sh5_row = 0;
-
                     Chartaxis x_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_X);
                     Chartaxis y_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_Y);
                     x_axis.setName("bins");
                     y_axis.setName("number of occurrences");
-                    // ch.setTableGrid(LXW_TRUE, LXW_TRUE, LXW_TRUE, LXW_TRUE);
-                    // void chart_axis_major_gridlines_set_visible(lxw_chart_axis*, ubyte) @nogc nothrow;
                     x_axis.majorGridlinesSetVisible(true);
-                    ch.legendSetPosition(LXW_CHART_LEGEND_TOP);
+                    ch.legendSetPosition(LXW_CHART_LEGEND_TOP);  
 
-                    //ws1.insertChartOpt(ch_row, ch_col, ch, &ch_options);
-                    //ch_row = cast(uint)(ch_row + ch_row_offset);      
-
-                    sh.setChart(ch);  // cannot insert chart in both worksheet and chartsheet.
+                    sh.setChart(ch);
                     sh.activate();
 
 
@@ -450,11 +359,6 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
             wb.close();
         }
     }
-}
-
-struct keysite {
-    ulong count;
-    ubyte site;
 }
 
 unittest {
@@ -501,8 +405,6 @@ unittest {
 
     sh.setChart(ch);  // cannot insert chart in both worksheet and chartsheet.
     sh.activate();
-
-    
 
     wb.close();
 }
