@@ -32,19 +32,21 @@ import std.algorithm.searching : count;
 */
 public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 {
+    uint MPR_count = 0;
+
     foreach(hdr; stdfdb.deviceMap.keys) {
 
         import std.algorithm: canFind;
-        string hfile = options.hfile;	// "<device>_histograms.pdf"
-        const bool separateFileForDevice = canFind(hfile, "<device>");
+        string hfile = options.hfile;	// "%device%_histograms.xlsx";
+        const bool separateFileForDevice = canFind(hfile, "%device%");
 
         import std.array : replace;
-        string fname = replace(hfile, "<device>", hdr.devName);
+        string fname = replace(hfile, "%device%", hdr.devName);
         if (options.verbosityLevel > 9) writeln(fname);
 
         if(separateFileForDevice) {
             import std.array : replace;
-            fname = replace(hfile, "<device>", hdr.devName);
+            fname = replace(hfile, "%device%", hdr.devName);
         }
         else {
             // ...
@@ -192,18 +194,20 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 
             uint sh1_row = 14;
             const ushort sh1_col = 0;
-            ws1.write(sh1_row, sh1_col, "Test Number", headerNameFmt);
-            ws1.write(sh1_row, cast(ushort)(sh1_col + 1), "Test Name", headerValueFmt);
-            ws1.mergeRange( sh1_row, 1,  sh1_row, 3, null);
+            ws1.write(sh1_row, sh1_col, "Test #", headerNameFmt2);
+            ws1.write(sh1_row, cast(ushort)(sh1_col + 1), "Duplicate #", headerNameFmt2);
+            ws1.write(sh1_row, cast(ushort)(sh1_col + 2), "Test Name", headerNameFmt2);
+            ws1.mergeRange( sh1_row, 2,  sh1_row, 4, null);
             sh1_row++;
 
             const TestID[] ids = getTestIDs(hdr);
             foreach(id; ids) {
                 if(id.type == Record_t.PTR ) {
 
-                    ws1.write(sh1_row, sh1_col, id.testNumber, headerNameFmt);
-                    ws1.write(sh1_row, cast(ushort)(sh1_col + 1), id.testName, headerValueFmt);
-                    ws1.mergeRange( sh1_row, 1,  sh1_row, 3, null);
+                    ws1.write(sh1_row, sh1_col, id.testNumber, headerValueFmt);
+                    ws1.write(sh1_row, cast(ushort)(sh1_col + 1), id.dup, headerValueFmt);
+                    ws1.write(sh1_row, cast(ushort)(sh1_col + 2), id.testName, headerValueFmt);
+                    ws1.mergeRange( sh1_row, 2,  sh1_row, 4, null);
                     sh1_row++;
 
                     sh2_row = 0;
@@ -217,12 +221,8 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                     double[] histvalues_allsites;
                     HistoData histodata_allsites = getResults(hdr, id);
 
-                    if(id.testName == "OTP_VERIFY_MIN") {
-                        writeln("OTP_VERIFY_MIN: ", histodata_allsites.values);
-                    }
-
                     if(histodata_allsites.values.length == 0) {       //when is this the case?
-                        writeln("skipped");
+                        writeln("skipped; no value(s) in histodata.");
                         //histvalues_allsites.length +=1;
                         //histvalues_allsites[0] = -1;
                         continue;
@@ -236,7 +236,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                     // setup chart for each PTR
                     Chart ch = wb.addChart(LXW_CHART_COLUMN);
                     ch.titleSetName(id.testName);
-                    Chartsheet sh = wb.addChartsheet(to!string(id.testName)~"_"~to!string(id.testNumber)~"_"~to!string(id.dup));
+                    Chartsheet sh = wb.addChartsheet(to!string(id.testNumber)~"-"~to!string(id.dup));
                     Chartseries[] series;
                     
                     // quantize the array into bins
@@ -248,7 +248,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                     const double max_value = histvalues_allsites[$-1];
                     uint num_of_bins =cast(uint)ceil( (max_value - min_value)/bin_width );
 
-                    if(num_of_bins == 0) {
+                    if(num_of_bins == 0) {                 //when is this the case?
                         num_of_bins = 1;
                     }
 
@@ -261,23 +261,31 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                     }
 
                     writeln("min = ", min_value, " | max = ", max_value, "| mean = ", mean(quantized_values));
-                    writeln("quantized_values = ", quantized_values);
-                    writeln("bin width = ", bin_width);
+                    //writeln("quantized_values = ", quantized_values);
+                    //writeln("bin width = ", bin_width);
 
                     quantized_values.sort();
                     double[] quantized_values_unique;
                     uint qvui = 0;
+                    bool first_index = true;
                     foreach(value; uniq(quantized_values)) {
                         quantized_values_unique.length++;
                         quantized_values_unique[qvui] = value;
-                        qvui++;
 
-                        ws3.write(sh3_row, sh3_col, value);
+                        if(first_index) {
+                            ws3.write(sh3_row, sh3_col, "["~to!string(min_value)~", "~to!string(value)~")");
+                            first_index = false;
+                        }
+                        else {
+                            const double prev_value = quantized_values_unique[qvui-1];
+                            ws3.write(sh3_row, sh3_col, "["~to!string(prev_value)~", "~to!string(value)~")");
+                        }
+                        qvui++;
                         sh3_row++;
                     }
                     ulong number_of_bins = quantized_values_unique.length;
 
-                    writeln("Unique quantized values = ", quantized_values_unique);
+                    //writeln("Unique quantized values = ", quantized_values_unique);
 
                     // write data for each site
                     ubyte[] sites = getSites(hdr);
@@ -299,7 +307,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                                 }
                             }
                         }
-                        writeln("bin_count (", to!string(site), ") = ", bin_count);
+                        //writeln("bin_count (", to!string(site), ") = ", bin_count);
                         foreach(value; bin_count) {
                             ws2.write(sh2_row, sh2_col, value);
                             sh2_row++;
@@ -325,21 +333,20 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 
                     Chartaxis x_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_X);
                     Chartaxis y_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_Y);
-                    x_axis.setName("bins");
+                    x_axis.setName("ranges of values");
                     y_axis.setName("number of occurrences");
                     x_axis.majorGridlinesSetVisible(true);
                     ch.legendSetPosition(LXW_CHART_LEGEND_TOP);  
 
                     sh.setChart(ch);
                     sh.activate();
-
-
                 }
                 
                 else if(id.type == Record_t.MPR) {
 
                     if( id.sameMPRTest(id) ) {
                         //writeln("MPR: ", id.testName, " | ", id.testNumber, " | ", id.dup);
+                        MPR_count++;
                     }
                     sh5_col = 0;
                     ubyte[] sites = getSites(hdr);
@@ -354,8 +361,8 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                         sh5_col+=2;
                     }
                 }
-                
             }
+            writeln("MPR Count = ", MPR_count);
             wb.close();
         }
     }
