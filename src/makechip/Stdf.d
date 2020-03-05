@@ -1078,35 +1078,40 @@ unittest
     import core.stdc.stdlib;
     import std.file;
     import std.string;
-    import std.parallelism;
     auto rr = dirEntries("stdf", SpanMode.depth);
     string[] files;
+    string tmp;
     foreach(s; rr) files ~= s;
-    foreach(string name; files)
+    try
     {
-        writeln("Reading STDF file: ", name); stdout.flush();
-        StdfReader stdf = new StdfReader(name);
-        stdf.read();
-        stdf.close();
-        writeln("Done."); stdout.flush();
-        StdfRecord[] rs = stdf.getRecords();
-        File f = File(name ~ ".tmp", "w");
-        writeln("Writing STDF file: ", name, ".tmp"); stdout.flush();
-        foreach (StdfRecord r; rs)
+        foreach(string name; files)
         {
-            auto type = r.recordType;
-            ubyte[] bs = r.getBytes();
-            f.rawWrite(bs);
+            tmp = name;
+            writeln("Reading STDF file: ", name); stdout.flush();
+            StdfReader stdf = new StdfReader(name);
+            stdf.read();
+            stdf.close();
+            writeln("Done."); stdout.flush();
+            StdfRecord[] rs = stdf.getRecords();
+            File f = File(name ~ ".tmp", "w");
+            writeln("Writing STDF file: ", name, ".tmp"); stdout.flush();
+            foreach (StdfRecord r; rs)
+            {
+                auto type = r.recordType;
+                ubyte[] bs = r.getBytes();
+                f.rawWrite(bs);
+            }
+            f.close();
+            string cmd = "./bdiff " ~ name ~ ".tmp " ~ name;
+            writeln("DIFF: ", cmd); stdout.flush();
+            int rv = system(toStringz(cmd));
+            if (rv != 0) writeln("FILE = ", name);
+            assert(rv == 0);
+            remove(name ~ ".tmp");
+            writeln("write/diff test passes for ", name); stdout.flush();
         }
-        f.close();
-        string cmd = "./bdiff " ~ name ~ ".tmp " ~ name;
-        writeln("DIFF: ", cmd); stdout.flush();
-        int rv = system(toStringz(cmd));
-        if (rv != 0) writeln("FILE = ", name);
-        assert(rv == 0);
-        remove(name ~ ".tmp");
-        writeln("write/diff test passes for ", name); stdout.flush();
     }
+    catch (Exception e) { writeln("Exception on file", tmp); }
 }
 
 private string getDeclString(const FieldType f) pure

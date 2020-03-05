@@ -541,6 +541,7 @@ class StdfDB
                     ubyte parmFlags = ptr.PARM_FLG;
                     float loLimit = ((optFlags & 16) || ptr.LO_LIMIT.isEmpty()) ? dvd.getDefaultLoLimit(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.LO_LIMIT;
                     float hiLimit = ((optFlags & 32) || ptr.HI_LIMIT.isEmpty()) ? dvd.getDefaultHiLimit(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.HI_LIMIT;
+                    // loLimit is correct here
                     float result = ptr.RESULT;
                     string units = ptr.UNITS.isEmpty() ? dvd.getDefaultUnits(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.UNITS;
                     byte resScal = ptr.RES_SCAL.isEmpty() ? dvd.getDefaultResScal(Record_t.PTR, ptr.TEST_NUM, testName, dup) : ptr.RES_SCAL;
@@ -598,9 +599,7 @@ class StdfDB
                         float result = mpr.RTN_RSLT.getValue()[i];
                         string pin = pinData.get(mpr.HEAD_NUM, mpr.SITE_NUM, pinIndex);
                         if (pin == "") pin = pinData.get(mpr.HEAD_NUM, minSite, pinIndex);
-//                        writeln("pin = ", pin);
                         TestID id = TestID.getTestID(Record_t.MPR, pin, mpr.TEST_NUM, testName, dup);
-//                        writeln("AAAA: id = ", id);
                         TestRecord tr = new TestRecord(id, mpr.SITE_NUM, mpr.HEAD_NUM, mpr.TEST_FLG, optFlags, parmFlags, 
                                 loLimit, hiLimit, result, units, resScal, llmScal, hlmScal, seq);
                         normalizeValues(tr);
@@ -742,7 +741,8 @@ class StdfDB
                     uint head = prr.HEAD_NUM;
                     uint site = prr.SITE_NUM;
                     //if (prr.HARD_BIN == 1) dvdDone = true; // this doesn't work if test flow is not consistent
-                    time += ((site * head) * prr.TEST_T) / (numSites * numHeads);
+                    time += prr.TEST_T;
+                    writeln("prr.TEST_T = ", prr.TEST_T, " time = ", time);
                     stdout.flush();
                     dr[site - minSite][head - minHead].devId = pid;
                     dr[site - minSite][head - minHead].site = site;
@@ -910,8 +910,7 @@ private int findScale(TestRecord tr)
 {
     import std.math;
     float val = 0.0f;
-//    write("loLimit = ", tr.loLimit, " hiLimit = ", tr.hiLimit);
-    if (tr.hiLimit == float.nan && tr.loLimit == float.nan) 
+    if (tr.hiLimit == float.max && tr.loLimit == float.max) 
     {
         return(0);
     }

@@ -80,6 +80,7 @@ public StdfDB loadDb(CmdOptions options)
                     {
                         if (!loLims.contains(hdr, id)) 
                         {
+                            writeln("id = ", id, " ll2 = ", test.loLimit); // ll2 incorrect here
                             loLims.put(test.loLimit, hdr, id);
                         }
                         else
