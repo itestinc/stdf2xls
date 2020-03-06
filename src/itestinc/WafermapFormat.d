@@ -1,8 +1,8 @@
-module makechip.WafermapFormat;
+module itestinc.WafermapFormat;
 import libxlsxd.format;
 import libxlsxd.workbook;
-import makechip.CmdOptions;
-import makechip.Config;
+import itestinc.CmdOptions;
+import itestinc.Config;
 import std.stdio;
 
 static Format headerNameFmt;

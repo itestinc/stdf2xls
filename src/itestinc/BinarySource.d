@@ -1,6 +1,6 @@
 /*
  * ==========================================================================
- * Copyright (C) 2019 makechip.com
+ * Copyright (C) 2019 itestinc.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 /++
     This module contains buffered ranges for binary and UTF* encoded files.
 +/
-module makechip.BinarySource;
+module itestinc.BinarySource;
 
 import std.stdio;
 import std.range;
