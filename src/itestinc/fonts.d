@@ -1,4 +1,4 @@
-module makechip.fonts;
+module itestinc.fonts;
 
 double[][][][string] fmapw;
 ubyte[][][string] fmaph;

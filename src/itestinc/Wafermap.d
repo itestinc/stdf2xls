@@ -1,14 +1,14 @@
-module makechip.Wafermap;
-import makechip.StdfDB;
-import makechip.CmdOptions;
-import makechip.Config;
-import makechip.logo;
-import makechip.WafermapFormat;
+module itestinc.Wafermap;
+import itestinc.StdfDB;
+import itestinc.CmdOptions;
+import itestinc.Config;
+import itestinc.logo;
+import itestinc.WafermapFormat;
 import libxlsxd.workbook;
 import libxlsxd.worksheet;
 import std.stdio;
 
-import makechip.Spreadsheet;
+import itestinc.Spreadsheet;
 
 /**
 	Read from the STDF database to generate a wafer map in excel.

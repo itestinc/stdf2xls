@@ -1,15 +1,15 @@
-import makechip.CmdOptions;
-import makechip.Stdf;
-import makechip.Descriptors;
-import makechip.Cpu_t;
-import makechip.Stdf2xls;
-import makechip.Config;
+import itestinc.CmdOptions;
+import itestinc.Stdf;
+import itestinc.Descriptors;
+import itestinc.Cpu_t;
+import itestinc.Stdf2xls;
+import itestinc.Config;
 import std.conv;
 import std.stdio;
 import std.traits;
 import std.getopt;
 import std.typecons;
-import makechip.StdfFile;
+import itestinc.StdfFile;
 
 int main(string[] args)
 {
