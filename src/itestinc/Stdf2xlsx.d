@@ -11,22 +11,22 @@
   6. Generate wafermaps
 
  */
-module makechip.Stdf2xls;
-import makechip.StdfFile;
-import makechip.Stdf;
-import makechip.Descriptors;
-import makechip.Config;
+module itestinc.Stdf2xls;
+import itestinc.StdfFile;
+import itestinc.Stdf;
+import itestinc.Descriptors;
+import itestinc.Config;
 import std.conv;
 import std.typecons;
-import makechip.CmdOptions;
-import makechip.DefaultValueDatabase;
-import makechip.StdfFile;
-import makechip.StdfDB;
+import itestinc.CmdOptions;
+import itestinc.DefaultValueDatabase;
+import itestinc.StdfFile;
+import itestinc.StdfDB;
 import std.stdio;
-import makechip.Spreadsheet;
-import makechip.Wafermap;
-import makechip.Histogram;
-import makechip.Util;
+import itestinc.Spreadsheet;
+import itestinc.Wafermap;
+import itestinc.Histogram;
+import itestinc.Util;
 
 private StdfFile[][HeaderInfo] stdfFiles;
 private string[string] devices;
@@ -165,17 +165,17 @@ public StdfDB loadDb(CmdOptions options)
 
 public void genSpreadsheet(CmdOptions options, Config config)
 {
-    makechip.Spreadsheet.genSpreadsheet(options, stdfdb, config);
+    itestinc.Spreadsheet.genSpreadsheet(options, stdfdb, config);
 }
 
 public void genWafermap(CmdOptions options, Config config)
 {
-    makechip.Wafermap.genWafermap(options, stdfdb, config);
+    itestinc.Wafermap.genWafermap(options, stdfdb, config);
 }
 
 public void genHistogram(CmdOptions options, Config config)
 {
-    makechip.Histogram.genHistogram(options, stdfdb, config);
+    itestinc.Histogram.genHistogram(options, stdfdb, config);
 }
 
 public void summarize()

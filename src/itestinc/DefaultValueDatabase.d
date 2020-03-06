@@ -1,8 +1,8 @@
-module makechip.DefaultValueDatabase;
+module itestinc.DefaultValueDatabase;
 import std.stdio;
-import makechip.Stdf;
-import makechip.Descriptors;
-import makechip.Util;
+import itestinc.Stdf;
+import itestinc.Descriptors;
+import itestinc.Util;
 alias TestNumber_t = uint;
 alias DupNumber_t = uint;
 alias Site_t = ubyte;

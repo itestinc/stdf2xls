@@ -1,9 +1,9 @@
-module makechip.Histogram;
-import makechip.StdfDB;
-import makechip.StdfFile;
-import makechip.Stdf;
-import makechip.CmdOptions;
-import makechip.Config;
+module itestinc.Histogram;
+import itestinc.StdfDB;
+import itestinc.StdfFile;
+import itestinc.Stdf;
+import itestinc.CmdOptions;
+import itestinc.Config;
 import std.stdio;
 import std.math;
 import std.conv;
@@ -12,17 +12,17 @@ import libxlsxd.workbook;
 import libxlsxd.worksheet;
 import libxlsxd.format;
 import libxlsxd.xlsxwrap;
-import makechip.logo;
-import makechip.Util;
-import makechip.SpreadsheetWriter;
-import makechip.Spreadsheet;
+import itestinc.logo;
+import itestinc.Util;
+import itestinc.SpreadsheetWriter;
+import itestinc.Spreadsheet;
 
 import libxlsxd.chart;
 import libxlsxd.chartaxis;
 import libxlsxd.chartseries;
 import libxlsxd.chartsheet;
 
-import makechip.WafermapFormat;
+import itestinc.WafermapFormat;
 
 import std.algorithm.iteration : uniq, mean;
 import std.algorithm.sorting : sort;

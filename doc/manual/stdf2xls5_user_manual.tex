@@ -63,30 +63,60 @@ stdf2xls 4.0 java program, and is significantly faster too.  It has many new fea
 \item Many ways to sort and order device data
 \item Ability to modifiy any STDF text field with regular expressions
 \item Ability to write out STDF files
+\item Multiple different devices types can be processed simultaneously
 \end{itemize}
 
 \section{Getting the program}
 
-The source code is available on gitlab. The source code can be downloaded
+The source code is available on github. The source code can be downloaded
 from gitlab with git, or just the exececutable for Windows or GNU/Linux
-may be copied from the gitlab web page.  This manual may also be copied
+may be downloaded from the gitlab web page.  This manual may also be copied
 from the gitlab webpage.\\
 \\
-clone the repository with the following command:
+To download the software with git use the following command:
 \begin{verbatim}
-git clone https://gitlab.com/ericwest123/stdf2xlsx5.git
+git clone https://github.com/itestinc/stdf2xls.git
 \end{verbatim}
 
-The jar file is in the stdf2xls4/dist directory.\\
-\\
-To compile the source code, import the project into eclipse as a git project.
+To compile the source code on GNU/Linux you also need dub, gcc and dmd (dmd is the D compiler).
 
 \section{Installation}
 
-Installation is just a matter of possibly copying the jar file to a more convenient
-directory.  Optionally a script can be made to actually run the jar file if desired.
+To just install the executable, the program can be downloaded from github.com.
+
+\subsection{GNU/Linux Installation}
+
+For GNU/Linux go to https://github.com/itestinc/stdf2xls, click on the dist folder, then
+click on the stdf2xls file, then press the Download button.  After the file has downloaded
+put it in a directory that in in your executable search path.
+
+\subsection{Windows Installation}
+
+For Windows go to https://github.com/itestinc/stdf2xls, click on the dist folder, then 
+click on the stdf2xls.exe file, then press the Download button.  After the file has downloaded
+put it in a directory that in in your executable search path.
 
 \section{Usage}
+
+A summary of the command line options can be printed by running the program
+with the '--help' option.  More detailed information about the command line
+options is given in this manual.
+
+There are nine primary operations that can be done with the program, and they may be
+done individually or simultaneously:
+\begin{itemize}
+\item -s or --genSpreadsheets will generate spreadsheets for the STDF measurement data
+\item -h or --genHistograms will generate histograms for the STDF measurement data
+\item -w or --gnWafermaps will generate wafermaps for the STDF bin data
+\item -d or --dumptext will generate an ASCII dump of the STDF file(s)
+\item -b or --dumpBytes will generate an ASCII dump of all of the bytes in the STDF file(s)
+\item -D or --digest will dump each unique set of header information found in the STDF files(s)
+\item -m or --modify <record field fromRegex : toRegex> will modify any text field in any record type 
+\item -g or --generateRCFile
+\item -o or --outputDir <folder\_name> will cause the STDF files that are read in to be written out to this folder
+\end{itemize}
+
+Each of these major options have several more options to refine their behavior.
 
 \subsection{Generating a Spreadsheet}
 \begin{verbatim}

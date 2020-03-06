@@ -1,15 +1,15 @@
-module makechip.SpreadsheetWriter;
+module itestinc.SpreadsheetWriter;
 import libxlsxd.workbook;
 import libxlsxd.worksheet;
 import libxlsxd.format;
 import libxlsxd.xlsxwrap;
-import makechip.StdfFile;
-import makechip.StdfDB;
-import makechip.Config;
-import makechip.CmdOptions;
+import itestinc.StdfFile;
+import itestinc.StdfDB;
+import itestinc.Config;
+import itestinc.CmdOptions;
 import std.stdio;
-import makechip.StdfDB:Point;
-import makechip.fonts;
+import itestinc.StdfDB:Point;
+import itestinc.fonts;
 
 static Format logoFmt; 
 static Format titleFmt;
@@ -565,7 +565,7 @@ public void writeSheet(CmdOptions options, Workbook wb, LinkedMap!(const TestID,
     else createSheets(options, config, wb, rowOrColMap, hdr, devices);
 }
 
-import makechip.Util;
+import itestinc.Util;
 import std.typecons;
 private Worksheet[] createSheetsRotated(CmdOptions options, Config config, Workbook wb, LinkedMap!(const TestID, uint) rowOrColMap, HeaderInfo hdr, DeviceResult[] devices)
 {
@@ -705,13 +705,13 @@ private void setLogo(CmdOptions options, Config config, Worksheet w)
     w.mergeRange(0, 0, 6, 2, null);
     if (logoPath == "") // use ITest logo
     {
-        import makechip.logo;
+        import itestinc.logo;
         double ss_width = 449 * 0.360 * 25.29 / lcol;
         double ss_height = 245 * 0.324 * 105.0 / lrow;
         opts.x_scale = (3.0 * 70.0) / ss_width;
         opts.y_scale = (7.0 * 20.0) / ss_height;
         opts.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
-        w.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, makechip.logo.img.dup.ptr, makechip.logo.img.length, &opts);
+        w.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, itestinc.logo.img.dup.ptr, itestinc.logo.img.length, &opts);
     }
     else
     {
