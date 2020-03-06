@@ -19,7 +19,7 @@
         "xlsxwriter"
     ],  
     "libs-windows": [
-        "xlsxwriter", "zlibstaticd"
+        "msvcrtd", "xlsxwriter", "zlibstaticd"
     ],
     "lflags-windows-x86_64-dmd": [
         "\\\"/LIBPATH:C:\\Users\\eric\\stdf2xls\\src\\libxlsxwriter\\out\\install\\x64-Debug\\lib\\\"",

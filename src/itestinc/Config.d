@@ -588,7 +588,19 @@ class Config
         magenta     (204,121,167)   cc79a7
         */
 
-        string rc = std.path.expandTilde("~/.stdf2xlsxrc");
+        string rc;
+        version(Windows)
+        {
+            import core.stdc.stdlib;
+            string s1 = to!string(getenv(toStringz("HOMEDRIVE")));
+            string s2 = to!string(getenv(toStringz("HOMEPATH")));
+            rc = s1 ~ s2 ~ "\\.stdf2xlsxrc";
+        }
+        else
+        {
+            rc = std.path.expandTilde("~/.stdf2xlsxrc");
+        }
+        writeln("rc = ", rc); stdout.flush();
         if (rc.exists)
         {
             auto f = File(rc, "r");
@@ -614,11 +626,23 @@ class Config
     {
         import std.path;
         import std.stdio;
-        string rc = expandTilde("~/stdf2xlsxrc");
+        string rc;
+        version(Windows)
+        {
+            import std.string;
+            import core.stdc.stdlib;
+            string s1 = to!string(getenv(toStringz("HOMEDRIVE")));
+            string s2 = to!string(getenv(toStringz("HOMEPATH")));
+            rc = s1 ~ s2 ~ "\\.stdf2xlsxrc";
+        }
+        else
+        {
+            rc = std.path.expandTilde("~/.stdf2xlsxrc");
+        }
         auto f = File(rc, "w");
-        writeln("# font styles: normal | bold | italic | underline | bold_italic | bold_underline | italic_underline | bold_italic_underline");
-        writeln("# supported fonts: Times | Arial | Courrier");
-        writeln("# legal font sizes: 6 to 31 (integers only)");
+        f.writeln("# font styles: normal | bold | italic | underline | bold_italic | bold_underline | italic_underline | bold_italic_underline");
+        f.writeln("# supported fonts: Times | Arial | Courrier");
+        f.writeln("# legal font sizes: 6 to 31 (integers only)");
         foreach (key; cfgMap.keys)
         {
             auto value = cfgMap[key];

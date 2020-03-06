@@ -1,0 +1,27 @@
+﻿{
+  "configurations": [
+    {
+      "name": "x64-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "-v",
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "ZLIB_LIBRARY_DEBUG",
+          "value": "C:/Users/eric/zlib-1.2.11/out/install/x64-Debug/lib/zlibd.lib",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "CMAKE_STATIC_LINKER_FLAGS_DEBUG",
+          "value": "",
+          "type": "STRING"
+        }
+      ]
+    }
+  ]
+}
