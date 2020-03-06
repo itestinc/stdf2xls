@@ -1,6 +1,6 @@
-module makechip.Config;
+module itestinc.Config;
 import libxlsxd.format;
-import makechip.Util;
+import itestinc.Util;
 import std.conv;
 import std.stdio;
 

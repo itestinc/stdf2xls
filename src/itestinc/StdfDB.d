@@ -35,16 +35,16 @@
   7. sort records by timestamp
 
  */
-module makechip.StdfDB;
-import makechip.Stdf;
-import makechip.StdfFile;
-import makechip.Descriptors;
-import makechip.Util;
+module itestinc.StdfDB;
+import itestinc.Stdf;
+import itestinc.StdfFile;
+import itestinc.Descriptors;
+import itestinc.Util;
 import std.conv;
 import std.stdio;
 import std.typecons;
-import makechip.CmdOptions;
-import makechip.DefaultValueDatabase;
+import itestinc.CmdOptions;
+import itestinc.DefaultValueDatabase;
 
 struct Point
 {

@@ -1,6 +1,6 @@
 /*
  * ==========================================================================
- * Copyright (C) 2014 makechip.com
+ * Copyright (C) 2014 itestinc.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
  * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
  */
-module makechip.Util;
+module itestinc.Util;
 
 @safe
 abstract class EnumValue(C) if (is(C : const(C)))

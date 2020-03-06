@@ -1,13 +1,13 @@
-module makechip.Spreadsheet;
-import makechip.StdfDB;
-import makechip.StdfFile;
-import makechip.Stdf;
-import makechip.CmdOptions;
-import makechip.Config;
+module itestinc.Spreadsheet;
+import itestinc.StdfDB;
+import itestinc.StdfFile;
+import itestinc.Stdf;
+import itestinc.CmdOptions;
+import itestinc.Config;
 import std.stdio;
 import libxlsxd.workbook;
-import makechip.SpreadsheetWriter;
-import makechip.Util;
+import itestinc.SpreadsheetWriter;
+import itestinc.Util;
 
 LinkedMap!(const TestID, uint)[HeaderInfo] rowOrColMapTable;
 ubyte[][HeaderInfo] sitesMap;
@@ -381,7 +381,7 @@ const(TestID)[] getTestIDs(HeaderInfo hdr)
 
 unittest
 {
-    import makechip.Stdf2xls;
+    import itestinc.Stdf2xls;
     CmdOptions options = new CmdOptions(["stdf2xls", "-a", "-r", "-h", "stdf/rabbi.stdf"]);
     Config config = new Config();
     config.load();
