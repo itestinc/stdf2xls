@@ -64,15 +64,15 @@
   7. sort records by timestamp
 
  */
-module makechip.StdfFile;
-import makechip.Stdf;
-import makechip.Descriptors;
-import makechip.CmdOptions;
+module itestinc.StdfFile;
+import itestinc.Stdf;
+import itestinc.Descriptors;
+import itestinc.CmdOptions;
 import std.algorithm.iteration;
 import std.conv;
 import std.string;
 import std.typecons;
-import makechip.DefaultValueDatabase;
+import itestinc.DefaultValueDatabase;
 import std.stdio;
 
 class HeaderInfo

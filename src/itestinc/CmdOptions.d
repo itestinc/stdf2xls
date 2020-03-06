@@ -1,7 +1,7 @@
-module makechip.CmdOptions;
-import makechip.Stdf;
-import makechip.StdfDB;
-import makechip.Descriptors;
+module itestinc.CmdOptions;
+import itestinc.Stdf;
+import itestinc.StdfDB;
+import itestinc.Descriptors;
 import std.conv;
 import std.stdio;
 import std.traits;
@@ -104,7 +104,7 @@ enum Notch {
 }
 
 import std.regex;
-import makechip.StdfFile;
+import itestinc.StdfFile;
 class CmdOptions
 {
     public static immutable string stdf2xlsx_version = "5.0.0";

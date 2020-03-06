@@ -1,4 +1,4 @@
-module makechip.logo;
+module itestinc.logo;
 
 immutable(ubyte[]) img = [
 137,

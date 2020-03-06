@@ -1,4 +1,4 @@
-module makechip.Descriptors;
+module itestinc.Descriptors;
 import std.conv;
 
 enum Data_t
