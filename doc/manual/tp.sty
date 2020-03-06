@@ -1,0 +1,116 @@
+\ProvidesPackage{tp}[2010/01/13 v1.0]
+\RequirePackage{eso-pic}
+\RequirePackage{tikz}
+\RequirePackage{pgfbaseimage}
+\RequirePackage{pgfpages}
+\usepackage{sectsty}
+\usepackage{varioref}
+\usepackage{unitsdef}
+\usepackage[T1]{fontenc}
+\usepackage{float}
+%\RequirePackage{lastpage}
+\RequirePackage[dvips,paper=letterpaper]{geometry}
+\graphicspath{{./}{/home/eric/mc/doc/sty}}
+%\makeatletter
+%\newcommand\textsubscript[1]{\@textsubscript{\selectfont#1}}
+%\def\@textsubscript#1{{\m@th\ensuremath{_{\mbox{\fontsize\sf@size\z@#1}}}}}
+%\newcommand\textbothscript[2]{%
+%  \@textbothscript{\selectfont#1}{\selectfont#2}}
+%\def\@textbothscript#1#2{%
+%  {\m@th\ensuremath{%
+%    ^{\mbox{\fontsize\sf@size\z@#1}}%
+%    _{\mbox{\fontsize\sf@size\z@#2}}}}}
+%\def\@super{^}\def\@sub{_}
+
+%\catcode`^\active\catcode`_\active
+%\def\@super@sub#1_#2{\textbothscript{#1}{#2}}
+%\def\@sub@super#1^#2{\textbothscript{#2}{#1}}
+%\def\@@super#1{\@ifnextchar_{\@super@sub{#1}}{\textsuperscript{#1}}}
+%\def\@@sub#1{\@ifnextchar^{\@sub@super{#1}}{\textsubscript{#1}}}
+%\def^{\let\@next\relax\ifmmode\@super\else\let\@next\@@super\fi\@next}
+%\def_{\let\@next\relax\ifmmode\@sub\else\let\@next\@@sub\fi\@next}
+%\makeatother
+
+\newcommand{\customer}{stdf2xls4}
+\newcommand{\partnum}{stdf2xls4}
+\renewcommand{\date}{XXXXXX}
+
+\newcommand{\lT}{\symbol{"3C}}
+\newcommand{\gT}{\symbol{"3E}}
+\usefont{T1}{phv}{m}{n}\selectfont
+\allsectionsfont{\usefont{T1}{phv}{m}{n}\selectfont}
+\renewcommand{\bfseries}{\usefont{T1}{phv}{b}{n}\selectfont}
+\newcommand{\tf}{\usefont{T1}{phv}{b}{sl}\selectfont}
+\renewcommand{\bf}{\usefont{T1}{phv}{b}{n}\selectfont}
+\newcommand{\nf}{\usefont{T1}{phv}{m}{n}\selectfont}
+\definecolor{mcblue}{rgb}{0.3203125,0.48046875,0.73828125}
+\usefont{T1}{phv}{m}{n}\selectfont
+\allsectionsfont{\usefont{T1}{phv}{m}{n}\selectfont}
+%% top starts at 1" + \voffset + \topmargin + \headheight + \headsep
+\setlength\voffset{0pt}
+\setlength\topmargin{1.0in}
+\setlength\headheight{12pt}
+\setlength\headsep{25pt}
+%% left starts at 1" + \hoffset + \oddsidemargin
+\setlength\hoffset{0pt}    
+\setlength\oddsidemargin{0pt}
+%% right ends at left + \textwidth
+\setlength\textwidth{6.5in}
+%% bottom ends at top + \textheight
+\setlength\textheight{7.5in}
+\setlength\footskip{30pt}
+\def\lm{1in}
+\def\tm{1.8in}
+\def\rm{7.5in}
+\def\bm{10.43in}
+\let\pagenum\thepage
+%\renewcommand{\thepage}{\relax}
+\newcommand{\versionhistory}{\relax}
+
+\newcommand{\makebg}
+{
+    \usefont{T1}{phv}{m}{n}\selectfont
+    \def\tm{1.1in}
+    \setlength\topmargin{0in}
+    \setlength\textheight{8.5in}
+    \AddToShipoutPicture
+    {
+        \setlength{\unitlength}{1cm}
+        \begin{tikzpicture}(0,0)(22,28)
+            \path [help lines, color=white] (0,0) grid (22,28);
+            \shade[left color=mcblue, right color=white] (\lm,9.9in) rectangle (\rm,10.0in);
+            \node[color=mcblue,anchor=base west] (b) at (\lm,10.04in) { \normalsize stdf2xls4  };
+            \shade[left color=mcblue, right color=white] (2.54,2) rectangle (19.05,2.05);
+            \node[color=mcblue,anchor=west] (c) at (2.54,1.8) { \footnotesize \copyright 2017 makechip.com };
+            \node[color=mcblue,anchor=east] (d) at (19.05,1.8) { \footnotesize \partnum\ Page \pagenum };
+        \end{tikzpicture}
+    }
+}
+
+\renewcommand{\maketitle}%
+{%
+    \usefont{T1}{phv}{m}{n}\selectfont
+    \AddToShipoutPicture*%
+    {%
+        \setlength{\unitlength}{1cm}
+        \begin{tikzpicture}(0,0)(22,28)
+            \path [help lines, color=white] (0,0) grid (22,28);
+            \node[color=mcblue,anchor=west] (e) at (2.54,9.7in) {\scalebox{1.5}{\Huge\bf makechip.com}};
+            \shade[left color=mcblue, right color=white] (\lm,9.2in) rectangle (\rm,9.3in);
+            \shade[left color=mcblue, right color=white] (2.54,2) rectangle (19.05,2.05);
+            \node[color=mcblue,anchor=west] (c) at (2.54,1.8) { \footnotesize \copyright 2017 makechip.com };
+            \node[color=mcblue,anchor=east] (d) at (19.05,1.8) { \footnotesize \partnum\ Page \pagenum };
+        \end{tikzpicture}%
+    }
+    {\centering {\large stdf2xls4 User Manual}\\
+    \vspace{0.1in}
+    {\large \date}\\
+    }
+    \vspace{1in}
+    \begin{center}
+    \versionhistory
+    \end{center}
+    \clearpage
+    \makebg
+}
+

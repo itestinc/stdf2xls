@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/histotest
+histotest.so
+histotest.dylib
+histotest.dll
+histotest.a
+histotest.lib
+histotest-test-*
+*.exe
+*.o
+*.obj
+*.lst

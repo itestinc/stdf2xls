@@ -354,12 +354,12 @@ class Config
         cfgMap[ss_header_name_bg_color]           = "F6F9D4";
         cfgMap[ss_header_name_text_color]         = "000000";
         cfgMap[ss_header_name_font_name]          = "Arial";
-        cfgMap[ss_header_name_font_size]          = "8   ";
+        cfgMap[ss_header_name_font_size]          = "8";
         cfgMap[ss_header_name_font_style]         = "bold";
         cfgMap[ss_header_value_bg_color]          = "F6F9D4";
         cfgMap[ss_header_value_text_color]        = "000000";
         cfgMap[ss_header_value_font_name]         = "Arial";
-        cfgMap[ss_header_value_font_size]         = "8   ";
+        cfgMap[ss_header_value_font_size]         = "8";
         cfgMap[ss_header_value_font_style]        = "normal";
         cfgMap[ss_test_name_header_bg_color]      = "DEE6EF";
         cfgMap[ss_test_name_header_text_color]    = "000000";
@@ -618,7 +618,7 @@ class Config
         auto f = File(rc, "w");
         writeln("# font styles: normal | bold | italic | underline | bold_italic | bold_underline | italic_underline | bold_italic_underline");
         writeln("# supported fonts: Times | Arial | Courrier");
-        writeln("# legal font sizes: 6 to 32 (integers only)");
+        writeln("# legal font sizes: 6 to 31 (integers only)");
         foreach (key; cfgMap.keys)
         {
             auto value = cfgMap[key];

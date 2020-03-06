@@ -471,6 +471,11 @@ format_set_rotation(lxw_format *self, int16_t angle)
     }
 }
 
+int16_t format_get_rotation(lxw_format *self)
+{
+    return self->rotation;
+}
+
 /*
  * Set the indent property.
  */

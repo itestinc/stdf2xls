@@ -51,6 +51,10 @@ struct Format {
         return format_get_bold(this.handle) != 0;
     }
 
+    short getRotation() nothrow {
+        return format_get_rotation(this.handle);
+    }
+
     bool getItalic() nothrow {
         return format_get_italic(this.handle) != 0;
     }
