@@ -85,7 +85,6 @@ public interface ByteReader
 public class BinarySource : ByteReader
 {
     immutable ubyte *NULL = cast(ubyte*) 0;
-    const size_t pageSize;
     public const string bufferName;
     private ubyte *ptr;
     private ubyte *eofLoc;
@@ -118,52 +117,69 @@ public class BinarySource : ByteReader
     {
         this.file = true;
         import std.internal.cstring;
-        pageSize = __getpagesize();
         this.bufferName = fileName;
-        fd = open(bufferName.tempCString!FSChar(), O_RDONLY);
-        version(unittest)
+        version(Windows)
         {
-            if (!testmode)
+            import std.string;
+            File f1 = File(fileName, "r");
+            bufferSize = fileSize = f1.size();
+            f1.close();
+            import core.memory;
+            import core.stdc.stdio;
+            auto f = fopen(toStringz(fileName), "r");
+            buffer = cast(ubyte*) pureMalloc(fileSize);
+            fread(buffer, 1L, fileSize, f);
+            fclose(f);
+        }
+        else
+        {
+            const size_t pageSize;
+            pageSize = __getpagesize();
+            fd = open(bufferName.tempCString!FSChar(), O_RDONLY);
+            version(unittest)
+            {
+                if (!testmode)
+                {
+                    if (fd <= 0) 
+                    {
+                        throw new BufferException("Unable to open " ~ bufferName);
+                    }
+                }
+            }
+            else
             {
                 if (fd <= 0) 
                 {
                     throw new BufferException("Unable to open " ~ bufferName);
                 }
             }
-        }
-        else
-        {
-            if (fd <= 0) 
+            stat_t finfo;
+            int status;
+            status = core.sys.posix.fcntl.fstat(fd, &finfo);
+            if (status != 0) 
             {
-                throw new BufferException("Unable to open " ~ bufferName);
+                throw new BufferException("Unable to stat file: " ~ bufferName);
             }
-        }
-        stat_t finfo;
-        int status;
-        status = core.sys.posix.fcntl.fstat(fd, &finfo);
-        if (status != 0) 
-        {
-            throw new BufferException("Unable to stat file: " ~ bufferName);
-        }
-        fileSize = finfo.st_size;
-        size_t numPages = fileSize / pageSize;
-        if ((fileSize % pageSize) != 0LU) numPages++;
-        this.bufferSize = numPages * pageSize;
-        buffer = cast(ubyte *) mmap(null, this.bufferSize, PROT_READ, MAP_SHARED, fd, 0);
-        version(unittest)
-        {
-            if (testmode && testval == 6) 
+            fileSize = finfo.st_size;
+            size_t numPages = fileSize / pageSize;
+            if ((fileSize % pageSize) != 0LU) numPages++;
+            this.bufferSize = numPages * pageSize;
+            buffer = cast(ubyte *) mmap(null, this.bufferSize, PROT_READ, MAP_SHARED, fd, 0);
+            version(unittest)
             {
-                import core.sys.posix.unistd;
-                munmap(cast(void*) buffer, bufferSize);
-                core.sys.posix.unistd.close(fd);
-                buffer = cast(ubyte*) MAP_FAILED;
-                fd = 0;
+                if (testmode && testval == 6) 
+                {
+                    import core.sys.posix.unistd;
+                    munmap(cast(void*) buffer, bufferSize);
+                    core.sys.posix.unistd.close(fd);
+                    buffer = cast(ubyte*) MAP_FAILED;
+                    fd = 0;
+                }
             }
-        }
-        if (buffer == MAP_FAILED) 
-        {
-            throw new BufferException("Unable to allocate buffer for " ~ bufferName);
+            if (buffer == MAP_FAILED) 
+            {
+                throw new BufferException("Unable to allocate buffer for " ~ bufferName);
+            }
         }
         ptr = buffer;
         _mark = ptr;
@@ -180,7 +196,6 @@ public class BinarySource : ByteReader
     this(string stringBuffer, string bufferName)
     {
         this.file = false;
-        pageSize = 0L;
         this.bufferName = bufferName;
         ptr = cast(ubyte *) stringBuffer.ptr;
         this.bufferSize = stringBuffer.length;
@@ -289,11 +304,19 @@ public class BinarySource : ByteReader
     {
         if (file)
         {
-            import core.sys.posix.unistd;
-            if (fd != 0)
+            version(Windows)
             {
-                munmap(cast(void*) buffer, bufferSize);
-                core.sys.posix.unistd.close(fd);
+                import core.memory;
+                free(buffer);
+            }
+            else
+            {
+                import core.sys.posix.unistd;
+                if (fd != 0)
+                {
+                    munmap(cast(void*) buffer, bufferSize);
+                    core.sys.posix.unistd.close(fd);
+                }
             }
         }
     }

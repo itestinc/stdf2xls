@@ -128,6 +128,9 @@ if(DEFINED ENV{${ZLIB_ROOT}})
     set(ZLIB_ROOT $ENV{ZLIB_ROOT})
 endif()
 
+set(ZLIB_ROOT "C:/Users/eric/zlib-1.2.11/out/install/x64-Debug/lib/")
+set(ZLIB_INCLUDE_DIR "C:/Users/eric/zlib-1.2.11/out/install/x64-Debug/include")
+
 if(IOAPI_NO_64)
     list(APPEND LXW_PRIVATE_COMPILE_DEFINITIONS IOAPI_NO_64=1)
 endif()

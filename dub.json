@@ -18,17 +18,16 @@
     "libs-posix": [
         "xlsxwriter"
     ],  
-    "preBuildCommands-posix": [
-        "make -C $PACKAGE_DIR/src/libxlsxwriter",
-        "rm src/libxlsxwriter/src/libxlsxwriter.so" 
+    "libs-windows": [
+        "xlsxwriter", "zlibstaticd"
+    ],
+    "lflags-windows-x86_64-dmd": [
+        "\\\"/LIBPATH:C:\\Users\\eric\\stdf2xls\\src\\libxlsxwriter\\out\\install\\x64-Debug\\lib\\\"",
+        "\\\"/LIBPATH:C:\\Users\\eric\\zlib-1.2.11\\out\\install\\x64-Debug\\lib\\\""
     ],  
-	"TargetType" : "executable",
+    "TargetType" : "executable",
 	"mainSourceFile" : "src/main.d",
     "dependencies" : {
         "printed": "~>0.0.10",
     },
-    "subPackages": [
-        "./xlsxTest/",
-        "./histoTest/"
-    ]
 }
