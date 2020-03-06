@@ -6,6 +6,7 @@ import makechip.Config;
 import std.stdio;
 
 static Format headerNameFmt;
+static Format headerNameFmt2;
 static Format headerValueFmt;
 static Format waferPassFmt;
 static Format waferFailFmt;
@@ -35,7 +36,7 @@ static Format blankBinFmt;
 public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
 {
     if (options.verbosityLevel > 9) writeln("initWaferFormats()");
-    import libxlsxd.xlsxwrap : lxw_format_borders, lxw_format_alignments, lxw_format_patterns;
+    import libxlsxd.xlsxwrap : lxw_format_borders, lxw_format_alignments, lxw_format_patterns, lxw_format_underlines;
 
 	headerNameFmt = wb.addFormat();
     headerNameFmt.setFontName("Arial");
@@ -46,6 +47,16 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     headerNameFmt.setAlign(lxw_format_alignments.LXW_ALIGN_RIGHT);
     headerNameFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_CENTER);
 
+    headerNameFmt2 = wb.addFormat();
+    headerNameFmt2.setFontName("Arial");
+    headerNameFmt2.setFontSize(8.0);
+    headerNameFmt2.setBold();
+    headerNameFmt2.setUnderline(lxw_format_underlines.LXW_UNDERLINE_SINGLE);
+    config.setBGColor(headerNameFmt2, Config.wafer_header_bg_color);
+    config.setFontColor(headerNameFmt2, Config.wafer_header_text_color);
+    headerNameFmt2.setAlign(lxw_format_alignments.LXW_ALIGN_LEFT);
+    headerNameFmt2.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_CENTER);
+
     headerValueFmt = wb.addFormat();
     headerValueFmt.setFontName("Arial");
     headerValueFmt.setFontSize(8.0);
@@ -53,8 +64,8 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     config.setFontColor(headerValueFmt, Config.wafer_header_text_color);
     headerValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_LEFT);
     headerValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_CENTER);
-    headerValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    headerValueFmt.setBorderColor(0x1000000);
+    //headerValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
+    //headerValueFmt.setBorderColor(0x1000000);
 
     waferPassFmt = wb.addFormat();
     waferPassFmt.setFontName("Arial");

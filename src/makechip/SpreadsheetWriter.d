@@ -72,8 +72,9 @@ static this()
     sindex["bold_italic_underline"] = 3;
 }
 
-private double getColumnWidth(string s, uint dpi, string fontName, string fontStyle, size_t fontSize)
+private double getColumnWidth(string s, uint dpi, string fontName, string fontStyle, size_t fontSize, bool textIsRotated)
 {
+    if (textIsRotated) return 5.0;
     double[][][] cw = fmapw[fontName];
 
     size_t style = sindex[fontStyle];
@@ -82,11 +83,17 @@ private double getColumnWidth(string s, uint dpi, string fontName, string fontSt
     return (w / 6.00) * (96.0 / dpi);
 }
 
-private double getRowHeight(uint dpi, string fontName, string fontStyle, size_t fontSize)
+private double getRowHeight(string s, uint dpi, string fontName, string fontStyle, size_t fontSize, bool textIsRotated)
 {
     ubyte[][] ch = fmaph[fontName];
     size_t style = sindex[fontStyle];
     double h = ch[fontSize][style];
+    if (textIsRotated)
+    {
+        double w = getColumnWidth(s, dpi, fontName, fontStyle, fontSize, false);
+        h = 15.0 * w / 8.43;
+    }
+    if (h < 15.0) h = 14.0;
     return (h * 96.0) / dpi;
 }
 
@@ -110,14 +117,14 @@ private string getStyle(Format fmt)
 private void updateCellSize(string s, uint row, ushort col, Format fmt)
 {
     string style = getStyle(fmt);
-    double cw = getColumnWidth(s, x_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize());
+    double cw = getColumnWidth(s, x_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize(), fmt.getRotation() >= 45.0);
     if (col !in maxColWidths) maxColWidths[col] = cw;
     else
     {
         double cm = maxColWidths[col];
         if (cw > cm) maxColWidths[col] = cw;
     }
-    double rh = getRowHeight(y_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize());
+    double rh = getRowHeight(s, y_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize(), fmt.getRotation() >= 45.0);
     if (row !in maxRowHeights) maxRowHeights[row] = rh;
     else
     {
@@ -129,8 +136,8 @@ private void updateCellSize(string s, uint row, ushort col, Format fmt)
 private void mergeRange(Worksheet w, uint row0, ushort col0, uint row1, ushort col1, string value, Format fmt)
 {
     string style = getStyle(fmt);
-    double cw = getColumnWidth(value, x_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize());
-    double rh = getRowHeight(y_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize());
+    double cw = getColumnWidth(value, x_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize(), fmt.getRotation() >= 45.0);
+    double rh = getRowHeight(value, y_dpi, fmt.getFontName(), style, cast(size_t) fmt.getFontSize(), fmt.getRotation() >= 45.0);
     uint cols = 1 + (col1 - col0);
     uint rows = 1 + (row1 - row0);
     cw /= cols;
@@ -573,7 +580,6 @@ private Worksheet[] createSheetsRotated(CmdOptions options, Config config, Workb
         string title = getTitle(options, hdr, i);
         if (title.length > 31) title = title[0..31];
         Worksheet w = wb.addWorksheet(title);
-        writeln("w = ", w);
         ws ~= w;
         setTitle(ws[i], hdr, Yes.rotated);
         setDeviceHeader(options, config, ws[i], hdr, Yes.rotated);
@@ -592,7 +598,6 @@ private Worksheet[] createSheetsRotated(CmdOptions options, Config config, Workb
             if (c < 3) lcol += maxColWidths[c];
             ws[i].setColumn(c, c, maxColWidths[c]);
         }
-        writeln("lrow = ", lrow, " lcol = ", lcol);
         setLogo(options, config, ws[i]);
     }
     return ws;
@@ -634,7 +639,6 @@ private Worksheet[] createSheets(CmdOptions options, Config config, Workbook wb,
             if (c < 3) lcol += maxColWidths[c];
             ws[i].setColumn(c, c, maxColWidths[c]);
         }
-        writeln("lrow = ", lrow, " lcol = ", lcol);
         setLogo(options, config, ws[i]);
     }
     return ws;
@@ -659,30 +663,30 @@ private void setTitle(Worksheet w, HeaderInfo hdr, bool rotated)
 {
     if (rotated)
     {
-        w.mergeRange(0, 3, 2, 6, hdr.devName, titleFmt);
+        mergeRange(w, 0, 3, 2, 6, hdr.devName, titleFmt);
         if (hdr.isWafersort())
         {
-            w.mergeRange(3, 3, 4, 6, "Lot: " ~ hdr.lot_id, titleFmt);
-            w.mergeRange(5, 3, 6, 6, "Wafer: " ~ hdr.wafer_id, titleFmt);
+            mergeRange(w, 3, 3, 4, 6, "Lot: " ~ hdr.lot_id, titleFmt);
+            mergeRange(w, 5, 3, 6, 6, "Wafer: " ~ hdr.wafer_id, titleFmt);
         }
         else
         {
-            w.mergeRange(3, 3, 4, 6, "Step: " ~ hdr.step, titleFmt);
-            w.mergeRange(5, 3, 6, 6, "Temp: " ~ hdr.temperature, titleFmt);
+            mergeRange(w, 3, 3, 4, 6, "Step: " ~ hdr.step, titleFmt);
+            mergeRange(w, 5, 3, 6, 6, "Temp: " ~ hdr.temperature, titleFmt);
         }
     }
     else
     {
-        w.mergeRange(0, 3, 2, 6, hdr.devName, titleFmt);
+        mergeRange(w, 0, 3, 2, 6, hdr.devName, titleFmt);
         if (hdr.isWafersort())
         {
-            w.mergeRange(3, 3, 4, 6, "Lot: " ~ hdr.lot_id, titleFmt);
-            w.mergeRange(5, 3, 6, 6, "Wafer: " ~ hdr.wafer_id, titleFmt);
+            mergeRange(w, 3, 3, 4, 6, "Lot: " ~ hdr.lot_id, titleFmt);
+            mergeRange(w, 5, 3, 6, 6, "Wafer: " ~ hdr.wafer_id, titleFmt);
         }
         else
         {
-            w.mergeRange(3, 3, 4, 6, "Step: " ~ hdr.step, titleFmt);
-            w.mergeRange(5, 3, 6, 6, "Temp: " ~ hdr.temperature, titleFmt);
+            mergeRange(w, 3, 3, 4, 6, "Step: " ~ hdr.step, titleFmt);
+            mergeRange(w, 5, 3, 6, 6, "Temp: " ~ hdr.temperature, titleFmt);
         }
     }
 }
@@ -748,53 +752,53 @@ private void setDeviceHeader(CmdOptions options, Config config, Worksheet w, Hea
         {
             for (ushort c=7; c<15; c+=4)
             {
-                w.mergeRange(r, c, r, cast(ushort) (c+1), "", hdrNameFmt);
-                w.mergeRange(r, cast(ushort) (c+2), r, cast(ushort) (c+3), "", hdrValueFmt);
+                mergeRange(w, r, c, r, cast(ushort) (c+1), "", hdrNameFmt);
+                mergeRange(w, r, cast(ushort) (c+2), r, cast(ushort) (c+3), "", hdrValueFmt);
             }
         }
         int r = 0;
         if (hdr.step != "")
         {
-            w.mergeRange(r, 7, r, 8, "STEP #:", hdrNameFmt);
-            w.mergeRange(r, 9, r, 10, hdr.step, hdrValueFmt);
+            mergeRange(w, r, 7, r, 8, "STEP #:", hdrNameFmt);
+            mergeRange(w, r, 9, r, 10, hdr.step, hdrValueFmt);
             r++;
         }
         if (hdr.temperature != "")
         {
-            w.mergeRange(r, 7, r, 8, "Temperature:", hdrNameFmt);
-            w.mergeRange(r, 9, r, 10, hdr.temperature, hdrValueFmt);
+            mergeRange(w, r, 7, r, 8, "Temperature:", hdrNameFmt);
+            mergeRange(w, r, 9, r, 10, hdr.temperature, hdrValueFmt);
             r++;
         }
         if (hdr.lot_id != "")
         {
-            w.mergeRange(r, 7, r, 8, "Lot #:", hdrNameFmt);
-            w.mergeRange(r, 9, r, 10, hdr.lot_id, hdrValueFmt);
+            mergeRange(w, r, 7, r, 8, "Lot #:", hdrNameFmt);
+            mergeRange(w, r, 9, r, 10, hdr.lot_id, hdrValueFmt);
             r++;
         }
         if (hdr.sublot_id != "")
         {
-            w.mergeRange(r, 7, r, 8, "SubLot #:", hdrNameFmt);
-            w.mergeRange(r, 9, r, 10, hdr.sublot_id, hdrValueFmt);
+            mergeRange(w, r, 7, r, 8, "SubLot #:", hdrNameFmt);
+            mergeRange(w, r, 9, r, 10, hdr.sublot_id, hdrValueFmt);
             r++;
         }
         if (hdr.wafer_id != "")
         {
-            w.mergeRange(r, 7, r, 8, "Wafer #:", hdrNameFmt);
-            w.mergeRange(r, 9, r, 10, hdr.wafer_id, hdrValueFmt);
+            mergeRange(w, r, 7, r, 8, "Wafer #:", hdrNameFmt);
+            mergeRange(w, r, 9, r, 10, hdr.wafer_id, hdrValueFmt);
             r++;
         }
         if (hdr.devName != "")
         {
-            w.mergeRange(r, 7, r, 8, "Device:", hdrNameFmt);
-            w.mergeRange(r, 9, r, 10, hdr.devName, hdrValueFmt);
+            mergeRange(w, r, 7, r, 8, "Device:", hdrNameFmt);
+            mergeRange(w, r, 9, r, 10, hdr.devName, hdrValueFmt);
             r++;
         }
         auto map = hdr.getHeaderItems();
         ushort c = 7;
         foreach (key; map.keys)
         {
-            w.mergeRange(r, c, r, cast(ushort) (c+1), key, hdrNameFmt);
-            w.mergeRange(r, cast(ushort) (c+2), r, cast(ushort) (c+3), map[key], hdrValueFmt);
+            mergeRange(w, r, c, r, cast(ushort) (c+1), key, hdrNameFmt);
+            mergeRange(w, r, cast(ushort) (c+2), r, cast(ushort) (c+3), map[key], hdrValueFmt);
             r++;
             if (r == 7)
             {
@@ -808,51 +812,51 @@ private void setDeviceHeader(CmdOptions options, Config config, Worksheet w, Hea
     {
         for (uint r=7; r<24; r++)
         {
-            w.mergeRange(r, 0, r, cast(ushort) 2, "", hdrNameFmt);
-            w.mergeRange(r, cast(ushort) 3, r, cast(ushort) 6, "", hdrValueFmt);
+            mergeRange(w, r, 0, r, cast(ushort) 2, "", hdrNameFmt);
+            mergeRange(w, r, cast(ushort) 3, r, cast(ushort) 6, "", hdrValueFmt);
         }
         int r = 7;
         if (hdr.step != "")
         {
-            w.mergeRange(r, 0, r, 2, "STEP #:", hdrNameFmt);
-            w.mergeRange(r, 3, r, 6, hdr.step, hdrValueFmt);
+            mergeRange(w, r, 0, r, 2, "STEP #:", hdrNameFmt);
+            mergeRange(w, r, 3, r, 6, hdr.step, hdrValueFmt);
             r++;
         }
         if (hdr.temperature != "")
         {
-            w.mergeRange(r, 0, r, 2, "Temperature:", hdrNameFmt);
-            w.mergeRange(r, 3, r, 6, hdr.temperature, hdrValueFmt);
+            mergeRange(w, r, 0, r, 2, "Temperature:", hdrNameFmt);
+            mergeRange(w, r, 3, r, 6, hdr.temperature, hdrValueFmt);
             r++;
         }
         if (hdr.lot_id != "")
         {
-            w.mergeRange(r, 0, r, 2, "Lot #:", hdrNameFmt);
-            w.mergeRange(r, 3, r, 6, hdr.lot_id, hdrValueFmt);
+            mergeRange(w, r, 0, r, 2, "Lot #:", hdrNameFmt);
+            mergeRange(w, r, 3, r, 6, hdr.lot_id, hdrValueFmt);
             r++;
         }
         if (hdr.sublot_id != "")
         {
-            w.mergeRange(r, 0, r, 2, "SubLot #:", hdrNameFmt);
-            w.mergeRange(r, 3, r, 6, hdr.sublot_id, hdrValueFmt);
+            mergeRange(w, r, 0, r, 2, "SubLot #:", hdrNameFmt);
+            mergeRange(w, r, 3, r, 6, hdr.sublot_id, hdrValueFmt);
             r++;
         }
         if (hdr.wafer_id != "")
         {
-            w.mergeRange(r, 0, r, 2, "Wafer #:", hdrNameFmt);
-            w.mergeRange(r, 3, r, 6, hdr.wafer_id, hdrValueFmt);
+            mergeRange(w, r, 0, r, 2, "Wafer #:", hdrNameFmt);
+            mergeRange(w, r, 3, r, 6, hdr.wafer_id, hdrValueFmt);
             r++;
         }
         if (hdr.devName != "")
         {
-            w.mergeRange(r, 0, r, 2, "Device:", hdrNameFmt);
-            w.mergeRange(r, 3, r, 6, hdr.devName, hdrValueFmt);
+            mergeRange(w, r, 0, r, 2, "Device:", hdrNameFmt);
+            mergeRange(w, r, 3, r, 6, hdr.devName, hdrValueFmt);
             r++;
         }
         auto map = hdr.getHeaderItems();
         foreach (key; map.keys)
         {
-            w.mergeRange(r, 0, r, 2, key, hdrNameFmt);
-            w.mergeRange(r, 3, r, 6, map[key], hdrValueFmt);
+            mergeRange(w, r, 0, r, 2, key, hdrNameFmt);
+            mergeRange(w, r, 3, r, 6, map[key], hdrValueFmt);
             r++;
             if (r > 23) break;
         }
@@ -925,7 +929,7 @@ private void setTestNameHeaders(CmdOptions options, Config config, Worksheet w, 
     }
     else
     {
-        for (size_t i=col; i<tests.length(); i++)
+        for (size_t i=col; i<tests.length() && i<col+maxCols; i++)
         {
             auto id = ids[i];       
             ushort lcol = cast(ushort) ((i-col) + 8);
@@ -945,7 +949,7 @@ private void setDeviceNameHeader(CmdOptions options, Config config, Worksheet w,
     {
         writeString(w, 0, cast(ushort) rowOrCol, device.devId.getID(), snxyValueFmt);
         writeString(w, 1, cast(ushort) rowOrCol, temp, tempValueFmt);
-        writeNumber(w, 2, cast(ushort) rowOrCol, device.tstamp - tmin, timeValueFmt);
+        writeNumber(w, 2, cast(ushort) rowOrCol, device.tstamp, timeValueFmt);
         writeNumber(w, 3, cast(ushort) rowOrCol, device.hwbin, hwbinValueFmt);
         writeNumber(w, 4, cast(ushort) rowOrCol, device.swbin, swbinValueFmt);
         writeNumber(w, 5, cast(ushort) rowOrCol, device.site, siteValueFmt);
@@ -956,7 +960,7 @@ private void setDeviceNameHeader(CmdOptions options, Config config, Worksheet w,
     {
         writeString(w, rowOrCol, 0, device.devId.getID(), snxyValueFmt);
         writeString(w, rowOrCol, 1, temp, tempValueFmt);
-        writeNumber(w, rowOrCol, 2, device.tstamp - tmin, timeValueFmt);
+        writeNumber(w, rowOrCol, 2, device.tstamp, timeValueFmt);
         writeNumber(w, rowOrCol, 3, device.hwbin, hwbinValueFmt);
         writeNumber(w, rowOrCol, 4, device.swbin, swbinValueFmt);
         writeNumber(w, rowOrCol, 5, device.site, siteValueFmt);
@@ -992,8 +996,7 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
             {
                 if (cast(ushort) (lcol+col) !in cmap)
                 {
-                    if (tr.type == TestType.FLOAT || tr.type == TestType.HEX_INT || tr.type == TestType.DEC_INT ||
-                        tr.type == TestType.DYNAMIC_LOLIMIT || tr.type == TestType.DYNAMIC_HILIMIT || tr.type == TestType.STRING)
+                    if (tr.type == TestType.FLOAT || tr.type == TestType.HEX_INT || tr.type == TestType.DEC_INT || tr.type == TestType.STRING)
                     {
                         writeString(w, 14, lcol, "", loLimitValueFmt);
                         writeString(w, 15, lcol, "", hiLimitValueFmt);
@@ -1001,9 +1004,23 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                     }
                     else
                     {
-                        writeNumber(w, 14, lcol, tr.loLimit, loLimitValueFmt);
+                        if (tr.dynamicLoLimit)
+                        {
+                            writeString(w, 14, cast(ushort) (lcol-1), "", dynLoLimitHdrFmt);
+                            writeString(w, 15, cast(ushort) (lcol-1), "", dynLoLimitHdrFmt);
+                            writeString(w, 16, cast(ushort) (lcol-1), tr.units, unitsValueFmt);
+                        }                       
+                        if (tr.loLimit > 1E28) writeString(w, 14, lcol, "", loLimitValueFmt); 
+                        else writeNumber(w, 14, lcol, tr.loLimit, loLimitValueFmt);
+                        if (tr.hiLimit > 1E28) writeString(w, 15, lcol, "", hiLimitValueFmt);
                         writeNumber(w, 15, lcol, tr.hiLimit, hiLimitValueFmt);
                         writeString(w, 16, lcol, tr.units, unitsValueFmt);
+                        if (tr.dynamicHiLimit)
+                        {
+                            writeString(w, 14, cast(ushort) (lcol+1), "", dynHiLimitHdrFmt);
+                            writeString(w, 15, cast(ushort) (lcol+1), "", dynHiLimitHdrFmt);
+                            writeString(w, 16, cast(ushort) (lcol+1), tr.units, unitsValueFmt);
+                        }
                     }
                     cmap[cast(ushort) (lcol+col)] = true;
                 }
@@ -1015,34 +1032,35 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                         break;
                     case PARAMETRIC: goto case;
                     case FLOAT:
-                         if ((tr.testFlags & 0x80) == 0x80) writeNumber(w, row, lcol, tr.result.f, failDataFmt);
-                         else writeNumber(w, row, lcol, tr.result.f, passDataFloatFmt);
-                         break;
+                        if (tr.dynamicLoLimit) writeNumber(w, row, cast(ushort) (lcol-1), tr.loLimit, dynLoLimitValueFmt);
+                        if ((tr.testFlags & 0x80) == 0x80) writeNumber(w, row, lcol, tr.result.f, failDataFmt);
+                        else writeNumber(w, row, lcol, tr.result.f, passDataFloatFmt);
+                        if (tr.dynamicHiLimit) writeNumber(w, row, cast(ushort) (lcol+1), tr.hiLimit, dynHiLimitValueFmt);
+                        break;
                     case HEX_INT:
-                         string value = to!string(tr.result.u);
-                         if ((tr.testFlags & 0x80) == 0x80) writeFormula(w, row, lcol, "=DEC2HEX(" ~ value ~ "; 8)", failDataFmt);
-                         else writeFormula(w, row, lcol, "=DEC2HEX(" ~ value ~ "; 8)", passDataHexFmt);
-                         break;
+                        string value = to!string(tr.result.u);
+                        if ((tr.testFlags & 0x80) == 0x80) writeFormula(w, row, lcol, "=DEC2HEX(" ~ value ~ "; 8)", failDataFmt);
+                        else writeFormula(w, row, lcol, "=DEC2HEX(" ~ value ~ "; 8)", passDataHexFmt);
+                        break;
                     case DEC_INT:
-                         if ((tr.testFlags & 0x80) == 0x80) writeNumber(w, row, lcol, tr.result.l, failDataFmt);
-                         else writeNumber(w, row, lcol, tr.result.l, passDataIntFmt);
-                         break;
+                        if ((tr.testFlags & 0x80) == 0x80) writeNumber(w, row, lcol, tr.result.l, failDataFmt);
+                        else writeNumber(w, row, lcol, tr.result.l, passDataIntFmt);
+                        break;
                     case DYNAMIC_LOLIMIT:
-                         writeNumber(w, row, lcol, tr.result.f, dynLoLimitValueFmt);
-                         break;
+                        writeNumber(w, row, lcol, tr.result.f, dynLoLimitValueFmt);
+                        break;
                     case DYNAMIC_HILIMIT:
-                         writeNumber(w, row, lcol, tr.result.f, dynHiLimitValueFmt);
-                         break;
+                        writeNumber(w, row, lcol, tr.result.f, dynHiLimitValueFmt);
+                        break;
                     default: // STRING
-                         if ((tr.testFlags & 0x80) == 0x80) writeString(w, row, lcol, tr.result.s, failDataFmt);
-                         else writeString(w, row, lcol, tr.result.s, passDataStringFmt);
-                         break;
+                        if ((tr.testFlags & 0x80) == 0x80) writeString(w, row, lcol, tr.result.s, failDataFmt);
+                        else writeString(w, row, lcol, tr.result.s, passDataStringFmt);
+                        break;
                 }
             }
             if (cast(ushort) (lcol+col) !in cmap)
             {
-                if (tr.type == TestType.FLOAT || tr.type == TestType.HEX_INT || tr.type == TestType.DEC_INT ||
-                    tr.type == TestType.DYNAMIC_LOLIMIT || tr.type == TestType.DYNAMIC_HILIMIT || tr.type == TestType.STRING)
+                if (tr.type == TestType.FLOAT || tr.type == TestType.HEX_INT || tr.type == TestType.DEC_INT || tr.type == TestType.STRING)
                 {
                     writeString(w, 14, lcol, "", loLimitValueFmt);
                     writeString(w, 15, lcol, "", hiLimitValueFmt);
@@ -1050,9 +1068,23 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                 }
                 else
                 {
-                    writeNumber(w, 14, lcol, tr.loLimit, loLimitValueFmt);
-                    writeNumber(w, 15, lcol, tr.hiLimit, hiLimitValueFmt);
+                    if (tr.dynamicLoLimit)
+                    {
+                        writeString(w, 14, cast(ushort) (lcol-1), "", dynLoLimitHdrFmt);
+                        writeString(w, 15, cast(ushort) (lcol-1), "", dynLoLimitHdrFmt);
+                        writeString(w, 16, cast(ushort) (lcol-1), tr.units, unitsValueFmt);
+                    }                       
+                    if (tr.loLimit > 1E28) writeString(w, 14, lcol, "", loLimitValueFmt);
+                    else writeNumber(w, 14, lcol, tr.loLimit, loLimitValueFmt);
+                    if (tr.hiLimit > 1E28) writeString(w, 15, lcol, "", hiLimitValueFmt);
+                    else writeNumber(w, 15, lcol, tr.hiLimit, hiLimitValueFmt);
                     writeString(w, 16, lcol, tr.units, unitsValueFmt);
+                    if (tr.dynamicHiLimit)
+                    {
+                        writeString(w, 14, cast(ushort) (lcol+1), "", dynHiLimitHdrFmt);
+                        writeString(w, 15, cast(ushort) (lcol+1), "", dynHiLimitHdrFmt);
+                        writeString(w, 16, cast(ushort) (lcol+1), tr.units, unitsValueFmt);
+                    }
                 }
                 cmap[cast(ushort) (lcol+col)] = true;
             }
@@ -1064,8 +1096,10 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                 break;
             case PARAMETRIC: goto case;
             case FLOAT:
+                if (tr.dynamicLoLimit) writeNumber(w, row, cast(ushort) (lcol-1), tr.loLimit, dynLoLimitValueFmt);
                 if ((tr.testFlags & 0x80) == 0x80) writeNumber(w, row, lcol, tr.result.f, failDataFmt);
                 else writeNumber(w, row, lcol, tr.result.f, passDataFloatFmt);
+                if (tr.dynamicHiLimit) writeNumber(w, row, cast(ushort) (lcol+1), tr.hiLimit, dynHiLimitValueFmt);
                 break;
             case HEX_INT:
                 string value = to!string(tr.result.u);
@@ -1115,7 +1149,6 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
             TestRecord tr = devices[j].tests[i];
             uint seqNum = rowOrColMap[tr.id];
             uint row = seqNum + 8;
-            writeln("row = ", row, " dynHiLimit = ", tr.dynamicHiLimit, " dynLoLimit = ", tr.dynamicLoLimit);
             if (row !in lmap)
             {
                 writeString(w, row, 10, tr.units, unitsValueFmt);
@@ -1123,21 +1156,6 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                 {
                     writeString(w, row, 8, "", loLimitValueFmt);
                     writeString(w, row, 9, "", hiLimitValueFmt);
-                }
-                else if (tr.type == TestType.DYNAMIC_LOLIMIT || tr.type == TestType.DYNAMIC_HILIMIT)
-                {
-                    if (tr.type == TestType.DYNAMIC_LOLIMIT)
-                    {
-                        writeString(w, row-1, 8, "", loLimitValueFmt);
-                        writeString(w, row-1, 9, "", hiLimitValueFmt);
-                        writeString(w, row-1, 10, tr.units, unitsValueFmt);
-                    }
-                    if (tr.type == TestType.DYNAMIC_HILIMIT)
-                    {
-                        writeString(w, row+1, 8, "", loLimitValueFmt);
-                        writeString(w, row+1, 9, "", hiLimitValueFmt);
-                        writeString(w, row+1, 10, tr.units, unitsValueFmt);
-                    }
                 }
                 else
                 {
@@ -1147,8 +1165,10 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                         writeString(w, row-1, 9, "", dynLoLimitHdrFmt);
                         writeString(w, row-1, 10, tr.units, unitsValueFmt);
                     }                       
-                    writeNumber(w, row, 8, tr.loLimit, loLimitValueFmt);
-                    writeNumber(w, row, 9, tr.hiLimit, loLimitValueFmt);
+                    if (tr.loLimit > 1E28) writeString(w, row, 8, "", loLimitValueFmt);
+                    else writeNumber(w, row, 8, tr.loLimit, loLimitValueFmt);
+                    if (tr.hiLimit > 1E28) writeString(w, row, 9, "", loLimitValueFmt);
+                    else writeNumber(w, row, 9, tr.hiLimit, loLimitValueFmt);
                     if (tr.dynamicHiLimit)
                     {
                         writeString(w, row+1, 8, "", dynHiLimitHdrFmt);

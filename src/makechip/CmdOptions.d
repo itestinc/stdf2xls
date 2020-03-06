@@ -130,9 +130,9 @@ class CmdOptions
     PMRNameType channelType = PMRNameType.AUTO;
     uint verbosityLevel = 1;
     string outputDir = "";
-    string sfile = "<device>_<lot>.xlsx";
-    string hfile = "<device>_historgrams.xlsx";
-    string wfile = "<device>_<lot>_<wafer>.xlsx";
+    string sfile = "%device%_%lot%.xlsx";
+    string hfile = "%device%_histograms.xlsx";
+    string wfile = "%device%_%lot%_%wafer%.xlsx";
     BinCategory_t category = BinCategory_t.NONE;
     const string options;
     
@@ -160,14 +160,14 @@ class CmdOptions
             "digest|D", "Summarize file contents", &summarize,
 
             "genSpreadsheets|s", "Generate spreadsheet(s)", &genSpreadsheet,
-            "so|S", "Spreadsheet output filename(s); name may contain variables for device, and/or lot\nDefault = ${device}_${lot}.xlsx", &sfile,
+            "so|S", "Spreadsheet output filename(s); name may contain variables for device, and/or lot\nDefault = %device%_%lot%.xlsx", &sfile,
             "rotate|r", "Transpose spreadsheet so there is one device per column instead of one device per row", &rotate,
             "sortType", "Sort devices by alphanumeric serial number, then by time. See the manual for valid sort types", &sortType,
             "1kcol|c", "limit to 1000 columns for libreoffice - default is 16360 columns", &limit1k,
             "noDynamicLimits|Y", "Don't check for and show dynamic limits", &noDynamicLimits,
 
             "genWafermaps|w", "Generate wafer map(s)", &genWafermap,
-            "wo|W", "Wafermap output filename(s); name may contain variables for device, wafer, and/or lot\nDefault = ${device}_${lot}_${wafer}.{pdf,txt}", &wfile,
+            "wo|W", "Wafermap output filename(s); name may contain variables for device, wafer, and/or lot\nDefault = %device%_%lot%_%wafer%.xlsx", &wfile,
             "pattern|P", "fill wafermap bins with patterns instead of colors", &pattern,
             "dumpAscii|A", "dump the wafer map in ASCII form", &asciiDump,
             "notch|n", "Rotate the wafer map for desired notch position: top|bottom|left|right.", &notch,

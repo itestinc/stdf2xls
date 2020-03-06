@@ -127,7 +127,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 
 		Workbook wb = newWorkbook(fname);
 		Worksheet ws = wb.addWorksheet("Wafermap");
-		Worksheet ws3 = wb.addWorksheet("Bin Filter");
+		Worksheet ws3 = wb.addWorksheet("Bin Filter (experimental)");
 
 		// Draw logo (7 rows, 3 cols)
 		import libxlsxd.xlsxwrap : lxw_image_options, lxw_object_position;
