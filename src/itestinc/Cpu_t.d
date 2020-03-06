@@ -1,9 +1,9 @@
-module makechip.Cpu_t;
-import makechip.Util;
+module itestinc.Cpu_t;
+import itestinc.Util;
 import std.conv;
 import std.range;
 import std.bitmanip;
-import makechip.BinarySource;
+import itestinc.BinarySource;
 
 enum Cpu_t : const(CPU)
 {
