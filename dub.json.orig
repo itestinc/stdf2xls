@@ -1,0 +1,34 @@
+{
+	"name" : "stdf2xls",
+    "buildTypes": {
+        "unittest": {
+            "buildOptions": ["unittests"]
+        },
+        "release": {
+            "buildOptions": ["releaseMode", "optimize"]
+        }
+    },
+	"description" : "Convert STDF data files to xlsx spreadhseet format",
+    "importPaths": [
+        "src/"
+    ],  
+    "lflags-posix": [
+        "-Lsrc/libxlsxwriter/src"
+    ],  
+    "libs-posix": [
+        "xlsxwriter"
+    ],  
+    "preBuildCommands-posix": [
+        "make -C $PACKAGE_DIR/src/libxlsxwriter",
+        "rm src/libxlsxwriter/src/libxlsxwriter.so" 
+    ],  
+	"TargetType" : "executable",
+	"mainSourceFile" : "src/main.d",
+    "dependencies" : {
+        "printed": "~>0.0.10",
+    },
+    "subPackages": [
+        "./xlsxTest/",
+        "./histoTest/"
+    ]
+}

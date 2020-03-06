@@ -14,7 +14,6 @@ endif
 DESTDIR ?=
 PREFIX  ?= /usr/local
 
-# Directory variables.
 OBJS_DIR    = .
 INC_DIR     = ../include
 

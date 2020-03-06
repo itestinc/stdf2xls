@@ -461,21 +461,27 @@ struct Worksheet {
 	void insertImageBuffer(RowType row, ColType col, const(ubyte)* buf,
 			size_t bufSize)
 	{
-		enforce(worksheet_insert_image_buffer(this.handle, row,
-					col, buf, bufSize
-				)
-				== LXW_NO_ERROR
-			);
+		version(Windows)
+		{
+			enforce(worksheet_insert_image_buffer(this.handle, row, col, buf, cast(uint) bufSize) == LXW_NO_ERROR);
+		}
+		else
+		{
+			enforce(worksheet_insert_image_buffer(this.handle, row, col, buf, bufSize) == LXW_NO_ERROR);
+		}
 	}
 
 	void insertImageBufferOpt(RowType row, ColType col, const(ubyte)* buf,
 			size_t bufSize, lxw_image_options* options)
 	{
-		enforce(worksheet_insert_image_buffer_opt(this.handle, row,
-					col, buf, bufSize, options
-				)
-				== LXW_NO_ERROR
-			);
+		version(Windows)
+		{
+		    enforce(worksheet_insert_image_buffer_opt(this.handle, row, col, buf, cast(uint) bufSize, options) == LXW_NO_ERROR);
+		}
+		else
+		{
+		    enforce(worksheet_insert_image_buffer_opt(this.handle, row, col, buf, bufSize, options) == LXW_NO_ERROR);
+		}
 	}
 
 	void insertChart(RowType row, ColType col, Chart chart) {
