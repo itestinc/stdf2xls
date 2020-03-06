@@ -106,8 +106,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
         uint sh1_row = 1;
         uint sh2_row = 0;
         uint sh3_row = 0;
-        uint sh5_row = 0;
-
+        //uint sh5_row = 0;
         const ushort sh1_col = 5;
         ushort sh2_col = 0;
         ushort sh3_col = 0;
@@ -187,8 +186,6 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                     histvalues_allsites.length +=1;
                     histvalues_allsites[i] = value;
                 }
-
-                
                 
                 // quantize the array into bins
                 double bin_width = (3.5*histodata_allsites.stdDev)/pow(histvalues_allsites.length, 1/3);    // Scott's normal reference formula (bin width is too wide for our case)
@@ -197,8 +194,6 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 import std.algorithm.searching : maxElement, minElement;
                 histvalues_allsites.sort();
                 
-                
-
                 // cut off outliers based on mean vs. standard deviation of each site
                 double min_value_new;
                 double max_value_new;
@@ -274,7 +269,6 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 Chartseries[] series;
 
                 // write histogram data (number of occurrences) for each site
-                
                 foreach(s, site; sites) {
                     HistoData histodata = getResults(hdr, id, site);
 
