@@ -39,7 +39,22 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 {
     // Possible cmd options
     const double outlier_cutoff = 1.5;      // is a multiplier of standard deviation; larger = less cutoff
-    const double bin_width_divider = 20;    // larger = more bins
+    const double bin_width_divider = 30;    // larger = more bins
+    const double cutoff_compensator = outlier_cutoff*1.2;   // increases the number of inner bins after cutting off the outlier bins; larger = more bins
+
+    const uint custom_number_of_bins = 30;
+    const bool useCustomBinCount = true;
+    const bool no_cutoff = true;
+
+    // cmd:
+    // --manualBinCount --setCount 30
+    // --cutoffOutliers --setCutoff 1.5
+    if(custom_number_of_bins < 1) {
+        throw new Exception("Number of bins must be an integer greater than 0.");
+    }
+    if(outlier_cutoff <= 0) {
+        throw new Exception("Cutoff cannot be a zero or negative multiple of the standard deviation.");
+    }
 
     uint MPR_count = 0;
 
@@ -203,50 +218,74 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 foreach(i, site; sites) {
                     HistoData histodata = getResults(hdr, id, site);
 
-                    writeln(id.testName, " | ", histodata.stdDev, " vs ",  bin_width);
+                    //writeln(id.testName, " | ", histodata.stdDev, " vs ",  bin_width);
 
-                    if(histodata.stdDev > 10*bin_width) {       // standard deviation is much narrower compared to bin width, so the cut off has to be more aggressive.
-                        min_value_eachsite = histodata.mean - (0.2)*outlier_cutoff*histodata.stdDev;
-                        max_value_eachsite = histodata.mean + (0.2)*outlier_cutoff*histodata.stdDev;
-                        writeln("more cutoff");
-                        bin_width = bin_width / 4;      // compensate outer bin cut offs with more bins
+                    if(no_cutoff) {
+                            min_value_new = histvalues_allsites[0];
+                            max_value_new = histvalues_allsites[$-1];
                     }
                     else {
-                        min_value_eachsite = histodata.mean - outlier_cutoff*histodata.stdDev;
-                        max_value_eachsite = histodata.mean + outlier_cutoff*histodata.stdDev;
-                    }
+                        if(histodata.stdDev > 10*bin_width) {       // standard deviation is much narrower compared to bin width, so the cut off has to be more aggressive.
+                            min_value_eachsite = histodata.mean - (0.2)*outlier_cutoff*histodata.stdDev;
+                            max_value_eachsite = histodata.mean + (0.2)*outlier_cutoff*histodata.stdDev;
+                            writeln("more cutoff");
+                            bin_width = bin_width / cutoff_compensator;      // compensate outer bin cut offs with more bins; should scale well with outlier cutoff multiplier
+                            writeln("compensated bin width = ", bin_width);
+                        }
+                        else {
+                            min_value_eachsite = histodata.mean - outlier_cutoff*histodata.stdDev;
+                            max_value_eachsite = histodata.mean + outlier_cutoff*histodata.stdDev;
+                        }
 
-                    if(i > 0) {
-                        min_value_new = min_value_new < min_value_eachsite ? min_value_new : min_value_eachsite;
-                        max_value_new = max_value_new > max_value_eachsite ? max_value_new : max_value_eachsite;
-                    }
-                    else {  // only the first index
-                        min_value_new = min_value_eachsite;
-                        max_value_new = max_value_eachsite;
+                        if(i > 0) {
+                            min_value_new = min_value_new < min_value_eachsite ? min_value_new : min_value_eachsite;
+                            max_value_new = max_value_new > max_value_eachsite ? max_value_new : max_value_eachsite;
+                         }
+                        else {  // only the first index
+                            min_value_new = min_value_eachsite;
+                            max_value_new = max_value_eachsite;
+                        }
                     }
                 }
 
                 // calculate number of bins based on bin width and ranges
-                uint num_of_bins =cast(uint)ceil( (max_value_new - min_value_new)/bin_width );  // general formula
+                double[] quantized_values;
+                double custom_bin_width;
+                if(useCustomBinCount) {
+                    custom_bin_width = cast(double)( (max_value_new - min_value_new)/custom_number_of_bins );
+                    writeln("custom_bin_width = ", custom_bin_width);
+                    quantized_values = new double[](custom_number_of_bins);
+                }
+                else {
+                    uint num_of_bins =cast(uint)ceil( (max_value_new - min_value_new)/bin_width );  // general formula
 
-                if(num_of_bins == 0) {                 //when is this the case?
-                    num_of_bins = 1;
+                    if(num_of_bins == 0) {                 //when is this the case?
+                        num_of_bins = 1;
+                    }
+                    quantized_values = new double[](num_of_bins);
                 }
 
                 // calculate the bin ranges using bin width, using the minimum value as base
-                double[] quantized_values = new double[](num_of_bins);
                 foreach(i, value; quantized_values) {
-                    quantized_values[i] = ceil((bin_width*(i+1) + min_value_new)*1_000)/1_000;
+
+                    if(useCustomBinCount) {
+                        quantized_values[i] = custom_bin_width*(i+1) + min_value_new;
+                    }
+                    else {
+                        quantized_values[i] = bin_width*(i+1) + min_value_new;      // quantized_values is already sorted by this
+                    }
+
+                    writeln(value);
                 }
 
                 // write histogram categories (bins) for each site
-                quantized_values.sort();
                 double[] quantized_values_unique;
                 uint qvui = 0;
                 bool first_index = true;
                 foreach(value; uniq(quantized_values)) {
                     quantized_values_unique.length++;
                     quantized_values_unique[qvui] = value;
+                    writeln(value);
 
                     if(first_index) {
                         ws3.write(sh3_row, sh3_col, "["~to!string(min_value_new)~", "~to!string(value)~")");
@@ -314,7 +353,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 // set histogram formats and insert into excel
                 Chartaxis x_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_X);
                 Chartaxis y_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_Y);
-                x_axis.setName("ranges of values (min = "~to!string(min_value)~", max = "~to!string(max_value)~")");
+                x_axis.setName("bins (min = "~to!string(min_value)~", max = "~to!string(max_value)~")");
                 y_axis.setName("number of occurrences");
                 x_axis.setNameFont(&AxisNameFont);
                 y_axis.setNameFont(&AxisNameFont);
@@ -332,6 +371,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 ws2.hide();
                 ws3.hide();
                 ws5.hide();
+                ws1.select();
             }
             
             else if(id.type == Record_t.MPR) {
