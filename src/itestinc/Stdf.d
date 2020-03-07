@@ -280,6 +280,8 @@ struct CN
     {
         size_t len = s.front;
         myVal = s.getBytes(len+1).dup;
+        //string ss = cast(string) myVal[1..$];
+        //writeln("CN = ", ss);
         reclen -= len + 1;
     }
 
@@ -1226,6 +1228,7 @@ class StdfReader
             ubyte b0 = src.getByte();
             ubyte b1 = src.getByte();
             size_t reclen = ((cast(size_t) b0) + (((cast(size_t) b1) << 8L) & 0xFF00L)) & 0xFFFFL;
+            writeln("src.remaining() = ", src.remaining(), " reclen = ", reclen);
             if (src.remaining() < 2) 
             {
                 writeln("Warining: premature end if STDF file");
@@ -1237,31 +1240,31 @@ class StdfReader
             StdfRecord r;
             switch (type.ordinal)
             {
-                case Record_t.ATR.ordinal: r = new Record!ATR(type, reclen, src); break;
-                case Record_t.BPS.ordinal: r = new Record!BPS(type, reclen, src); break;
-                case Record_t.DTR.ordinal: r = new Record!DTR(type, reclen, src); break;
-                case Record_t.EPS.ordinal: r = new Record!EPS(type, reclen, src); break;
-                case Record_t.FAR.ordinal: r = new Record!FAR(type, reclen, src); break;
-                case Record_t.FTR.ordinal: r = new Record!FTR(type, reclen, src); break;
-                case Record_t.GDR.ordinal: r = new Record!GDR(type, reclen, src); break;
-                case Record_t.HBR.ordinal: r = new Record!HBR(type, reclen, src); break;
-                case Record_t.MIR.ordinal: r = new Record!MIR(type, reclen, src); break;
-                case Record_t.MPR.ordinal: r = new Record!MPR(type, reclen, src); break;
-                case Record_t.MRR.ordinal: r = new Record!MRR(type, reclen, src); break;
-                case Record_t.PCR.ordinal: r = new Record!PCR(type, reclen, src); break;
-                case Record_t.PGR.ordinal: r = new Record!PGR(type, reclen, src); break;
-                case Record_t.PIR.ordinal: r = new Record!PIR(type, reclen, src); break;
-                case Record_t.PLR.ordinal: r = new Record!PLR(type, reclen, src); break;
-                case Record_t.PMR.ordinal: r = new Record!PMR(type, reclen, src); break;
-                case Record_t.PRR.ordinal: r = new Record!PRR(type, reclen, src); break;
-                case Record_t.PTR.ordinal: r = new Record!PTR(type, reclen, src); break;
-                case Record_t.RDR.ordinal: r = new Record!RDR(type, reclen, src); break;
-                case Record_t.SBR.ordinal: r = new Record!SBR(type, reclen, src); break;
-                case Record_t.SDR.ordinal: r = new Record!SDR(type, reclen, src); break;
-                case Record_t.TSR.ordinal: r = new Record!TSR(type, reclen, src); break;
-                case Record_t.WCR.ordinal: r = new Record!WCR(type, reclen, src); break;
-                case Record_t.WIR.ordinal: r = new Record!WIR(type, reclen, src); break;
-                case Record_t.WRR.ordinal: r = new Record!WRR(type, reclen, src); break;
+                case Record_t.ATR.ordinal: r = new Record!ATR(type, reclen, src); writeln("ATR"); break;
+                case Record_t.BPS.ordinal: r = new Record!BPS(type, reclen, src); writeln("BPS"); break;
+                case Record_t.DTR.ordinal: r = new Record!DTR(type, reclen, src); writeln("DTR"); break;
+                case Record_t.EPS.ordinal: r = new Record!EPS(type, reclen, src); writeln("EPS"); break;
+                case Record_t.FAR.ordinal: r = new Record!FAR(type, reclen, src); writeln("FAR"); break;
+                case Record_t.FTR.ordinal: r = new Record!FTR(type, reclen, src); writeln("FTR"); break;
+                case Record_t.GDR.ordinal: r = new Record!GDR(type, reclen, src); writeln("GDR"); break;
+                case Record_t.HBR.ordinal: r = new Record!HBR(type, reclen, src); writeln("HBR"); break;
+                case Record_t.MIR.ordinal: r = new Record!MIR(type, reclen, src); writeln("MIR"); break;
+                case Record_t.MPR.ordinal: r = new Record!MPR(type, reclen, src); writeln("MPR"); break;
+                case Record_t.MRR.ordinal: r = new Record!MRR(type, reclen, src); writeln("MRR"); break;
+                case Record_t.PCR.ordinal: r = new Record!PCR(type, reclen, src); writeln("PCR"); break;
+                case Record_t.PGR.ordinal: r = new Record!PGR(type, reclen, src); writeln("PGR"); break;
+                case Record_t.PIR.ordinal: r = new Record!PIR(type, reclen, src); writeln("PIR"); break;
+                case Record_t.PLR.ordinal: r = new Record!PLR(type, reclen, src); writeln("PLR"); break;
+                case Record_t.PMR.ordinal: r = new Record!PMR(type, reclen, src); writeln("PMR"); break;
+                case Record_t.PRR.ordinal: r = new Record!PRR(type, reclen, src); writeln("PRR"); break;
+                case Record_t.PTR.ordinal: r = new Record!PTR(type, reclen, src); writeln("PTR"); break;
+                case Record_t.RDR.ordinal: r = new Record!RDR(type, reclen, src); writeln("RDR"); break;
+                case Record_t.SBR.ordinal: r = new Record!SBR(type, reclen, src); writeln("SBR"); break;
+                case Record_t.SDR.ordinal: r = new Record!SDR(type, reclen, src); writeln("SDR"); break;
+                case Record_t.TSR.ordinal: r = new Record!TSR(type, reclen, src); writeln("TSR"); break;
+                case Record_t.WCR.ordinal: r = new Record!WCR(type, reclen, src); writeln("WCR"); break;
+                case Record_t.WIR.ordinal: r = new Record!WIR(type, reclen, src); writeln("WTR"); break;
+                case Record_t.WRR.ordinal: r = new Record!WRR(type, reclen, src); writeln("WRR"); break;
                 default: throw new Exception("Unknown record type: " ~ type.stringof);
             }
             rs ~= r;
