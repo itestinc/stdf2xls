@@ -175,6 +175,10 @@ class CmdOptions
             "genHistograms|h", "Generate histogram(s)", &genHistogram,
             "ho|H", "Histogram output filename(s); name may contain variables for device, step, lot, and/or testID\nDefault = ${device}_histograms.pdf", &hfile,
             "binCategory", "Specify if bins should be divided by SITE, LOT, TEMPerature or NONE. Default = NONE\nNote: if --ho contains ${lot} then dividing bins by lot does not make sense", &category,
+            //"manBins", "Allow manual number of bins.", &manBins,
+            //"setCount", "Manually set the number of bins across all histograms.", &binCount,
+            //"cutOutliers", "Cut off the outliers", &cutoff;
+            //"setCut", "Define how much of the outliers to cut, in terms of standard deviation", &setCut,
 
             "generateRCFile|g", "Generate a default \".stdf2xlsxrc\" file", &generateRC,
             "channel-type|t", "Channel type: AUTO, CHANNEL, PHYSICAL, or LOGICAL. Only use this if you know what you are doing.", &channelType,
