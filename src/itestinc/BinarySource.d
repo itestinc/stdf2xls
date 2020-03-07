@@ -315,8 +315,7 @@ public class BinarySource : ByteReader
         {
             version(Windows)
             {
-                import core.stdc.stdlib;
-                free(buffer);
+                writeln("src.close()"); stdout.flush();
             }
             else
             {
@@ -328,6 +327,7 @@ public class BinarySource : ByteReader
                 }
             }
         }
+        writeln("XX src.close()"); stdout.flush();
     }
 }
 

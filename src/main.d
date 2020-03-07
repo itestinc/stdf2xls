@@ -22,8 +22,10 @@ int main(string[] args)
     if (options.generateRC) config.write();
     StdfFile[][HeaderInfo] stdfs = processStdf(options);
     // print, write, and modify here - options.textDump, options.byteDump, options.verifyWrittenStdf, option.outputDir
+    writeln("stdfs.size = ", stdfs.length);
     foreach (hdr; stdfs.keys)
     {
+        writeln("hdr = ", hdr, " options.textDump = ", options.textDump);
         StdfFile[] files = stdfs[hdr];
         foreach (file; files)
         {
