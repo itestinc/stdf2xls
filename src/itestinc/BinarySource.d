@@ -123,18 +123,27 @@ public class BinarySource : ByteReader
             import std.string;
             File f1 = File(fileName, "r");
             bufferSize = fileSize = f1.size();
+            writeln("bufferSize = ", bufferSize);
             f1.close();
-            import core.memory;
+            auto f = File(fileName, "r");
+            auto buf = f.rawRead(new ubyte[bufferSize]);
+            writeln("length = ", buf.length);
+            buffer = buf.ptr;
+            f.close();
+            /*
             import core.stdc.stdio;
+            import core.stdc.stdlib;
             auto f = fopen(toStringz(fileName), "r");
-            buffer = cast(ubyte*) pureMalloc(fileSize);
-            fread(buffer, 1L, fileSize, f);
+            buffer = cast(ubyte*) malloc(fileSize);
+            size_t len = 0L;
+            len = fread(buffer + len, 1L, fileSize, f);
+            writeln("bufferSize = ", bufferSize, " fileSize = ", fileSize, " len = ", len);
             fclose(f);
+            */
         }
         else
         {
-            const size_t pageSize;
-            pageSize = __getpagesize();
+            const size_t pageSize = __getpagesize();
             fd = open(bufferName.tempCString!FSChar(), O_RDONLY);
             version(unittest)
             {
@@ -306,7 +315,7 @@ public class BinarySource : ByteReader
         {
             version(Windows)
             {
-                import core.memory;
+                import core.stdc.stdlib;
                 free(buffer);
             }
             else
