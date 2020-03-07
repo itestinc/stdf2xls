@@ -187,11 +187,17 @@ struct StdfFile
 
     void load()
     {
+        writeln("load()"); stdout.flush();
         StdfReader stdf = new StdfReader(filename);
+        writeln("FF"); stdout.flush();
         stdf.read();
+        writeln("GG"); stdout.flush();
         stdf.close();
+        writeln("stdf closed"); stdout.flush();
         records = stdf.getRecords();
+        writeln("HH"); stdout.flush();
         hdr = getHeaderInfo();
+        writeln("end of load"); stdout.flush();
     }
 
     private HeaderInfo getHeaderInfo()

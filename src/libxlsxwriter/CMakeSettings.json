@@ -20,6 +20,11 @@
           "name": "CMAKE_STATIC_LINKER_FLAGS_DEBUG",
           "value": "",
           "type": "STRING"
+        },
+        {
+          "name": "USE_STATIC_MSVC_RUNTIME",
+          "value": "True",
+          "type": "BOOL"
         }
       ]
     }
