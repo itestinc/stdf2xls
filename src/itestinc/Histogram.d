@@ -1,101 +1,53 @@
 module itestinc.Histogram;
+import itestinc.HistogramFormat;
 
-import libxlsxd.workbook;
-import libxlsxd.worksheet;
-import libxlsxd.format;
-import libxlsxd.xlsxwrap;
 import itestinc.logo;
 import itestinc.Util;
-import itestinc.SpreadsheetWriter;
 import itestinc.Spreadsheet;
 import itestinc.StdfDB;
-import itestinc.StdfFile;
 import itestinc.Stdf;
 import itestinc.CmdOptions;
 import itestinc.Config;
-import itestinc.WafermapFormat;
 
 import libxlsxd.workbook;
 import libxlsxd.worksheet;
-import libxlsxd.format;
 import libxlsxd.xlsxwrap;
 import libxlsxd.chart;
 import libxlsxd.chartaxis;
 import libxlsxd.chartseries;
 import libxlsxd.chartsheet;
-import itestinc.WafermapFormat;
 
 import std.stdio;
-import std.math;
-import std.conv;
+import std.math : pow, ceil, round;
+import std.conv : to;
+import std.array : replace;
 import std.algorithm.iteration : uniq, mean;
 import std.algorithm.sorting : sort;
-import std.algorithm.searching : count;
+import std.algorithm.searching : count, canFind;
 
 /**
 */
 
 public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 {
-    // Possible cmd options
-    const double outlier_cutoff = 1.5;      // is a multiplier of standard deviation; larger = less cutoff
-    const double bin_width_divider = 30;    // larger = more bins
-    const double cutoff_compensator = outlier_cutoff*1.2;   // increases the number of inner bins after cutting off the outlier bins; larger = more bins
-
-    const uint custom_number_of_bins = 30;
-    const bool useCustomBinCount = true;
-    const bool no_cutoff = true;
-
-    // cmd:
-    // --manualBinCount --setCount 30
-    // --cutoffOutliers --setCutoff 1.5
-    if(custom_number_of_bins < 1) {
-        throw new Exception("Number of bins must be an integer greater than 0.");
-    }
-    if(outlier_cutoff <= 0) {
-        throw new Exception("Cutoff cannot be a zero or negative multiple of the standard deviation.");
-    }
+    const double bin_width_divider = 40;    // larger = more bins
+    const double aggressive_multiplier = 0.15;  // smaller = more aggressive
+    const double cutoff_compensator = options.cutoff*aggressive_multiplier*6;   // increases the number of inner bins after cutting off the outlier bins; larger = more bins
 
     uint MPR_count = 0;
 
-    lxw_chart_font TitleFont;
-    TitleFont.name = cast(char*)"Cambria";
-    TitleFont.size = 20;
-
-    //lxw_chart_font LabelsFont;
-    //LabelsFont.size = 8;
-    //LabelsFont.rotation = -90;
-
-    lxw_chart_font LegendFont;
-    LegendFont.size = 9;
-
-    lxw_chart_font AxisNameFont;
-    AxisNameFont.size = 9;
-    AxisNameFont.bold = true;
-
-    lxw_chart_font xAxisNumberFont;
-    xAxisNumberFont.size = 9;
-    xAxisNumberFont.rotation = -45;
-
-    lxw_chart_font yAxisNumberFont;
-    yAxisNumberFont.size = 9;
-
-    lxw_chart_line GridLine;
-    GridLine.color = 0xC8C8C8;
-
     foreach(hdr; stdfdb.deviceMap.keys) {
 
-        import std.algorithm: canFind;
         string hfile = options.hfile;	// "%device%_histograms.xlsx";
         const bool separateFileForDevice = canFind(hfile, "%device%");
 
-        import std.array : replace;
-        string fname = replace(hfile, "%device%", hdr.devName);
+        string devName_nospace = replace(hdr.devName, " ", "_");    // spaces are evil
+
+        string fname = replace(hfile, "%device%", devName_nospace);
         if (options.verbosityLevel > 9) writeln(fname);
 
         if(separateFileForDevice) {
-            import std.array : replace;
-            fname = replace(hfile, "%device%", hdr.devName);
+            fname = replace(hfile, "%device%", devName_nospace);
         }
         else {
             // ...
@@ -118,11 +70,13 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
         Worksheet ws3 = wb.addWorksheet(sheet3);
         Worksheet ws5 = wb.addWorksheet(sheet5);
 
-        uint sh1_row = 1;
+        initHistoFormats(wb, options, config);
+
+        uint sh1_row = 8;
         uint sh2_row = 0;
         uint sh3_row = 0;
         //uint sh5_row = 0;
-        const ushort sh1_col = 5;
+        const ushort sh1_col = 0;
         ushort sh2_col = 0;
         ushort sh3_col = 0;
         ushort sh5_col = 0;
@@ -132,42 +86,39 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 		lxw_image_options img_options;
 		const double ss_width = 449 * 0.350;
 		const double ss_height = 245 * 0.324;
-		img_options.x_scale = (3.0 * 70.0) / ss_width;
+		img_options.x_scale = (4.0 * 70.0) / ss_width;
 		img_options.y_scale = (7.0 * 20.0) / ss_height;
 		ws1.mergeRange(0, 0, 7, 3, null);
 		img_options.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
-		ws1.insertImageBufferOpt(cast(uint) 0, cast(ushort) 1, img.dup.ptr, img.length, &img_options);
+		ws1.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, img.dup.ptr, img.length, &img_options);
 
         // write useful headers
-        initWaferFormats(wb, options, config);
-        ws1.write( 8, 0, "wafer_id:", headerNameFmt);
-		ws1.write( 9, 0, "lot_id:", headerNameFmt);
-		ws1.write(10, 0, "sublot_id:", headerNameFmt);
-		ws1.write(11, 0, "device:", headerNameFmt);
-		ws1.write(12, 0, "temp:", headerNameFmt);
-		ws1.write(13, 0, "step:", headerNameFmt);
-        ws1.write(14, 0, "sites:", headerNameFmt);
+        uint header_row = 0;
+        ushort header_col = 4;
 
-        ws1.write( 8, 1, hdr.wafer_id, headerValueFmt);
-		ws1.write( 9, 1, hdr.lot_id, headerValueFmt);
-		ws1.write(10, 1, hdr.sublot_id, headerValueFmt);
-		ws1.write(11, 1, hdr.devName, headerValueFmt);
-		ws1.write(12, 1, hdr.temperature, headerValueFmt);
-		ws1.write(13, 1, hdr.step, headerValueFmt);
-        ws1.write(14, 1, getSites(hdr).length, headerValueFmt);
+        ws1.mergeRange(0, header_col, 0, cast(ushort)(header_col+1), "Wafer ID:", headerNameFmt);
+		ws1.mergeRange(1, header_col, 1, cast(ushort)(header_col+1), "Lot ID:", headerNameFmt);
+		ws1.mergeRange(2, header_col, 2, cast(ushort)(header_col+1), "Sublot ID:", headerNameFmt);
+		ws1.mergeRange(3, header_col, 3, cast(ushort)(header_col+1), "Device Name:", headerNameFmt);
+		ws1.mergeRange(4, header_col, 4, cast(ushort)(header_col+1), "Temperature:", headerNameFmt);
+		ws1.mergeRange(5, header_col, 5, cast(ushort)(header_col+1), "Step:", headerNameFmt);
+        ws1.mergeRange(6, header_col, 6, cast(ushort)(header_col+1), "Sites:", headerNameFmt);
+        ws1.mergeRange(7, header_col, 7, cast(ushort)(header_col+1), "Histogram Options:", headerNameFmt);
 
-        ws1.mergeRange( 8, 1,  8, 3, null);
-		ws1.mergeRange( 9, 1,  9, 3, null);
-		ws1.mergeRange(10, 1, 10, 3, null);
-		ws1.mergeRange(11, 1, 11, 3, null);
-		ws1.mergeRange(12, 1, 12, 3, null);
-		ws1.mergeRange(13, 1, 13, 3, null);
-        ws1.mergeRange(14, 1, 14, 3, null);
+        ws1.mergeRange(0, cast(ushort)(header_col+2), 0, cast(ushort)(header_col+4), hdr.wafer_id, headerValueFmt);
+		ws1.mergeRange(1, cast(ushort)(header_col+2), 1, cast(ushort)(header_col+4), hdr.lot_id, headerValueFmt);
+		ws1.mergeRange(2, cast(ushort)(header_col+2), 2, cast(ushort)(header_col+4), hdr.sublot_id, headerValueFmt);
+		ws1.mergeRange(3, cast(ushort)(header_col+2), 3, cast(ushort)(header_col+4), hdr.devName, headerValueFmt);
+		ws1.mergeRange(4, cast(ushort)(header_col+2), 4, cast(ushort)(header_col+4), hdr.temperature, headerValueFmt);
+		ws1.mergeRange(5, cast(ushort)(header_col+2), 5, cast(ushort)(header_col+4), hdr.step, headerValueFmt);
+        ws1.mergeRange(6, cast(ushort)(header_col+2), 6, cast(ushort)(header_col+4), to!string(getSites(hdr)), headerValueFmt);
+        ws1.mergeRange(7, cast(ushort)(header_col+2), 7, cast(ushort)(header_col+4), "\"--binCount "~to!string(options.binCount)~" --cutoff "~to!string(options.cutoff)~"\"", headerValueFmt);
 
-        ws1.write(sh1_row, sh1_col, "Test #", headerNameFmt2);
-        ws1.write(sh1_row, cast(ushort)(sh1_col + 1), "Duplicate #", headerNameFmt2);
-        ws1.write(sh1_row, cast(ushort)(sh1_col + 2), "Test Name", headerNameFmt2);
-        ws1.mergeRange( sh1_row, cast(ushort)(sh1_col + 2),  sh1_row, cast(ushort)(sh1_col + 6), null);
+        //ws1.write(0, sh1_col, "Right-click on the sheet scroll arrows (bottom left) for easy navigation.");
+        ws1.write(sh1_row, sh1_col, "Test #", listNameFmt);
+        ws1.write(sh1_row, cast(ushort)(sh1_col + 1), "Duplicate #", listNameFmt);
+        ws1.write(sh1_row, cast(ushort)(sh1_col + 2), "", listNameFmt);
+        ws1.mergeRange( sh1_row, cast(ushort)(sh1_col + 3),  sh1_row, cast(ushort)(sh1_col + 8), "Test Name", listNameFmt);
         sh1_row++;
 
         const TestID[] ids = getTestIDs(hdr);
@@ -177,8 +128,8 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 // write the list of histograms created
                 ws1.write(sh1_row, sh1_col, id.testNumber, headerValueFmt);
                 ws1.write(sh1_row, cast(ushort)(sh1_col + 1), id.dup, headerValueFmt);
-                ws1.write(sh1_row, cast(ushort)(sh1_col + 2), id.testName, headerValueFmt);
-                ws1.mergeRange( sh1_row, cast(ushort)(sh1_col + 2),  sh1_row, cast(ushort)(sh1_col + 6), null);
+                ws1.write(sh1_row, cast(ushort)(sh1_col + 2), "", headerValueFmt);
+                ws1.mergeRange( sh1_row, cast(ushort)(sh1_col + 3),  sh1_row, cast(ushort)(sh1_col + 8), id.testName, headerValueFmt);
                 sh1_row++;
 
                 sh2_row = 0;
@@ -193,7 +144,6 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 HistoData histodata_allsites = getResults(hdr, id);
 
                 if(histodata_allsites.values.length == 0) {         //when is this the case?
-                    writeln("skipped; no value(s) in histodata.");
                     continue;
                 }
 
@@ -201,14 +151,14 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                     histvalues_allsites.length +=1;
                     histvalues_allsites[i] = value;
                 }
+                histvalues_allsites.sort();
                 
                 // quantize the array into bins
                 double bin_width = (3.5*histodata_allsites.stdDev)/pow(histvalues_allsites.length, 1/3);    // Scott's normal reference formula (bin width is too wide for our case)
                 bin_width = bin_width / bin_width_divider;       // adjust the bin width with custom divider
                 //bin_width = round(bin_width*10_000)/10_000;
-                import std.algorithm.searching : maxElement, minElement;
-                histvalues_allsites.sort();
-                
+                //import std.algorithm.searching : maxElement, minElement;
+
                 // cut off outliers based on mean vs. standard deviation of each site
                 double min_value_new;
                 double max_value_new;
@@ -216,25 +166,22 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 double max_value_eachsite;
                 ubyte[] sites = getSites(hdr);
                 foreach(i, site; sites) {
-                    HistoData histodata = getResults(hdr, id, site);
-
+                    const HistoData histodata = getResults(hdr, id, site);
                     //writeln(id.testName, " | ", histodata.stdDev, " vs ",  bin_width);
 
-                    if(no_cutoff) {
+                    if(options.cutoff <= 0) {
                             min_value_new = histvalues_allsites[0];
                             max_value_new = histvalues_allsites[$-1];
                     }
                     else {
                         if(histodata.stdDev > 10*bin_width) {       // standard deviation is much narrower compared to bin width, so the cut off has to be more aggressive.
-                            min_value_eachsite = histodata.mean - (0.2)*outlier_cutoff*histodata.stdDev;
-                            max_value_eachsite = histodata.mean + (0.2)*outlier_cutoff*histodata.stdDev;
-                            writeln("more cutoff");
+                            min_value_eachsite = histodata.mean - (aggressive_multiplier)*options.cutoff*histodata.stdDev;
+                            max_value_eachsite = histodata.mean + (aggressive_multiplier)*options.cutoff*histodata.stdDev;
                             bin_width = bin_width / cutoff_compensator;      // compensate outer bin cut offs with more bins; should scale well with outlier cutoff multiplier
-                            writeln("compensated bin width = ", bin_width);
                         }
                         else {
-                            min_value_eachsite = histodata.mean - outlier_cutoff*histodata.stdDev;
-                            max_value_eachsite = histodata.mean + outlier_cutoff*histodata.stdDev;
+                            min_value_eachsite = histodata.mean - options.cutoff*histodata.stdDev;
+                            max_value_eachsite = histodata.mean + options.cutoff*histodata.stdDev;
                         }
 
                         if(i > 0) {
@@ -251,31 +198,29 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 // calculate number of bins based on bin width and ranges
                 double[] quantized_values;
                 double custom_bin_width;
-                if(useCustomBinCount) {
-                    custom_bin_width = cast(double)( (max_value_new - min_value_new)/custom_number_of_bins );
-                    writeln("custom_bin_width = ", custom_bin_width);
-                    quantized_values = new double[](custom_number_of_bins);
+                
+                if(options.binCount < 1) {
+                    uint auto_number_of_bins =cast(uint)ceil( (max_value_new - min_value_new)/bin_width );  // general formula
+
+                    if(auto_number_of_bins == 0) {                 //happens when min value == max value. All values in histodata are the same, so assign just 1 bin.
+                        auto_number_of_bins = 1;
+                    }
+                    quantized_values = new double[](auto_number_of_bins);
                 }
                 else {
-                    uint num_of_bins =cast(uint)ceil( (max_value_new - min_value_new)/bin_width );  // general formula
-
-                    if(num_of_bins == 0) {                 //when is this the case?
-                        num_of_bins = 1;
-                    }
-                    quantized_values = new double[](num_of_bins);
+                    custom_bin_width = cast(double)( (max_value_new - min_value_new)/options.binCount );
+                    quantized_values = new double[](options.binCount);
                 }
 
                 // calculate the bin ranges using bin width, using the minimum value as base
                 foreach(i, value; quantized_values) {
 
-                    if(useCustomBinCount) {
-                        quantized_values[i] = custom_bin_width*(i+1) + min_value_new;
-                    }
-                    else {
+                    if(options.binCount < 1) {
                         quantized_values[i] = bin_width*(i+1) + min_value_new;      // quantized_values is already sorted by this
                     }
-
-                    writeln(value);
+                    else {
+                        quantized_values[i] = custom_bin_width*(i+1) + min_value_new;
+                    }
                 }
 
                 // write histogram categories (bins) for each site
@@ -284,8 +229,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 bool first_index = true;
                 foreach(value; uniq(quantized_values)) {
                     quantized_values_unique.length++;
-                    quantized_values_unique[qvui] = value;
-                    writeln(value);
+                    quantized_values_unique[qvui] = round(value*1000)/1000;     // round to 3 digits to be more readable on histograms
 
                     if(first_index) {
                         ws3.write(sh3_row, sh3_col, "["~to!string(min_value_new)~", "~to!string(value)~")");
@@ -357,21 +301,15 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 y_axis.setName("number of occurrences");
                 x_axis.setNameFont(&AxisNameFont);
                 y_axis.setNameFont(&AxisNameFont);
-                x_axis.setNumFont(&xAxisNumberFont);
-                y_axis.setNumFont(&yAxisNumberFont);
+                x_axis.setNumFont(&AxisXNumberFont);
+                y_axis.setNumFont(&AxisYNumberFont);
                 x_axis.majorGridlinesSetVisible(true);
-                x_axis.majorGridlinesSetLine(&GridLine);
+                x_axis.majorGridlinesSetLine(&GridLineX);
                 y_axis.majorGridlinesSetVisible(true);
-                y_axis.majorGridlinesSetLine(&GridLine);
+                y_axis.majorGridlinesSetLine(&GridLineY);
                 ch.legendSetPosition(LXW_CHART_LEGEND_TOP);  
                 ch.legendSetFont(&LegendFont);
                 sh.setChart(ch);
-                sh.activate();
-
-                ws2.hide();
-                ws3.hide();
-                ws5.hide();
-                ws1.select();
             }
             
             else if(id.type == Record_t.MPR) {
@@ -395,6 +333,10 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
             }
         }
         writeln("MPR Count = ", MPR_count);
+        ws2.hide();
+        ws3.hide();
+        ws5.hide();
+        ws1.select();
         wb.close();
     }
 }
