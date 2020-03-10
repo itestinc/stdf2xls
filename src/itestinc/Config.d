@@ -600,7 +600,6 @@ class Config
         {
             rc = std.path.expandTilde("~/.stdf2xlsxrc");
         }
-        writeln("rc = ", rc); stdout.flush();
         if (rc.exists)
         {
             auto f = File(rc, "r");
