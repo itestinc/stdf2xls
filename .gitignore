@@ -24,3 +24,6 @@ x.tmp
 out/
 build/
 *.exe
+*.aux
+*.log
+*.toc

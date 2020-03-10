@@ -176,8 +176,8 @@ class CmdOptions
             "notch|n", "Rotate the wafer map for desired notch position: top|bottom|left|right.", &notch,
 
             "genHistograms|h", "Generate histogram(s)", &genHistogram,
-            "ho|H", "Histogram output filename(s); name may contain variables for device, step, lot, and/or testID\nDefault = ${device}_histograms.pdf", &hfile,
-            "binCategory", "Specify if bins should be divided by SITE, LOT, TEMPerature or NONE. Default = NONE\nNote: if --ho contains ${lot} then dividing bins by lot does not make sense", &category,
+            "ho|H", "Histogram output filename(s); name may contain variables for device, step, lot, and/or testID\nDefault = %device%_histograms.pdf", &hfile,
+            "binCategory", "Specify if bins should be divided by SITE, LOT, TEMPerature or NONE. Default = NONE\nNote: if --ho contains %lot% then dividing bins by lot does not make sense", &category,
             "binCount", "Manually set the number of bins across all histograms. Set to 0 (zero) for automatic.", &binCount,
             "cutoff", "Define how much of the outliers to cut, in terms of standard deviation. Set to 0 (zero) for no cutoff.", &cutoff,
 

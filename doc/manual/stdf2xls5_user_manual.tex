@@ -14,7 +14,6 @@
 \usepackage{epsfig}
 \usepackage{tikz}
 \usetikzlibrary{arrows}
-%%\usepackage{ulem}
 \pagestyle{plain}
 \renewcommand{\arraystretch}{1.4}
 \begin{document}
@@ -69,16 +68,16 @@ stdf2xls 4.0 java program, and is significantly faster too.  It has many new fea
 \section{Getting the program}
 
 The source code is available on github. The source code can be downloaded
-from gitlab with git, or just the exececutable for Windows or GNU/Linux
-may be downloaded from the gitlab web page.  This manual may also be copied
-from the gitlab webpage.\\
+from github with git, or just the exececutable for Windows or GNU/Linux
+may be downloaded from the github web page.  This manual may also be copied
+from the github webpage.\\
 \\
 To download the software with git use the following command:
 \begin{verbatim}
 git clone https://github.com/itestinc/stdf2xls.git
 \end{verbatim}
 
-To compile the source code on GNU/Linux you also need dub, gcc and dmd (dmd is the D compiler).
+\noindent To compile the source code on GNU/Linux you also need dub, gcc and dmd (dmd is the D compiler).
 
 \section{Installation}
 
@@ -99,120 +98,443 @@ put it in a directory that in in your executable search path.
 \section{Usage}
 
 A summary of the command line options can be printed by running the program
-with the '--help' option.  More detailed information about the command line
+with the '\texttt{-{}-}help' option.  More detailed information about the command line
 options is given in this manual.
+\begin{verbatim}
+stdf2xls --help
+\end{verbatim}
+gives the following output:
+\begingroup
+\scriptsize
+\begin{verbatim}
+Options:
+-a        --extract-pin Extract pin name from test name suffix (default delimiter = '@')
+-b          --dumpBytes dump the STDF in ascii byte form
+-d           --dumptext dump the STDF in text form
+-m             --modify modify a string field in specified record type.
+     Example: -m 'MIR TST\_TEMP "TEMPERATURE :" "TEMPERATURE:"'
+-o          --outputDir write out the STDF to this directory. Specifying this will cause the STDF to be written back out.
+-p      --pin-delimiter Delimiter character that separates pin name from test name (Default = '@')
+-i --ignoreSerialMarker Ignore the serial marker and use STDF part ID instead
+-D             --digest Summarize file contents
+-s    --genSpreadsheets Generate spreadsheet(s)
+-S                 --so Spreadsheet output filename(s); name may contain variables for device, and/or lot
+Default = %device%_%lot%.xlsx
+-r             --rotate Transpose spreadsheet so there is one device per column instead of one device per row
+             --sortType Sort devices by alphanumeric serial number, then by time. See the manual for valid sort types
+-c              --1kcol limit to 1000 columns for libreoffice - default is 16360 columns
+-Y    --noDynamicLimits Don't check for and show dynamic limits
+-w       --genWafermaps Generate wafer map(s)
+-W                 --wo Wafermap output filename(s); name may contain variables for device, wafer, and/or lot
+Default = %device%_%lot%_%wafer%.xlsx
+-P            --pattern fill wafermap bins with patterns instead of color
+-A          --dumpAscii dump the wafer map in ASCII form
+-n              --notch Rotate the wafer map for desired notch position: top|bottom|left|right.
+-h      --genHistograms Generate histogram(s)
+-H                 --ho Histogram output filename(s); name may contain variables for device, step, lot, and/or testID
+Default = %device%_histograms.pdf
+          --binCategory Specify if bins should be divided by SITE, LOT, TEMPerature or NONE. Default = NONE
+Note: if --ho contains %lot% then dividing bins by lot does not make sense
+-g     --generateRCFile Generate a default ".stdf2xlsxrc" file
+-t       --channel-type Channel type: AUTO, CHANNEL, PHYSICAL, or LOGICAL. Only use this if you know what you are doing.
+-v            --verbose Verbosity level. Default is 1 which means print only warnings.  0 means don't print anything
+-V             --verify Verify written STDF; only useful if \texttt{-{}-}outputDir is specified. For testing purposes only.
+   --noIgnoreMiscHeader Don't ignore custom user header items when comparing headers from different STDF files
+-h               --help This help information.
+\end{verbatim}
+\endgroup
 
+\noindent
 There are nine primary operations that can be done with the program, and they may be
 done individually or simultaneously:
 \begin{itemize}
-\item -s or --genSpreadsheets will generate spreadsheets for the STDF measurement data
-\item -h or --genHistograms will generate histograms for the STDF measurement data
-\item -w or --gnWafermaps will generate wafermaps for the STDF bin data
-\item -d or --dumptext will generate an ASCII dump of the STDF file(s)
-\item -b or --dumpBytes will generate an ASCII dump of all of the bytes in the STDF file(s)
-\item -D or --digest will dump each unique set of header information found in the STDF files(s)
-\item -m or --modify <record field fromRegex : toRegex> will modify any text field in any record type 
-\item -g or --generateRCFile
-\item -o or --outputDir <folder\_name> will cause the STDF files that are read in to be written out to this folder
+\item -s or \texttt{-{}-}genSpreadsheets will generate spreadsheets for the STDF measurement data
+\item -h or \texttt{-{}-}genHistograms will generate histograms for the STDF measurement data
+\item -w or \texttt{-{}-}genWafermaps will generate wafermaps for the STDF bin data
+\item -d or \texttt{-{}-}dumptext will generate an ASCII dump of the STDF file(s)
+\item -b or \texttt{-{}-}dumpBytes will generate an ASCII dump of all of the bytes in the STDF file(s)
+\item -D or \texttt{-{}-}digest will dump each unique set of header information found in the STDF file(s)
+\item -m or \texttt{-{}-}modify '<record> <field> \"<fromRegex>\" : \"<toRegex>\"' will modify any text field in any record type 
+\item -g or \texttt{-{}-}generateRCFile will generate an "rc" file in the home directory called ".stdf2xlsxrc"
+              which contains all the default color, font, and logo settings.
+\item -o or \texttt{-{}-}outputDir <folder\_name> will cause the STDF files that are read in to be written out to this folder
 \end{itemize}
 
-Each of these major options have several more options to refine their behavior.
+\noindent
+Each of these major options have several more options to refine their behavior, and their usage
+and options will be discussed in the following sections.
 
-\subsection{Generating a Spreadsheet}
-\begin{verbatim}
-java [-mx<M>] -jar <path_to_stdf2xls4_jar_file> [options] -x <spreadsheet_file> <stdf_files>
-\end{verbatim}
+\subsection{-s or \texttt{-{}-}genSpreadsheets}
+Spreadsheet generation has nine options that control aspects of how the spreadsheet is generated.
+You must give the -s or \texttt{-{}-}genSpreadsheet option to get a datalog spreadsheet.
+
 \begin{itemize}
-\item <M> is the amount of memory to allocate to the java virtual machine for example, 4G, 500M, 12G.
-\item [options] are explained in the next section, and are optional.
-\item The spreadsheet\_file must have a suffix of ".xls" or ".xlsx".  The spreadsheet format is
-determined from this suffix.
-\item There can be one STDF file or many STDF files specified; also "*.std" or "*.stdf" will work.
+\item -a        \texttt{-{}-}extract-pin Extract pin name from test name suffix (default delimiter = '@')
+\item -p      \texttt{-{}-}pin-delimiter Delimiter character that separates pin name from test name (Default = '@')
+\item -i \texttt{-{}-}ignoreSerialMarker Ignore the serial marker and use STDF part ID instead
+\item -S                 \texttt{-{}-}so Spreadsheet output filename(s); name may contain variables for device, and/or lot
+\item -r             \texttt{-{}-}rotate Transpose spreadsheet so there is one device per column instead of one device per row
+\item -c              \texttt{-{}-}1kcol limit to 1000 columns for libreoffice - default is 16360 columns
+\item -Y    \texttt{-{}-}noDynamicLimits Don't check for and show dynamic limits
+\item -t       \texttt{-{}-}channel-type Channel type: AUTO, CHANNEL, PHYSICAL, or LOGICAL.
+\item -m             \texttt{-{}-}modify modify a string field in specified record type.
 \end{itemize}
 
-\subsection{Converting STDF to ASCII}
-\begin{verbatim}
-java -jar <path_to_stdf2xls4_jar_file> -d <stdf_files>
-\end{verbatim}
+\subsubsection{-a or --extract-pin}
+Some testers like the Advantest 93K will append a pin name on to the end of a test name
+to indicate the pin that is being tested.  By default it uses an \makeatletter '@' \makeatother
+to delimit the test name from the pin name.  For example \makeatletter "myTestName@VCC". \makeatother
+This option will remove the delimiter and pin name from the test name, and put the pin name
+in the pin column or row of the spreadsheet.  You may use any character for the deliter,
+but \makeatletter '@' \makeatother is used by default.  See next section.
 
-\subsection{Command Line Options}
+\subsubsection{-p or --pinDelimiter}
+This option allows you to specifiy the delimiter that is used to separate the test name and pin name.
+It is only necessary to use this option if the delimiter is not \makeatletter '@'. \makeatother.
+
+\subsubsection{-i or --ignoreSerialMarker}
+There are two ways to specify a serial number for a device.  If you do nothing then stdf2xls
+will use the PART\_ID field in the PRR record as the serial number.  This field is set by the tester
+automatically. However if you want to assign your own alpha-numeric serial numbers you can put
+them into a Datalog Text Record using a special format.  To put your own serial numbers
+in to the STDF, print a string to the datalogger using this format:
 \begin{verbatim}
-java -jar <path_to_stdf2xls4_jar_file> --help
+TEXT_DATA : S/N : <serial_id>
 \end{verbatim}
+For example,
+\begin{verbatim}
+TEXT_DATA : S/N : A1
+\end{verbatim}
+On the Advantest 93K a Datalog Text Record is generated by using the PUT\_DATALOG() function.
+The stdf2xls program will prioritize the Datalog Text Record serial marker over the
+PART\_ID field in the PRR record.  If you want to prioritize thie PART\_ID field over
+the Datalog Text Record serial marker, then use this option.  Generally you won't want
+to use this option.
+
+\subsubsection{-S or --so}
+This option is used to specify the spreadsheet filname.  It is not necessary to use this option.
+By default the spreadsheet filename will be <deviceName>\_<lot\_id>.xlsx.  Note that you can process
+multiple device types simultaneously and each device and lot will be sent to a different spreadsheet
+file.  With this option you can specify the datalog spreadsheet filename, and you can use variables
+to specfiy the lot and/or device in the filename.  For example:
+\begin{verbatim}
+-S device_%device%_lot_%lot%.xlsx
+\end{verbatim}
+If your device was 8087 and your lot number was N5432S, then this would
+give filename of\\ "device\_8087\_lot\_N5432S.xlsx"\\\\   Note that if the actual lot or device
+number contains a '/' character, then the '/' will be replaced with a '\%' character
+because you can't have slashes in a filename.  If the lot or device number contains
+a space character, then the space will be replaced with a '\_' character.  This is because
+spaces in filenames are evil.
+
+\subsubsection{-r or --rotate}
+By default the datalog spreadsheet is generated with tests in columns and devices in rows.  This
+option will transpose the spreadsheet so that devices are in columns and tests are in rows.
+
+\subsubsection{-c or --1kcol}
+Use this option if you are using libreoffice or openoffice.org  This limits the number
+of columns to 1000.  Libreoffice and openoffice.org will truncate andy data beyond 1024 columns.
+By default 32K columns will be used for MS Excel.  In any case if the number of columns
+exceeds these limits then the data will be continued on another tab in the workbook.
+
+\subsubsection{-Y or --noDynamicLimits}
+By default all parametric tests are scanned for non-constant limits.  If non-constant
+limits are detected for certain tests, then the spreadsheet is formatted differently
+for those tests such that each test result is surounded by the limits used for that
+test.  If you don't want this behavior then use this option, but realize the limits
+will not be accurate.
+
+\subsubsection{-t or --channel-type}
+For Multiple Parametric Test Records the pin information is obtained from
+the Pin Map Records which map a pin index number to a pin name.  Unfortunately
+the Pin Map Record has three fields where a pin name {\it might} be stored.
+Most of the time stdf2xls will use the correct field to get the correct
+pin name, but occasionnaly a new tester may use the wrong field.  In that
+case this option can be used for force stdf2xls to use the correct field.
+If your pin names are not coming out correctly for Multiple Parametric Test Result
+records, then do an ASCII dump of the STDF file, and look at the Pin Map Records,
+and it should be obvious which field to specify with this option.
+
+\subsubsection{-m or --modify}
+This option can be used to modify a string field in any STDF record. It uses a powerful
+regular-expression engine that is documented at http://www.regular-expressions.info/.
+This option has the form:
+\begin{verbatim}
+modify '<record> <field> \"<fromRegex>\" \"<toRegex>\"'
+\end{verbatim}
+Note that the single quotes, double quotes, and backslashes are needed so that the shell
+interprets the command line correctly.  Note that you can also specify this
+option multiple times on the command line to do several edits simultaneously.
+
+Here are a couple of examples.  First just remove the space in "TEMPERATURE :"
+that occurs in any Datalog Text Record:
+\begin{verbatim}
+-m 'DTR TEXT_DAT \"TEMPERATURE :\" \"TEMPERATURE:\"'
+\end{verbatim}
+This will affect every Datalog Text Record that contains the string "TEMPERATURE :".\\
+\\
+A more complex example would be if you need to remove the suffix at the end of
+a wafer number.  Assume that the wafer number has the format '<letter> <digit> <digit> <digit> X'
+(like W123X or V433X).  Further assume you only want to remove the X suffix if the 
+wafer number begins with 'W':
+\begin{verbatim}
+-m 'WIR WAFER_ID 
+
+The <record> parameter is the three-letter record name as it is specfied
+in the STDF specfication.  The <field> parameter is the field name as
+given in the STDF specification.  The valid record and field names
+that may be modified are shown below:
+\begin{itemize}
+\item Record ATR
+    \begin{itemize}
+    \item Field Name: "CMD\_LINE"
+    \end{itemize}
+\item Record BPS
+    \begin{itemize}
+    \item Field Name: "SEQ\_NAME"
+    \end{itemize}
+\item Record DTR
+    \begin{itemize}
+    \item Field Name: "TEXT\_DAT"
+    \end{itemize}
+\item Record FTR
+    \begin{itemize}
+    \item Field Name: "VECT\_NAM"
+    \item Field Name: "TIME\_SET"
+    \item Field Name: "OP\_CODE"
+    \item Field Name: "TEST\_TXT"
+    \item Field Name: "ALARM\_ID"
+    \item Field Name: "PROG\_TXT"
+    \item Field Name: "RSLT\_TXT"
+    \end{itemize}
+\item Record HBR
+    \begin{itemize}
+    \item Field Name: "HBIN\_NAM"
+    \end{itemize}
+\item Record MIR
+    \begin{itemize}
+    \item Field Name: "LOT\_ID"
+    \item Field Name: "PART\_TYP"
+    \item Field Name: "NODE\_NAM"
+    \item Field Name: "TSTR\_TYP"
+    \item Field Name: "JOB\_NAM"
+    \item Field Name: "JOB\_REV"
+    \item Field Name: "SBLOT\_ID"
+    \item Field Name: "OPER\_NAM"
+    \item Field Name: "EXEC\_TYP"
+    \item Field Name: "EXEC\_VER"
+    \item Field Name: "TEST\_COD"
+    \item Field Name: "TST\_TEMP"
+    \item Field Name: "USER\_TXT"
+    \item Field Name: "AUX\_FILE"
+    \item Field Name: "PKG\_TYP"
+    \item Field Name: "FAMLY\_ID"
+    \item Field Name: "DATE\_COD"
+    \item Field Name: "FACIL\_ID"
+    \item Field Name: "FLOOR\_ID"
+    \item Field Name: "PROC\_ID"
+    \item Field Name: "OPER\_FRQ"
+    \item Field Name: "SPEC\_NAM"
+    \item Field Name: "SPEC\_VER"
+    \item Field Name: "FLOW\_ID"
+    \item Field Name: "SETUP\_ID"
+    \item Field Name: "DSGN\_REV"
+    \item Field Name: "ENG\_ID"
+    \item Field Name: "ROM\_COD"
+    \item Field Name: "SERL\_NUM"
+    \item Field Name: "SUPR\_NAM"
+    \end{itemize}
+\item Record MPR
+    \begin{itemize}
+    \item Field Name: "TEST\_TXT"
+    \item Field Name: "ALARM\_ID"
+    \item Field Name: "UNITS"
+    \item Field Name: "C\_RESFMT"
+    \item Field Name: "C\_LLMFMT
+    \item Field Name: "UNITS\_IN"
+    \item Field Name: "C\_HLMFMT"
+    \end{itemize}
+\item Record MRR
+    \begin{itemize}
+    \item Field Name: "USR\_DESC"
+    \item Field Name: "EXC\_DESC"
+    \end{itemize}
+\item Record PGR
+    \begin{itemize}
+    \item Field Name: "GRP\_NAME"
+    \end{itemize}
+\item Record PLR
+    \begin{itemize}
+    \item Field Name: "PGM\_CHAR"
+    \item Field Name: "RTN\_CHAR"
+    \item Field Name: "PGM\_CHAL"
+    \item Field Name: "RTN\_CHAL"
+    \end{itemize}
+\item Record PMR
+    \begin{itemize}
+    \item Field Name: "CHAN\_NAM"
+    \item Field Name: "PHY\_NAM"
+    \item Field Name: "LOG\_NAM"
+    \end{itemize}
+\item Record PRR
+    \begin{itemize}
+    \item Field Name: "PART\_ID"
+    \item Field Name: "PART\_TXT"
+    \end{itemize}
+\item Record PTR
+    \begin{itemize}
+    \item Field Name: "TEST\_TXT"
+    \item Field Name: "ALARM\_ID"
+    \item Field Name: "UNITS"
+    \item Field Name: "C\_RESFMT"
+    \item Field Name: "C\_LLMFMT"
+    \item Field Name: "C\_HLMFMT"
+    \end{itemize}
+\item Record SBR
+    \begin{itemize}
+    \item Field Name: "SBIN\_NAM"
+    \end{itemize}
+\item Record SDR
+    \begin{itemize}
+    \item Field Name: "HAND\_TYP"
+    \item Field Name: "HAND\_ID"
+    \item Field Name: "CARD\_TYP"
+    \item Field Name: "CARD\_ID"
+    \item Field Name: "LOAD\_TYP"
+    \item Field Name: "LOAD\_ID"
+    \item Field Name: "DIB\_TYP"
+    \item Field Name: "DIB\_ID"
+    \item Field Name: "CABL\_TYP"
+    \item Field Name: "CABL\_ID"
+    \item Field Name: "CONT\_TYP"
+    \item Field Name: "CONT\_ID"
+    \item Field Name: "LASR\_TYP"
+    \item Field Name: "LASR\_ID"
+    \item Field Name: "EXTR\_TYP"
+    \item Field Name: "EXTR\_ID"
+    \end{itemize}
+\item Record TSR
+    \begin{itemize}
+    \item Field Name: "TEST\_NAM"
+    \item Field Name: "SEQ\_NAME"
+    \item Field Name: "TEST\_LBL"
+    \end{itemize}
+\item Record WIR
+    \begin{itemize}
+    \item Field Name: "WAFER\_ID"
+    \end{itemize}
+\item Record WRR
+    \begin{itemize}
+    \item Field Name: "WAFER\_ID"
+    \item Field Name: "FABWF\_ID"
+    \item Field Name: "FRAME\_ID"
+    \item Field Name: "MASK\_ID"
+    \item Field Name: "USR\_DESC"
+    \item Field Name: "EXC\_DESC"
+    \end{itemize}
+\end{itemize}
+
+\subsection{-h or \texttt{-{}-}genHistograms}
+
+
+\subsection{-w or \texttt{-{}-}genWafermaps}
+
+
+\subsection{-d or \texttt{-{}-}dumptext}
+
+
+\subsection{-b or \texttt{-{}-}dumpBytes}
+
+
+\subsection{-D or \texttt{-{}-}digest}
+
+
+\subsection{-m or \texttt{-{}-}modify}
+
+
+\subsection{-g or \texttt{-{}-}generateRCFile}
+
+
+\subsection{-o or \texttt{-{}-}outputDir}
+
+
+
+
+
+
+
+
 
 \section{Command Line Options}
 Options can be specified as a single dash followed by a single character, or a double dash
 followed by multiple characters.
 \begin{itemize}
-\item -a [<char>] or --pin-suffix [<char>]\\
+\item -a [<char>] or \texttt{-{}-}pin-suffix [<char>]\\
 This option tells the program that if a test name of a ParametricTestRecord has
 a character <char> in it then the characters following <char> are to be interpreted
 as a pin name for that test.  If <char> is not specified, then by default '@' will be used.
 The pin name is displayed on a separate row or column in the test header.
-\item -b or --one-page\\
+\item -b or \texttt{-{}-}one-page\\
 Normally STDF files from different wafers or test steps are displayed in different spreadsheets.
 This option will combine them all on one page with an additional row or column for the test
 step or wafer number.
-\item -c or --columns\\
+\item -c or \texttt{-{}-}columns\\
 Specifying this option will increase the maximum number of columns in the spreadsheet
 from 1024 to 16384.  Note that with this option the spreadsheet will not be
 readable with Libreoffice.
-\item -d or --dump\\
+\item -d or \texttt{-{}-}dump\\
 This option causes the STDF data to be dumped in ASCII format to STDOUT.
-\item -g or --gui\\
+\item -g or \texttt{-{}-}gui\\
 This option will run the program from a GUI instead of the command line.  This option
 is experimental and will probably be deprecated in a future version.
-\item -h or --help\\
+\item -h or \texttt{-{}-}help\\
 Prints a summary of the command line options.
-\item -j or --jxl-xls-name\\
+\item -j or \texttt{-{}-}jxl-xls-name\\
 This option specified to use the JExcel library instead of the Apache POI library
 for spreadsheet generation.  Sometimes the Apache library for "xls" format is problematic.
 The JExcel library can be tried to see if it resolves any formatting problems.  Note
 that this option has no effect when using "xlsx" or XML format, and XML format is
 recommended anyways.
-\item -l <file> or --logo <file>\\
+\item -l <file> or \texttt{-{}-}logo <file>\\
 This option specifies a logo (PNG file) to include in the upper left
 corner of the spreadsheet.  The logo should have an aspect ratio of
 about 290(W) to 120(H).  It will be scaled to fit within the required area.
-\item -m or --modifier\\
+\item -m or \texttt{-{}-}modifier\\
 This is an experimental feature that can modify STDF fields on the fly as the STDF is loaded.
 Currently it is only enabled for DatalogTextRecords. This option has the form of:\\
 -m "R:Record\_t F:FieldDescriptor C:Condition\_t V:oldValue N:newValue"\\
 Where record type currently can only be DTR, the field descriptor can only be TEXT\_DAT, and
 Condition\_t can be EQUALS, CONTAINS, or TRUE.  Also, multiple modifiers may be specified by using multiple -m options.
 This implementation is lame, and will probably later be replaced by a regular expression engine.\\
-\begin{verbatim}
--m "R:DTR F:TEXT_DAT C:CONTAINS V:2.00 N:2.0"
-\end{verbatim}
 This will check every DatalogTextRecord for the string "2.00", and
 if found, it will replace it with "2.0".  Currently whitespace in the
 string cannot be handled.  The Condition TRUE is currently useless. The EQUALS
 condition requires that the entire text field be equal to the oldValue for
 a replacement to occur.
-\item -n or --no-wrap-test-names\\
+\item -n or \texttt{-{}-}no-wrap-test-names\\
 When the the test names run horizontally across the spreadsheet they will be wrapped
 to keep the columns from getting too wide.  This option will prevent wrapping the test
 names, but can give very wide columns.
-\item -o or --no-overwrite\\
+\item -o or \texttt{-{}-}no-overwrite\\
 Currently this option is not working.
-\item -p <integer> or --precision <integer>\\
+\item -p <integer> or \texttt{-{}-}precision <integer>\\
 This option specifies how many digits will be to the right of the decimal
 point for floating point values.  The default is 3.
-\item -r or --rotate\\
+\item -r or \texttt{-{}-}rotate\\
 This option transposes the spreadsheet.  By default test names run horizontally across
 the spreadsheet and devices run vertically down the spreadsheet. With the -r option
 the test names will run vertically down the spreadsheet and devices will run horizontally
 across the spreadsheet.
-\item -s or --sort\\
+\item -s or \texttt{-{}-}sort\\
 this options sorts the data by serial number or XY-coordinate (for wafersort).
-\item -v or --dont-skip-search-fails\\
+\item -v or \texttt{-{}-}dont-skip-search-fails\\
 Verigy (AKA Advantest) testers can output bogus test data as tests related to searches.  By default
 these will be ignored.  This option will include them in the spreadsheet.
-\item -x <file.xls[x]> or --xls-name <file.xlsx[x]>\\
+\item -x <file.xls[x]> or \texttt{-{}-}xls-name <file.xlsx[x]>\\
 This options specifies the name of the spreadsheet file and is required (unless using the -d option).
 If the suffix of the filename is ".xlsx" then the newer XML format will be used for the spreadsheet.
 Otherwise the older ".xls" format will be used.  In the future the xls format may be deprecated.
-\item -y or --dynamic limits\\
+\item -y or \texttt{-{}-}dynamic limits\\
 If this option is used, then the high and low limits of all parametric tests are
 searched, and if they vary by more than 0.1\percent then the corresponding test will use dynamic limit
 which means that the column to the left of the test will be the lower limit used and the column to
@@ -224,7 +546,7 @@ For alpha-numeric serial numbers, print a text field to the datalog
 at the beginning of the test flow that looks like this:
 
 \begin{verbatim}
-TEXT_DATA: S/N : <serial_number>
+TEXT\_DATA: S/N : <serial\_number>
 \end{verbatim}
 The strings "TEXT\_DATA" and "S/N" must match exactly what is shown here.  Whitespace
 around the colons is ignored.  The maximum length of any string printed to the datalogger
@@ -235,7 +557,7 @@ Arbitrary data for each device may be mapped to the spreadsheet as a test result
 with the rest of the test data.  To get this information into the STDF file, print a 
 text field to the datalogger using the format:
 \begin{verbatim}
-TEXT_DATA : test_name : value [(units)] [ : test_number [ : site_number [ : head_number ]]]
+TEXT\_DATA : test\_name : value [(units)] [ : test\_number [ : site\_number [ : head\_number ]]]
 \end{verbatim}
 All fields after the value are optional.  Whitespace around the colons is ignored.
 
@@ -248,7 +570,7 @@ with each spreadsheet having different header information.
 
 To generate a header field, print the field to the datalogger using this format:
 \begin{verbatim}
->>> <header_name> : <header_value>
+>>> <header\_name> : <header\_value>
 \end{verbatim}
 The prefix "\gT\gT\gT" indicates a header field.  The header name can be any string (not containing a colon)
 and the header value can be any string.
