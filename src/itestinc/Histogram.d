@@ -55,7 +55,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 
         foreach(i, dr; stdfdb.deviceMap[hdr]) {
             foreach(tr; dr.tests) {
-                //writeln(tr.loLimit);
+                writeln(tr.id.testName, " ", tr.id.testNumber, " | lolimit = ", tr.loLimit, " | hilimit = ", tr.hiLimit);
             }
         }
 
@@ -93,28 +93,28 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 		ws1.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, img.dup.ptr, img.length, &img_options);
 
         // write useful headers
-        uint header_row = 0;
-        ushort header_col = 4;
+        const uint header_row = 0;
+        const ushort header_col = 4;
 
-        ws1.mergeRange(0, header_col, 0, cast(ushort)(header_col+1), "Wafer ID:", headerNameFmt);
-		ws1.mergeRange(1, header_col, 1, cast(ushort)(header_col+1), "Lot ID:", headerNameFmt);
-		ws1.mergeRange(2, header_col, 2, cast(ushort)(header_col+1), "Sublot ID:", headerNameFmt);
-		ws1.mergeRange(3, header_col, 3, cast(ushort)(header_col+1), "Device Name:", headerNameFmt);
-		ws1.mergeRange(4, header_col, 4, cast(ushort)(header_col+1), "Temperature:", headerNameFmt);
-		ws1.mergeRange(5, header_col, 5, cast(ushort)(header_col+1), "Step:", headerNameFmt);
-        ws1.mergeRange(6, header_col, 6, cast(ushort)(header_col+1), "Sites:", headerNameFmt);
-        ws1.mergeRange(7, header_col, 7, cast(ushort)(header_col+1), "Histogram Options:", headerNameFmt);
+        ws1.mergeRange(cast(uint)(header_row+0), header_col, cast(uint)(header_row+0), cast(ushort)(header_col+1), "Wafer ID:", headerNameFmt);
+		ws1.mergeRange(cast(uint)(header_row+1), header_col, cast(uint)(header_row+1), cast(ushort)(header_col+1), "Lot ID:", headerNameFmt);
+		ws1.mergeRange(cast(uint)(header_row+2), header_col, cast(uint)(header_row+2), cast(ushort)(header_col+1), "Sublot ID:", headerNameFmt);
+		ws1.mergeRange(cast(uint)(header_row+3), header_col, cast(uint)(header_row+3), cast(ushort)(header_col+1), "Device Name:", headerNameFmt);
+		ws1.mergeRange(cast(uint)(header_row+4), header_col, cast(uint)(header_row+4), cast(ushort)(header_col+1), "Temperature:", headerNameFmt);
+		ws1.mergeRange(cast(uint)(header_row+5), header_col, cast(uint)(header_row+5), cast(ushort)(header_col+1), "Step:", headerNameFmt);
+        ws1.mergeRange(cast(uint)(header_row+6), header_col, cast(uint)(header_row+6), cast(ushort)(header_col+1), "Sites:", headerNameFmt);
+        ws1.mergeRange(cast(uint)(header_row+7), header_col, cast(uint)(header_row+7), cast(ushort)(header_col+1), "Histogram Options:", headerNameFmt);
 
-        ws1.mergeRange(0, cast(ushort)(header_col+2), 0, cast(ushort)(header_col+4), hdr.wafer_id, headerValueFmt);
-		ws1.mergeRange(1, cast(ushort)(header_col+2), 1, cast(ushort)(header_col+4), hdr.lot_id, headerValueFmt);
-		ws1.mergeRange(2, cast(ushort)(header_col+2), 2, cast(ushort)(header_col+4), hdr.sublot_id, headerValueFmt);
-		ws1.mergeRange(3, cast(ushort)(header_col+2), 3, cast(ushort)(header_col+4), hdr.devName, headerValueFmt);
-		ws1.mergeRange(4, cast(ushort)(header_col+2), 4, cast(ushort)(header_col+4), hdr.temperature, headerValueFmt);
-		ws1.mergeRange(5, cast(ushort)(header_col+2), 5, cast(ushort)(header_col+4), hdr.step, headerValueFmt);
-        ws1.mergeRange(6, cast(ushort)(header_col+2), 6, cast(ushort)(header_col+4), to!string(getSites(hdr)), headerValueFmt);
-        ws1.mergeRange(7, cast(ushort)(header_col+2), 7, cast(ushort)(header_col+4), "\"--binCount "~to!string(options.binCount)~" --cutoff "~to!string(options.cutoff)~"\"", headerValueFmt);
+        ws1.mergeRange(cast(uint)(header_row+0), cast(ushort)(header_col+2), cast(uint)(header_row+0), cast(ushort)(header_col+4), hdr.wafer_id, headerValueFmt);
+		ws1.mergeRange(cast(uint)(header_row+1), cast(ushort)(header_col+2), cast(uint)(header_row+1), cast(ushort)(header_col+4), hdr.lot_id, headerValueFmt);
+		ws1.mergeRange(cast(uint)(header_row+2), cast(ushort)(header_col+2), cast(uint)(header_row+2), cast(ushort)(header_col+4), hdr.sublot_id, headerValueFmt);
+		ws1.mergeRange(cast(uint)(header_row+3), cast(ushort)(header_col+2), cast(uint)(header_row+3), cast(ushort)(header_col+4), hdr.devName, headerValueFmt);
+		ws1.mergeRange(cast(uint)(header_row+4), cast(ushort)(header_col+2), cast(uint)(header_row+4), cast(ushort)(header_col+4), hdr.temperature, headerValueFmt);
+		ws1.mergeRange(cast(uint)(header_row+5), cast(ushort)(header_col+2), cast(uint)(header_row+5), cast(ushort)(header_col+4), hdr.step, headerValueFmt);
+        ws1.mergeRange(cast(uint)(header_row+6), cast(ushort)(header_col+2), cast(uint)(header_row+6), cast(ushort)(header_col+4), to!string(getSites(hdr)), headerValueFmt);
+        ws1.mergeRange(cast(uint)(header_row+7), cast(ushort)(header_col+2), cast(uint)(header_row+7), cast(ushort)(header_col+4), "\"--binCount "~to!string(options.binCount)~" --cutoff "~to!string(options.cutoff)~"\"", headerValueFmt);
 
-        //ws1.write(0, sh1_col, "Right-click on the sheet scroll arrows (bottom left) for easy navigation.");
+        ws1.write(8, 10, "Right-click on the sheet scroll arrows (bottom left) for easy navigation.");
         ws1.write(sh1_row, sh1_col, "Test #", listNameFmt);
         ws1.write(sh1_row, cast(ushort)(sh1_col + 1), "Duplicate #", listNameFmt);
         ws1.write(sh1_row, cast(ushort)(sh1_col + 2), "", listNameFmt);
@@ -167,17 +167,16 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 ubyte[] sites = getSites(hdr);
                 foreach(i, site; sites) {
                     const HistoData histodata = getResults(hdr, id, site);
-                    //writeln(id.testName, " | ", histodata.stdDev, " vs ",  bin_width);
 
                     if(options.cutoff <= 0) {
                             min_value_new = histvalues_allsites[0];
                             max_value_new = histvalues_allsites[$-1];
                     }
                     else {
-                        if(histodata.stdDev > 10*bin_width) {       // standard deviation is much narrower compared to bin width, so the cut off has to be more aggressive.
+                        if(histodata.stdDev > 10*bin_width) {               // standard deviation is much narrower compared to bin width, so the cut off has to be more aggressive.
                             min_value_eachsite = histodata.mean - (aggressive_multiplier)*options.cutoff*histodata.stdDev;
                             max_value_eachsite = histodata.mean + (aggressive_multiplier)*options.cutoff*histodata.stdDev;
-                            bin_width = bin_width / cutoff_compensator;      // compensate outer bin cut offs with more bins; should scale well with outlier cutoff multiplier
+                            bin_width = bin_width / cutoff_compensator;     // compensate outer bin cut offs with more bins; should scale well with outlier cutoff multiplier
                         }
                         else {
                             min_value_eachsite = histodata.mean - options.cutoff*histodata.stdDev;
@@ -185,8 +184,8 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                         }
 
                         if(i > 0) {
-                            min_value_new = min_value_new < min_value_eachsite ? min_value_new : min_value_eachsite;
-                            max_value_new = max_value_new > max_value_eachsite ? max_value_new : max_value_eachsite;
+                            min_value_new = (min_value_new < min_value_eachsite) ? min_value_new : min_value_eachsite;
+                            max_value_new = (max_value_new > max_value_eachsite) ? max_value_new : max_value_eachsite;
                          }
                         else {  // only the first index
                             min_value_new = min_value_eachsite;
@@ -216,10 +215,10 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 foreach(i, value; quantized_values) {
 
                     if(options.binCount < 1) {
-                        quantized_values[i] = bin_width*(i+1) + min_value_new;      // quantized_values is already sorted by this
+                        quantized_values[i] = (round(bin_width*(i+1) + min_value_new)*1_000)/1_000;      // quantized_values is already sorted by this
                     }
                     else {
-                        quantized_values[i] = custom_bin_width*(i+1) + min_value_new;
+                        quantized_values[i] = (round(custom_bin_width*(i+1) + min_value_new)*1_000)/1_000;
                     }
                 }
 
@@ -229,7 +228,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 bool first_index = true;
                 foreach(value; uniq(quantized_values)) {
                     quantized_values_unique.length++;
-                    quantized_values_unique[qvui] = round(value*1000)/1000;     // round to 3 digits to be more readable on histograms
+                    quantized_values_unique[qvui] = value;
 
                     if(first_index) {
                         ws3.write(sh3_row, sh3_col, "["~to!string(min_value_new)~", "~to!string(value)~")");
@@ -246,7 +245,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 
                 // set up histogram chart for each PTR
                 Chart ch = wb.addChart(LXW_CHART_COLUMN);
-                ch.titleSetName(id.testName);
+                ch.titleSetName(id.testName~"\n"~"");
                 ch.titleSetNameFont(&TitleFont);
                 Chartsheet sh = wb.addChartsheet(to!string(id.testNumber)~"-"~to!string(id.dup));
                 Chartseries[] series;
@@ -270,7 +269,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                             }
                         }
                     }
-                    //writeln("bin_count (", to!string(site), ") = ", bin_count);
+
                     foreach(value; bin_count) {
                         ws2.write(sh2_row, sh2_col, value);
                         sh2_row++;
@@ -291,14 +290,11 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 sh2_col++;
                 sh2_row = 0;
 
-                const double min_value = histvalues_allsites[0];
-                const double max_value = histvalues_allsites[$-1];
-
                 // set histogram formats and insert into excel
                 Chartaxis x_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_X);
                 Chartaxis y_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_Y);
-                x_axis.setName("bins (min = "~to!string(min_value)~", max = "~to!string(max_value)~")");
-                y_axis.setName("number of occurrences");
+                x_axis.setName("Bins (min: "~to!string( histvalues_allsites[0] )~", max: "~to!string( histvalues_allsites[$-1] )~")");
+                y_axis.setName("Number of Occurrences");
                 x_axis.setNameFont(&AxisNameFont);
                 y_axis.setNameFont(&AxisNameFont);
                 x_axis.setNumFont(&AxisXNumberFont);
