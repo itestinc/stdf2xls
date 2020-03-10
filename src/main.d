@@ -13,6 +13,7 @@ import itestinc.StdfFile;
 
 int main(string[] args)
 {
+    if ((args.length == 2) && (args[1] == "-h")) args[1] = "--help";
     CmdOptions options = new CmdOptions(args);
     import std.path;
     import std.digest;
