@@ -31,11 +31,6 @@ lxw_chart_line GridLineY;
 */
 public void initHistoFormats(Workbook wb, CmdOptions options, Config config) {
 
-    /* DEFAULT\
-    uint binCount = 0;     0 = auto
-    double cutoff = 1.5;    0 = auto
-    */
-
     if(options.binCount > 0) {
         writeln("Using manual bin count: ", options.binCount);
     }
@@ -49,9 +44,7 @@ public void initHistoFormats(Workbook wb, CmdOptions options, Config config) {
         writeln("Defaulting to automatic outlier cutoff.");
     }
 
-
     import libxlsxd.xlsxwrap : lxw_format_borders, lxw_format_alignments, lxw_format_underlines;
-
     headerNameFmt = wb.addFormat();
     headerNameFmt.setFontName("Arial");
     headerNameFmt.setFontSize(8.0);
@@ -82,11 +75,6 @@ public void initHistoFormats(Workbook wb, CmdOptions options, Config config) {
     config.setFontColor(headerValueFmt, Config.histo_header_text_color);
     headerValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_LEFT);
     headerValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_CENTER);
-    //headerValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    //headerValueFmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
-    //headerValueFmt.setBorderColor(0x1000000);
-
-    
 
     TitleFont.name = cast(char*)"Cambria";
     TitleFont.size = 20;
