@@ -48,7 +48,7 @@
 \clearpage
 \makebg
 
-\section{Introduction}
+\section{\bf Introduction}
 stdf2xls 5.0 is a program that converts STDF files into spreadsheets, wafermaps, and/or histograms.
 It is natively compiled from the D-language and therefore it uses much less memory than the previous
 stdf2xls 4.0 java program, and is significantly faster too.  It has many new features:
@@ -59,13 +59,23 @@ stdf2xls 4.0 java program, and is significantly faster too.  It has many new fea
 \item New algorithm correctly orders tests even if the testflow varies from device to device
 \item Spreadsheet colors and fonts are now customizable
 \item Improved spreadsheet layout
-\item Many ways to sort and order device data
+\item Many ways to sort and order device data, including by timestamp.
 \item Ability to modifiy any STDF text field with regular expressions
 \item Ability to write out STDF files
 \item Multiple different devices types can be processed simultaneously
 \end{itemize}
 
-\section{Getting the program}
+There are a couple of minor regressions though:
+\begin{itemize}
+\item No more support for big-endian CPUs.
+It seems that most testers today are using the Intel CPU architecture,
+so why pay for the performance penalty if you don't need it.
+\item Logo scaling is more difficult.  This is because of
+the new xlsx library being used which makes image handling
+a little more difficult.
+\end{itemize}
+
+\section{\bf Getting the program}
 
 The source code is available on github. The source code can be downloaded
 from github with git, or just the exececutable for Windows or GNU/Linux
@@ -79,29 +89,29 @@ git clone https://github.com/itestinc/stdf2xls.git
 
 \noindent To compile the source code on GNU/Linux you also need dub, gcc and dmd (dmd is the D compiler).
 
-\section{Installation}
+\section{\bf Installation}
 
 To just install the executable, the program can be downloaded from github.com.
 
-\subsection{GNU/Linux Installation}
+\subsection{\bf GNU/Linux Installation}
 
 For GNU/Linux go to https://github.com/itestinc/stdf2xls, click on the dist folder, then
 click on the stdf2xls file, then press the Download button.  After the file has downloaded
 put it in a directory that in in your executable search path.
 
-\subsection{Windows Installation}
+\subsection{\bf Windows Installation}
 
 For Windows go to https://github.com/itestinc/stdf2xls, click on the dist folder, then 
 click on the stdf2xls.exe file, then press the Download button.  After the file has downloaded
 put it in a directory that in in your executable search path.
 
-\section{Usage}
+\section{\bf Usage}
 
 A summary of the command line options can be printed by running the program
 with the '\texttt{-{}-}help' option.  More detailed information about the command line
 options is given in this manual.
 \begin{verbatim}
-stdf2xls --help
+stdf2xls --help or stdf2xls -h
 \end{verbatim}
 gives the following output:
 \begingroup
@@ -154,9 +164,10 @@ done individually or simultaneously:
 \item -d or \texttt{-{}-}dumptext will generate an ASCII dump of the STDF file(s)
 \item -b or \texttt{-{}-}dumpBytes will generate an ASCII dump of all of the bytes in the STDF file(s)
 \item -D or \texttt{-{}-}digest will dump each unique set of header information found in the STDF file(s)
-\item -m or \texttt{-{}-}modify '<record> <field> \"<fromRegex>\" : \"<toRegex>\"' will modify any text field in any record type 
+\item -m or \texttt{-{}-}modify '<record> <field> ''<fromRegex>'' : ''<toRegex>'' ' will modify any text field in any record type 
 \item -g or \texttt{-{}-}generateRCFile will generate an "rc" file in the home directory called ".stdf2xlsxrc"
-              which contains all the default color, font, and logo settings.
+              which contains all the default color, font, and logo settings.  This file, if it exists, is loaded
+              on startup and used to configure the output.
 \item -o or \texttt{-{}-}outputDir <folder\_name> will cause the STDF files that are read in to be written out to this folder
 \end{itemize}
 
@@ -164,7 +175,7 @@ done individually or simultaneously:
 Each of these major options have several more options to refine their behavior, and their usage
 and options will be discussed in the following sections.
 
-\subsection{-s or \texttt{-{}-}genSpreadsheets}
+\subsection{\bf -s or \texttt{-{}-}genSpreadsheets}
 Spreadsheet generation has nine options that control aspects of how the spreadsheet is generated.
 You must give the -s or \texttt{-{}-}genSpreadsheet option to get a datalog spreadsheet.
 
@@ -180,7 +191,7 @@ You must give the -s or \texttt{-{}-}genSpreadsheet option to get a datalog spre
 \item -m             \texttt{-{}-}modify modify a string field in specified record type.
 \end{itemize}
 
-\subsubsection{-a or --extract-pin}
+\subsubsection{\bf -a or --extract-pin}
 Some testers like the Advantest 93K will append a pin name on to the end of a test name
 to indicate the pin that is being tested.  By default it uses an \makeatletter '@' \makeatother
 to delimit the test name from the pin name.  For example \makeatletter "myTestName@VCC". \makeatother
@@ -188,11 +199,11 @@ This option will remove the delimiter and pin name from the test name, and put t
 in the pin column or row of the spreadsheet.  You may use any character for the deliter,
 but \makeatletter '@' \makeatother is used by default.  See next section.
 
-\subsubsection{-p or --pinDelimiter}
+\subsubsection{\bf -p or --pinDelimiter}
 This option allows you to specifiy the delimiter that is used to separate the test name and pin name.
 It is only necessary to use this option if the delimiter is not \makeatletter '@'. \makeatother.
 
-\subsubsection{-i or --ignoreSerialMarker}
+\subsubsection{\bf -i or --ignoreSerialMarker}
 There are two ways to specify a serial number for a device.  If you do nothing then stdf2xls
 will use the PART\_ID field in the PRR record as the serial number.  This field is set by the tester
 automatically. However if you want to assign your own alpha-numeric serial numbers you can put
@@ -211,7 +222,7 @@ PART\_ID field in the PRR record.  If you want to prioritize thie PART\_ID field
 the Datalog Text Record serial marker, then use this option.  Generally you won't want
 to use this option.
 
-\subsubsection{-S or --so}
+\subsubsection{\bf -S or --so}
 This option is used to specify the spreadsheet filname.  It is not necessary to use this option.
 By default the spreadsheet filename will be <deviceName>\_<lot\_id>.xlsx.  Note that you can process
 multiple device types simultaneously and each device and lot will be sent to a different spreadsheet
@@ -227,24 +238,24 @@ because you can't have slashes in a filename.  If the lot or device number conta
 a space character, then the space will be replaced with a '\_' character.  This is because
 spaces in filenames are evil.
 
-\subsubsection{-r or --rotate}
+\subsubsection{\bf -r or --rotate}
 By default the datalog spreadsheet is generated with tests in columns and devices in rows.  This
 option will transpose the spreadsheet so that devices are in columns and tests are in rows.
 
-\subsubsection{-c or --1kcol}
+\subsubsection{\bf -c or --1kcol}
 Use this option if you are using libreoffice or openoffice.org  This limits the number
 of columns to 1000.  Libreoffice and openoffice.org will truncate andy data beyond 1024 columns.
 By default 32K columns will be used for MS Excel.  In any case if the number of columns
 exceeds these limits then the data will be continued on another tab in the workbook.
 
-\subsubsection{-Y or --noDynamicLimits}
+\subsubsection{\bf -Y or --noDynamicLimits}
 By default all parametric tests are scanned for non-constant limits.  If non-constant
 limits are detected for certain tests, then the spreadsheet is formatted differently
 for those tests such that each test result is surounded by the limits used for that
 test.  If you don't want this behavior then use this option, but realize the limits
 will not be accurate.
 
-\subsubsection{-t or --channel-type}
+\subsubsection{\bf -t or --channel-type}
 For Multiple Parametric Test Records the pin information is obtained from
 the Pin Map Records which map a pin index number to a pin name.  Unfortunately
 the Pin Map Record has three fields where a pin name {\it might} be stored.
@@ -255,31 +266,38 @@ If your pin names are not coming out correctly for Multiple Parametric Test Resu
 records, then do an ASCII dump of the STDF file, and look at the Pin Map Records,
 and it should be obvious which field to specify with this option.
 
-\subsubsection{-m or --modify}
+\subsubsection{\bf -m or --modify}
 This option can be used to modify a string field in any STDF record. It uses a powerful
-regular-expression engine that is documented at http://www.regular-expressions.info/.
+regular-expression engine that is documented at https://dlang.org/phobos/std\_regex.html
 This option has the form:
 \begin{verbatim}
-modify '<record> <field> \"<fromRegex>\" \"<toRegex>\"'
+--modify '<record> <field> "<fromRegex>" "<toFormatString>"'
 \end{verbatim}
-Note that the single quotes, double quotes, and backslashes are needed so that the shell
+Note that the single quotes, and double quotes are needed so that the shell
 interprets the command line correctly.  Note that you can also specify this
 option multiple times on the command line to do several edits simultaneously.
-
+\\
+\\
 Here are a couple of examples.  First just remove the space in "TEMPERATURE :"
 that occurs in any Datalog Text Record:
 \begin{verbatim}
--m 'DTR TEXT_DAT \"TEMPERATURE :\" \"TEMPERATURE:\"'
+-m 'DTR TEXT_DAT "TEMPERATURE :" "TEMPERATURE:"'
 \end{verbatim}
 This will affect every Datalog Text Record that contains the string "TEMPERATURE :".\\
 \\
-A more complex example would be if you need to remove the suffix at the end of
-a wafer number.  Assume that the wafer number has the format '<letter> <digit> <digit> <digit> X'
-(like W123X or V433X).  Further assume you only want to remove the X suffix if the 
-wafer number begins with 'W':
+For a more complex example, assume you have test names in a Functional Test Record
+that have the form: "Output\_OVPT\_Setup\_T040:Functional[1]". Suppose you want to change
+the colon to an 'X', but only if the name starts with "Output\_", and 'T' is followed by three digits:
 \begin{verbatim}
--m 'WIR WAFER_ID 
-
+-m 'FTR TEST_TXT "Output_(.*_T)(\d\d\d):(.*)" "Output_$1$2X$3"'
+\end{verbatim}
+In this case "Output\_OVPT\_Setup\_T040:Functional[1]" will be replaced with "Output\_OVPT\_Setup\_T040XFunctional[1]".
+Note that the parenthesis in the regular expression are not characters, but instead indicate match groups.
+The content of the first pair of parenthesis is accessed in the <toFormatString> with \$1, and the content
+of the second pair of parenthesis is accessed in the <toFormatString> with \$2, and so on.
+\\
+\\
+\noindent
 The <record> parameter is the three-letter record name as it is specfied
 in the STDF specfication.  The <field> parameter is the field name as
 given in the STDF specification.  The valid record and field names
@@ -434,177 +452,468 @@ that may be modified are shown below:
     \end{itemize}
 \end{itemize}
 
-\subsection{-h or \texttt{-{}-}genHistograms}
+\subsection{\bf -h or \texttt{-{}-}genHistograms}
 
 
-\subsection{-w or \texttt{-{}-}genWafermaps}
+\subsection{\bf -w or \texttt{-{}-}genWafermaps}
 
 
-\subsection{-d or \texttt{-{}-}dumptext}
-
-
-\subsection{-b or \texttt{-{}-}dumpBytes}
-
-
-\subsection{-D or \texttt{-{}-}digest}
-
-
-\subsection{-m or \texttt{-{}-}modify}
-
-
-\subsection{-g or \texttt{-{}-}generateRCFile}
-
-
-\subsection{-o or \texttt{-{}-}outputDir}
-
-
-
-
-
-
-
-
-
-\section{Command Line Options}
-Options can be specified as a single dash followed by a single character, or a double dash
-followed by multiple characters.
-\begin{itemize}
-\item -a [<char>] or \texttt{-{}-}pin-suffix [<char>]\\
-This option tells the program that if a test name of a ParametricTestRecord has
-a character <char> in it then the characters following <char> are to be interpreted
-as a pin name for that test.  If <char> is not specified, then by default '@' will be used.
-The pin name is displayed on a separate row or column in the test header.
-\item -b or \texttt{-{}-}one-page\\
-Normally STDF files from different wafers or test steps are displayed in different spreadsheets.
-This option will combine them all on one page with an additional row or column for the test
-step or wafer number.
-\item -c or \texttt{-{}-}columns\\
-Specifying this option will increase the maximum number of columns in the spreadsheet
-from 1024 to 16384.  Note that with this option the spreadsheet will not be
-readable with Libreoffice.
-\item -d or \texttt{-{}-}dump\\
-This option causes the STDF data to be dumped in ASCII format to STDOUT.
-\item -g or \texttt{-{}-}gui\\
-This option will run the program from a GUI instead of the command line.  This option
-is experimental and will probably be deprecated in a future version.
-\item -h or \texttt{-{}-}help\\
-Prints a summary of the command line options.
-\item -j or \texttt{-{}-}jxl-xls-name\\
-This option specified to use the JExcel library instead of the Apache POI library
-for spreadsheet generation.  Sometimes the Apache library for "xls" format is problematic.
-The JExcel library can be tried to see if it resolves any formatting problems.  Note
-that this option has no effect when using "xlsx" or XML format, and XML format is
-recommended anyways.
-\item -l <file> or \texttt{-{}-}logo <file>\\
-This option specifies a logo (PNG file) to include in the upper left
-corner of the spreadsheet.  The logo should have an aspect ratio of
-about 290(W) to 120(H).  It will be scaled to fit within the required area.
-\item -m or \texttt{-{}-}modifier\\
-This is an experimental feature that can modify STDF fields on the fly as the STDF is loaded.
-Currently it is only enabled for DatalogTextRecords. This option has the form of:\\
--m "R:Record\_t F:FieldDescriptor C:Condition\_t V:oldValue N:newValue"\\
-Where record type currently can only be DTR, the field descriptor can only be TEXT\_DAT, and
-Condition\_t can be EQUALS, CONTAINS, or TRUE.  Also, multiple modifiers may be specified by using multiple -m options.
-This implementation is lame, and will probably later be replaced by a regular expression engine.\\
-This will check every DatalogTextRecord for the string "2.00", and
-if found, it will replace it with "2.0".  Currently whitespace in the
-string cannot be handled.  The Condition TRUE is currently useless. The EQUALS
-condition requires that the entire text field be equal to the oldValue for
-a replacement to occur.
-\item -n or \texttt{-{}-}no-wrap-test-names\\
-When the the test names run horizontally across the spreadsheet they will be wrapped
-to keep the columns from getting too wide.  This option will prevent wrapping the test
-names, but can give very wide columns.
-\item -o or \texttt{-{}-}no-overwrite\\
-Currently this option is not working.
-\item -p <integer> or \texttt{-{}-}precision <integer>\\
-This option specifies how many digits will be to the right of the decimal
-point for floating point values.  The default is 3.
-\item -r or \texttt{-{}-}rotate\\
-This option transposes the spreadsheet.  By default test names run horizontally across
-the spreadsheet and devices run vertically down the spreadsheet. With the -r option
-the test names will run vertically down the spreadsheet and devices will run horizontally
-across the spreadsheet.
-\item -s or \texttt{-{}-}sort\\
-this options sorts the data by serial number or XY-coordinate (for wafersort).
-\item -v or \texttt{-{}-}dont-skip-search-fails\\
-Verigy (AKA Advantest) testers can output bogus test data as tests related to searches.  By default
-these will be ignored.  This option will include them in the spreadsheet.
-\item -x <file.xls[x]> or \texttt{-{}-}xls-name <file.xlsx[x]>\\
-This options specifies the name of the spreadsheet file and is required (unless using the -d option).
-If the suffix of the filename is ".xlsx" then the newer XML format will be used for the spreadsheet.
-Otherwise the older ".xls" format will be used.  In the future the xls format may be deprecated.
-\item -y or \texttt{-{}-}dynamic limits\\
-If this option is used, then the high and low limits of all parametric tests are
-searched, and if they vary by more than 0.1\percent then the corresponding test will use dynamic limit
-which means that the column to the left of the test will be the lower limit used and the column to
-the right of the test will be the upper limit used.
-\end{itemize}
+\subsection{\bf -d or \texttt{-{}-}dumptext}
+This option prints the contents of the STDF file(s) in ASCII form to the standard output.
 \clearpage
-\section{Support for Alphanumeric Serial Numbers}
-For alpha-numeric serial numbers, print a text field to the datalog
-at the beginning of the test flow that looks like this:
 
+\subsection{\bf -b or \texttt{-{}-}dumpBytes}
+This option prints the bytes of the STDF file(s) in an easy to read format.
+The output is sent to the standard output.  Below is an example of this output format:
+
+%%\begingroup
+%%\scriptsize
 \begin{verbatim}
-TEXT\_DATA: S/N : <serial\_number>
+reclen = 2
+type = FAR
+[
+02 00 00 0A 02 04 ]
+reclen = 48
+type = ATR
+[
+30 00 00 14 9E 69 FA 5B 2B 43 72 65 64 65 6E 63 65 20 53 79 73 74 65 6D
+73 20 44 69 61 6D 6F 6E 64 20 53 65 72 69 65 73 20 2D 20 52 65 6C 65 61
+73 65 20 31 ]
+reclen = 110
+type = MIR
+[
+6E 00 01 0A 56 5A FA 5B 9E 69 FA 5B 00 20 20 20 FF FF 20 09 4C 31 31 31
+38 30 36 36 30 0D 4C 65 74 68 65 35 20 46 54 35 30 30 30 05 44 31 30 2D
+32 04 44 2D 31 30 07 46 54 5F 35 30 30 30 00 00 06 31 30 30 32 39 35 07
+64 6D 64 5F 65 78 65 0B 76 32 2E 31 2E 31 5F 42 4C 44 34 00 00 00 00 03
+51 46 4E 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ]
+reclen = 45
+type = SDR
+[
+2D 00 01 50 00 00 04 00 01 02 03 0F 45 70 73 6F 6E 20 4E 53 20 53 65 72
+69 65 73 07 36 30 34 30 2D 30 36 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 ]
+reclen = 69
+type = PMR
+[
+45 00 01 3C 01 00 01 00 03 58 49 4E 36 52 65 73 6F 75 72 63 65 3A 20 53
+33 5F 44 49 47 49 54 41 4C 2C 20 43 68 61 73 73 69 73 3A 20 30 2C 20 53
+6C 6F 74 3A 20 33 2C 20 43 68 61 6E 6E 65 6C 3A 20 38 34 03 58 49 4E 00
+00 ]
+...
 \end{verbatim}
-The strings "TEXT\_DATA" and "S/N" must match exactly what is shown here.  Whitespace
-around the colons is ignored.  The maximum length of any string printed to the datalogger
-must not exceed 255 characters.
+%%\endgroup
 
-\section{Custom Spreadsheet Data Values}
-Arbitrary data for each device may be mapped to the spreadsheet as a test result along
-with the rest of the test data.  To get this information into the STDF file, print a 
-text field to the datalogger using the format:
-\begin{verbatim}
-TEXT\_DATA : test\_name : value [(units)] [ : test\_number [ : site\_number [ : head\_number ]]]
-\end{verbatim}
-All fields after the value are optional.  Whitespace around the colons is ignored.
-
-\section{Spreadsheet Header Fields}
-It is often desirable to include header information in each spreadsheet.  The header information
-can be encoded into datalog text fields that are printed out for each device.  Note that it is
-expected that the header data be constant for an entire test session.  If the header information
-changes within a set of STDF files, then there will be multiple spreadsheets generated (within a workbook)
-with each spreadsheet having different header information.
-
-To generate a header field, print the field to the datalogger using this format:
-\begin{verbatim}
->>> <header\_name> : <header\_value>
-\end{verbatim}
-The prefix "\gT\gT\gT" indicates a header field.  The header name can be any string (not containing a colon)
-and the header value can be any string.
-\clearpage
-\subsection{Legacy Header Fields}
-There were a set of fixed header fields that are still supported, but are now deprecated (don't use them on new test programs).
-These field were simply a header name followed by a header value.  The recognized header names
-are:
+\subsection{\bf -D or \texttt{-{}-}digest}
+This option prints each unique header information for all STDF files that are loaded.
+stdf2xls uses the header information to decide when generate a new worksheet, or a new
+workbook.  The stdf loader attempts to load a header structure with the following
+information:
 \begin{itemize}
-\item CUSTOMER:
-\item DEVICE NUMBER:
-\item SOW:
-\item CUSTOMER PO\#:
-\item TESTER:
-\item TEST PROGRAM:
-\item LOADBOARD:
-\item CONTROL SERIAL \#s:
-\item JOB \#:
-\item LOT \#:
-\item STEP \#:
-\item TEMPERATURE:
+\item device name
+\item traveller step number
+\item temperature
+\item Lot ID
+\item Sublot ID
+\item Wafer ID
+\item A list of user-defined header items
 \end{itemize}
+Not all of this information is available in every STDF file, so some of these
+fields will be empty.  By default, the list of user-defined header items
+is ignored when comparing this data with the data from another file.
+If you don't want to ignore the user-defined header data when deciding to
+create a new worksheet, then use the --noIgnoreMiscHeader option.
 
-These header names may be combined with the new header format if necessary.
+\subsection{\bf -m or \texttt{-{}-}modify}
+This option may be used when generating a spreadsheet, however it can also
+be used to modify an STDF file if it is used with the -{}-outputDir option.
+The STDF file can be modified and then written back out in another directory.
 
-\section{Modifying STDF Text fields}
+\subsection{\bf -o or \texttt{-{}-}outputDir}
+If this option is used, each STDF file is written back out in STDF binary format.
+If no modifications are done using the -{}-modify option, then the STDF that
+is written out will be identical with the original STDF file.  This option,
+without the -{}-modify option is mainly used for testing the STDF reader.
+\clearpage
+\subsection{\bf -g or \texttt{-{}-}generateRCFile}
+This option is used to generate and initialization file.  The file
+must be placed in the user's home directory, and it must be
+named ".stdf2xlsxrc".  When this option is used, the file generated
+will have the correct name and be written to the home directory, so
+it will overwrite an existing version of this file. The file contents
+contains the following text:
+\begin{verbatim}
+# font styles: normal | bold | italic | underline | bold_italic | bold_underline | 
+#              italic_underline | bold_italic_underline
+# supported fonts: Times | Arial | Courrier
+# legal font sizes: 6 to 31
+monitor_x_dpi                       96
+monitor_y_dpi                       96
+ss.logo.x_scale                     0.0
+ss.logo.y_scale                     0.0
+ss.logo.file_path           
+ss.logo.text
+ss.logo.bg_color                    NONE
+ss.logo.text_color                  000000
+ss.logo.font_name                   Arial
+ss.logo.font_size                   8
+ss.logo.font_style                  normal
+
+ss.title.bg_color                   15B8D7
+ss.title.text_color                 FFFFFF
+ss.title.font_name                  Arial
+ss.title.font_size                  16
+ss.title.font_style                 bold
+
+ss.header.name.bg_color             F6F9D4
+ss.header.name.text_color           000000
+ss.header.name.font_name            Arial
+ss.header.name.font_size            8   
+ss.header.name.font_style           bold
+
+ss.header.value.bg_color            F6F9D4
+ss.header.value.text_color          000000
+ss.header.value.font_name           Arial
+ss.header.value.font_size           8   
+ss.header.value.font_style          normal
+\end{verbatim}
+\clearpage
+\begin{verbatim}
+ss.test_name.header.bg_color        DEE6EF
+ss.test_name.header.text_color      000000
+ss.test_name.header.font_name       Arial
+ss.test_name.header.font_size       8
+ss.test_name.header.font_style      bold
+
+ss.test_name.value.bg_color         FFE994
+ss.test_name.value.text_color       000000
+ss.test_name.value.font_name        Arial
+ss.test_name.value.font_size        12
+ss.test_name.value.font_style       normal
+
+ss.test_number.header.bg_color      DEE6EF
+ss.test_number.header.text_color    000000
+ss.test_number.header.font_name     Arial
+ss.test_number.header.font_size     8
+ss.test_number.header.font_style    bold
+
+ss.test_number.value.bg_color       FFE994
+ss.test_number.value.text_color     000000
+ss.test_number.value.font_name      Arial
+ss.test_number.value.font_size      8
+ss.test_number.value.font_style     normal
+
+ss.duplicate.header.bg_color        DEE6EF
+ss.duplicate.header.text_color      000000
+ss.duplicate.header.font_name       Arial
+ss.duplicate.header.font_size       8
+ss.duplicate.header.font_style      bold
+
+ss.duplicate.value.bg_color         FFE994
+ss.duplicate.value.text_color       000000
+ss.duplicate.value.font_name        Arial
+ss.duplicate.value.font_size        8
+ss.duplicate.value.font_style       normal
+
+ss.lo_limit.header.bg_color         DEE6EF
+ss.lo_limit.header.text_color       000000
+ss.lo_limit.header.font_name        Arial
+ss.lo_limit.header.font_size        8
+ss.lo_limit.header.font_style       bold
+
+ss.lo_limit.value.bg_color          FFE994
+ss.lo_limit.value.text_color        000000
+ss.lo_limit.value.font_name         Arial
+ss.lo_limit.value.font_size         8
+ss.lo_limit.value.font_style        normal
+\end{verbatim}
+\clearpage
+\begin{verbatim}
+ss.hi_limit.header.bg_color         DEE6EF
+ss.hi_limit.header.text_color       000000
+ss.hi_limit.header.font_name        Arial
+ss.hi_limit.header.font_size        8
+ss.hi_limit.header.font_style       bold
+
+ss.hi_limit.value.bg_color          FFE994
+ss.hi_limit.value.text_color        000000
+ss.hi_limit.value.font_name         Arial
+ss.hi_limit.value.font_size         8
+ss.hi_limit.value.font_style        normal
+
+ss.dyn_lo_limit.header.bg_color     FFE994
+ss.dyn_lo_limit.header.text_color   000000
+ss.dyn_lo_limit.header.font_name    Arial
+ss.dyn_lo_limit.header.font_size    8
+ss.dyn_lo_limit.header.font_style   bold
+
+ss.dyn_lo_limit.value.bg_color      FFFFB4
+ss.dyn_lo_limit.value.text_color    000000
+ss.dyn_lo_limit.value.font_name     Arial
+ss.dyn_lo_limit.value.font_size     8
+ss.dyn_lo_limit.value.font_style    normal
+
+ss.dyn_hi_limit.header.bg_color     FFE994
+ss.dyn_hi_limit.header.text_color   000000
+ss.dyn_hi_limit.header.font_name    Arial
+ss.dyn_hi_limit.header.font_size    8
+ss.dyn_hi_limit.header.font_style   bold
+
+ss.dyn_hi_limit.value.bg_color      FFFFB4
+ss.dyn_hi_limit.value.text_color    000000
+ss.dyn_hi_limit.value.font_name     Arial
+ss.dyn_hi_limit.value.font_size     8
+ss.dyn_hi_limit.value.font_style    normal
+
+ss.pin.header.bg_color              DEE6EF
+ss.pin.header.text_color            000000
+ss.pin.header.font_name             Arial
+ss.pin.header.font_size             8
+ss.pin.header.font_style            bold
+
+ss.pin.value.bg_color               FFE994
+ss.pin.value.text_color             000000
+ss.pin.value.font_name              Arial
+ss.pin.value.font_size              8
+ss.pin.value.font_style             normal
+\end{verbatim}
+\clearpage
+\begin{verbatim}
+ss.units.header.bg_color            DEE6EF
+ss.units.header.text_color          000000
+ss.units.header.font_name           Arial
+ss.units.header.font_size           8
+ss.units.header.font_style          bold
+
+ss.units.value.bg_color             FFE994
+ss.units.value.text_color           000000
+ss.units.value.font_name            Arial
+ss.units.value.font_size            8
+ss.units.value.font_style           normal
+
+ss.sn_xy.header.bg_color            DEE6EF
+ss.sn_xy.header.text_color          000000
+ss.sn_xy.header.font_name           Arial
+ss.sn_xy.header.font_size           8
+ss.sn_xy.header.font_style          bold
+
+ss.sn_xy.value.bg_color             FFE994
+ss.sn_xy.value.text_color           000000
+ss.sn_xy.value.font_name            Arial
+ss.sn_xy.value.font_size            8
+ss.sn_xy.value.font_style           normal
+
+ss.temp.header.bg_color             DEE6EF
+ss.temp.header.text_color           000000
+ss.temp.header.font_name            Arial
+ss.temp.header.font_size            8
+ss.temp.header.font_style           bold
+
+ss.temp.value.bg_color              FFE994
+ss.temp.value.text_color            000000
+ss.temp.value.font_name             Arial
+ss.temp.value.font_size             8
+ss.temp.value.font_style            normal
+
+ss.time.header.bg_color             DEE6EF
+ss.time.header.text_color           000000
+ss.time.header.font_name            Arial
+ss.time.header.font_size            8
+ss.time.header.font_style           bold
+
+ss.time.value.bg_color              FFE994
+ss.time.value.text_color            000000
+ss.time.value.font_name             Arial
+ss.time.value.font_size             8
+ss.time.value.font_style            normal
+\end{verbatim}
+\clearpage
+\begin{verbatim}
+ss.hw_bin.header.bg_color           DEE6EF
+ss.hw_bin.header.text_color         000000
+ss.hw_bin.header.font_name          Arial
+ss.hw_bin.header.font_size          8
+ss.hw_bin.header.font_style         bold
+
+ss.hw_bin.value.bg_color            FFE994
+ss.hw_bin.value.text_color          000000
+ss.hw_bin.value.font_name           Arial
+ss.hw_bin.value.font_size           8
+ss.hw_bin.value.font_style          normal
+
+ss.sw_bin.header.bg_color           DEE6EF
+ss.sw_bin.header.text_color         000000
+ss.sw_bin.header.font_name          Arial
+ss.sw_bin.header.font_size          8
+ss.sw_bin.header.font_style         bold
+
+ss.sw_bin.value.bg_color            FFE994
+ss.sw_bin.value.text_color          000000
+ss.sw_bin.value.font_name           Arial
+ss.sw_bin.value.font_size           8
+ss.sw_bin.value.font_style          normal
+
+ss.site.header.bg_color             DEE6EF
+ss.site.header.text_color           000000
+ss.site.header.font_name            Arial
+ss.site.header.font_size            8
+ss.site.header.font_style           bold
+
+ss.site.value.bg_color              FFE994
+ss.site.value.text_color            000000
+ss.site.value.font_name             Arial
+ss.site.value.font_size             8
+ss.site.value.font_style            normal
+
+ss.result.header.bg_color           DEE6EF
+ss.result.header.text_color         000000
+ss.result.header.font_name          Arial
+ss.result.header.font_size          8
+ss.result.header.font_style         bold
+
+ss.result.pass.value.bg_color       FFE994
+ss.result.pass.value.text_color     000000
+ss.result.pass.value.font_name      Arial
+ss.result.pass.value.font_size      8
+ss.result.pass.value.font_style     normal
+\end{verbatim}
+\clearpage
+\begin{verbatim}
+ss.result.fail.value.bg_color       FF0000
+ss.result.fail.value.text_color     000000
+ss.result.fail.value.font_name      Arial
+ss.result.fail.value.font_size      8
+ss.result.fail.value.font_style     normal
+
+ss.pass.data.float.value.bg_color   NONE
+ss.pass.data.float.value.text_color 000000
+ss.pass.data.float.value.font_name  Courrier
+ss.pass.data.float.value.font_size  10
+ss.pass.data.float.value            normal
+
+ss.pass.data.int.value.bg_color     NONE
+ss.pass.data.int.value.text_color   000000
+ss.pass.data.int.value.font_name    Courrier
+ss.pass.data.int.value.font_size    10
+ss.pass.data.int.value              normal
+
+ss.pass.data.hex.value.bg_color     NONE
+ss.pass.data.hex.value.text_color   000000
+ss.pass.data.hex.value.font_name    Courrier
+ss.pass.data.hex.value.font_size    10
+ss.pass.data.hex.value              normal
+
+ss.pass.data.string.value.bg_color   NONE
+ss.pass.data.string.value.text_color 000000
+ss.pass.data.string.value.font_name  Courrier
+ss.pass.data.string.value.font_size  10
+ss.pass.data.string.value            normal
+
+ss.fail.data.value.bg_color         FF0000
+ss.fail.data.value.text_color       000000
+ss.fail.data.value.font_name        Courrier
+ss.fail.data.value.font_size        10
+ss.fail.data.value                  normal
+
+wafer.fail.bg_color                 BF0000
+wafer.empty.bg_color                666666
+wafer.pass.bg_color                 22C600
+\end{verbatim}
+\clearpage
+
+\subsubsection{Logo Configuration}
+Most of the fields in the preceeding section should be self-explanitory.
+However, configuring your own logo to fit correctly in the spreadsheet
+is not easy.  It is very dependent on how the image was created,
+and the resolution of your monitor.  So it is a trial and error
+situation to get your logo to fit correctly.  By default you will
+get the iTest logo, and you can also specify text instead of a logo.
+If you want to use your own logo, you must supply the path of the logo
+file in the rc file, and then you must scale it.  To scale the logo
+first set the monitor\_x\_dpi and monitor\_y\_dpi to match your monitor.
+
+\begin{verbatim}
+monitor_x_dpi                       96
+monitor_y_dpi                       96
+ss.logo.x_scale                     0.0
+ss.logo.y_scale                     0.0
+ss.logo.file_path           
+ss.logo.text
+ss.logo.bg_color                    NONE
+ss.logo.text_color                  000000
+ss.logo.font_name                   Arial
+ss.logo.font_size                   8
+ss.logo.font_style                  normal
+\end{verbatim}
+\clearpage
+
+\subsection{\bf User Supplied Header and Data Values}
+
+By default header information in the spreadsheet is obtained from
+standard STDF fields.  For example the lot number is obtained
+from the LOT\_ID field of the Master Information Record.  Header
+information is lot specific, so it includes things like traveller
+step number, wafer number, temperature, etc.  Some of this information
+can be obtained from standard fields in the STDF, but sometimes
+the tester does not fill in these fields, so they can be overriden 
+by printing text to the datalogger.  Note that printing to the datalogger
+must generate a Datalog Text Record in the STDF for this to work.
+
+\subsubsection{Customizing the Spreadsheet Header Information}
+The standard header fields that can be obtained from STDF are:
+\begin{itemize}
+\item Temperature (MIR.TST\_TEMP)
+\item Lot number (MIR.LOT\_ID)
+\item Sublot number (MIR.SBLOT\_ID)
+\item Wafer number (WIR.WAFER\_ID)
+\item Device Name (MIR.PART\_TYP)
+\end{itemize}
+Additionally the progam also uses a traveller STEP number to identify
+a unique lot, but there doesn't seem to be an STDF field that corresponds
+to this.  The above fields, including the STEP number can be overidden
+using Datalog Text Records.  The above fields can be overriden by using
+the following syntax with Datalog Text Records:
+\begin{center}
+\begin{table}[H]\caption*{Standard Header Text Records}
+\centering
+\begin{tabular}[H]{|c|c|}
+\hline
+{\bf Header Field} & {\bf Datalog Text Format }\\
+\hline
+\hline
+Temperature     & "\gT\gT\gT TEMPERATURE : <temperature\_value>"\\
+\hline
+Lot number      & "\gT\gT\gT LOT \# : <lot\_number>\\
+\hline
+Sublot number   & "\gT\gT\gT SUBLOT \# : <sublot\_number>\\
+\hline
+Wafer number    & "\gT\gT\gT WAFER \# : <wafer\_number>\\
+\hline
+Device Name     & "\gT\gT\gT DEVICE\_NUMBER : <device\_number>\\
+\hline
+Step number     & "\gT\gT\gT STEP \# : <step\_number>\\
+\hline
+\end{tabular}
+\end{table}
+\end{center}
+
+\subsubsection{\bf User-defined Header fields}
+In addition to the standard header fields, the user may add custom header fields with Datalog
+Text Records.  By default, user-defined header fields are not used to identify
+a unique lot, however, this behavior can be overriden with the -{}-noIgnoreMiscHeader command-line option.
+The format for a user-defined header item is:
+\begin{verbatim}
+>>> <header_name> : <header\_value>
+\end{verbatim}
+There is limited space in the spreadsheet for user-defined header items, so if there
+are too many header items, the list will get trucated.  Additionally older versions of stdf2xls
+supported a legacy format for header items.  The legacy format is still supported, but
+it is no longer documented.
 
 \section{Wafermaps}
 
 
 \section{Histograms}
-
-
-\section{Look and Feel Customization}
 
 
 

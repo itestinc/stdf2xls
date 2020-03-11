@@ -50,12 +50,13 @@ int main(string[] args)
                     {
                         ubyte[] bs = rec.getBytes();
                         writeln("[");
-                        size_t cnt = 0;
+                        size_t cnt = 1;
                         foreach (b; bs)
                         {
-                            if (b < 0xF) std.stdio.write("0", toHexString([b]), " ");
-                            else std.stdio.write(toHexString([b]), " ");
-                            if (cnt == 40)
+                            string by = toHexString([b]);
+                            if (by.length < 2) std.stdio.write("0", by, " ");
+                            else std.stdio.write(by, " ");
+                            if (cnt == 24)
                             {
                                 writeln("");
                                 cnt = 0;
@@ -123,6 +124,7 @@ import std.regex;
 void modify(StdfRecord rec, Modifier m)
 {
     auto re = regex(m.regexp);
+    //writeln("regex = ", re, " repl = ", m.repl);
     switch (m.recordType.ordinal)
     {
         case Record_t.ATR.ordinal:  Record!ATR r = cast(Record!ATR) rec;

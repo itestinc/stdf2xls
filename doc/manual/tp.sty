@@ -38,7 +38,7 @@
 %% bottom ends at top + \textheight
 \setlength\textheight{7.5in}
 \setlength\footskip{30pt}
-\def\lm{1in}
+\def\lm{0.92in}
 \def\tm{1.8in}
 \def\rm{7.5in}
 \def\bm{10.43in}
@@ -63,9 +63,9 @@
             %%\node {\scalebox{\logoscale}{\pgfputat{\pgfxy(\logox ,\logoy)}{\pgfbox[left,base] {\pgfimage{itest_logo}}}}};
             \path [help lines, color=white] (0,0) grid (22,28);
             \draw[color=itblue,fill=itblue] (\lm,9.9in) rectangle (\rm,10.0in);
-            \draw[color=itblue,fill=itblue] (2.54,2) rectangle (19.05,2.05);
+            \draw[color=itblue,fill=itblue] (\lm,2) rectangle (19.05,2.05);
             \node[color=itblue,anchor=base west] (b) at (\lm,10.04in) { \normalsize stdf2xls5  };
-            \node[color=itblue,anchor=west] (c) at (2.54,1.8) { \footnotesize \copyright 2020 Itest Inc. };
+            \node[color=itblue,anchor=west] (c) at (\lm,1.8) { \footnotesize \copyright 2020 Itest Inc. };
             \node[color=itblue,anchor=east] (d) at (19.05,1.8) { \footnotesize \partnum\ Page \pagenum };
         \end{tikzpicture}
     }
@@ -81,8 +81,8 @@
             \node {\scalebox{\logoscale}{\pgfputat{\pgfxy(\logox ,\logoy)}{\pgfbox[left,base] {\pgfimage{itest_logo}}}}};
             \path [help lines, color=white] (0,0) grid (22,28);
             \draw[color=itblue,fill=itblue] (\lm,9.2in) rectangle (\rm,9.3in);
-            \draw[color=itblue,fill=itblue] (2.54,2) rectangle (19.05,2.05);
-            \node[color=itblue,anchor=west] (c) at (2.54,1.8) { \footnotesize \copyright 2020 Itest Inc. };
+            \draw[color=itblue,fill=itblue] (\lm,2) rectangle (19.05,2.05);
+            \node[color=itblue,anchor=west] (c) at (\lm,1.8) { \footnotesize \copyright 2020 Itest Inc. };
             \node[color=itblue,anchor=east] (d) at (19.05,1.8) { \footnotesize \partnum\ Page \pagenum };
         \end{tikzpicture}%
     }
