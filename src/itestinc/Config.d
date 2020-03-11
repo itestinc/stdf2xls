@@ -248,6 +248,8 @@ class Config
     static immutable string wafer_bin14_bg_color                 = "wafer.bin14.bg_color";
     static immutable string wafer_bin15_bg_color                 = "wafer.bin15.bg_color";
     static immutable string wafer_bin16_bg_color                 = "wafer.bin16.bg_color";
+    static immutable string histo_header_text_color             = "histo.header.text_color";
+    static immutable string histo_header_bg_color               = "histo.header.bg_color";
 
     
 
@@ -576,6 +578,9 @@ class Config
         cfgMap[wafer_bin14_bg_color]              = "cccccc";
         cfgMap[wafer_bin15_bg_color]              = "61E7F7";
         cfgMap[wafer_bin16_bg_color]              = "BF0000";
+        cfgMap[histo_header_text_color]           = "000000";
+        cfgMap[histo_header_bg_color]             = "DEE6EF";
+        
 
         /* palette for colorblindness
         black       (0,0,0)
@@ -600,7 +605,6 @@ class Config
         {
             rc = std.path.expandTilde("~/.stdf2xlsxrc");
         }
-        writeln("rc = ", rc); stdout.flush();
         if (rc.exists)
         {
             auto f = File(rc, "r");

@@ -8,31 +8,10 @@
 \usepackage{unitsdef}
 \usepackage[T1]{fontenc}
 \usepackage{float}
-%\RequirePackage{lastpage}
 \RequirePackage[dvips,paper=letterpaper]{geometry}
 \graphicspath{{./}{/home/eric/mc/doc/sty}}
-%\makeatletter
-%\newcommand\textsubscript[1]{\@textsubscript{\selectfont#1}}
-%\def\@textsubscript#1{{\m@th\ensuremath{_{\mbox{\fontsize\sf@size\z@#1}}}}}
-%\newcommand\textbothscript[2]{%
-%  \@textbothscript{\selectfont#1}{\selectfont#2}}
-%\def\@textbothscript#1#2{%
-%  {\m@th\ensuremath{%
-%    ^{\mbox{\fontsize\sf@size\z@#1}}%
-%    _{\mbox{\fontsize\sf@size\z@#2}}}}}
-%\def\@super{^}\def\@sub{_}
-
-%\catcode`^\active\catcode`_\active
-%\def\@super@sub#1_#2{\textbothscript{#1}{#2}}
-%\def\@sub@super#1^#2{\textbothscript{#2}{#1}}
-%\def\@@super#1{\@ifnextchar_{\@super@sub{#1}}{\textsuperscript{#1}}}
-%\def\@@sub#1{\@ifnextchar^{\@sub@super{#1}}{\textsubscript{#1}}}
-%\def^{\let\@next\relax\ifmmode\@super\else\let\@next\@@super\fi\@next}
-%\def_{\let\@next\relax\ifmmode\@sub\else\let\@next\@@sub\fi\@next}
-%\makeatother
-
-\newcommand{\customer}{stdf2xls4}
-\newcommand{\partnum}{stdf2xls4}
+\newcommand{\customer}{stdf2xls5}
+\newcommand{\partnum}{stdf2xls5}
 \renewcommand{\date}{XXXXXX}
 
 \newcommand{\lT}{\symbol{"3C}}
@@ -43,7 +22,7 @@
 \newcommand{\tf}{\usefont{T1}{phv}{b}{sl}\selectfont}
 \renewcommand{\bf}{\usefont{T1}{phv}{b}{n}\selectfont}
 \newcommand{\nf}{\usefont{T1}{phv}{m}{n}\selectfont}
-\definecolor{mcblue}{rgb}{0.3203125,0.48046875,0.73828125}
+\definecolor{itblue}{rgb}{0.0980392,0.71764706,0.83529412}
 \usefont{T1}{phv}{m}{n}\selectfont
 \allsectionsfont{\usefont{T1}{phv}{m}{n}\selectfont}
 %% top starts at 1" + \voffset + \topmargin + \headheight + \headsep
@@ -59,10 +38,14 @@
 %% bottom ends at top + \textheight
 \setlength\textheight{7.5in}
 \setlength\footskip{30pt}
-\def\lm{1in}
+\def\lm{0.92in}
 \def\tm{1.8in}
 \def\rm{7.5in}
 \def\bm{10.43in}
+\newcommand{\logox}{0.11cm}
+\newcommand{\logoy}{0.98cm}
+\newcommand{\logoscale}{0.86}
+
 \let\pagenum\thepage
 %\renewcommand{\thepage}{\relax}
 \newcommand{\versionhistory}{\relax}
@@ -77,12 +60,13 @@
     {
         \setlength{\unitlength}{1cm}
         \begin{tikzpicture}(0,0)(22,28)
+            %%\node {\scalebox{\logoscale}{\pgfputat{\pgfxy(\logox ,\logoy)}{\pgfbox[left,base] {\pgfimage{itest_logo}}}}};
             \path [help lines, color=white] (0,0) grid (22,28);
-            \shade[left color=mcblue, right color=white] (\lm,9.9in) rectangle (\rm,10.0in);
-            \node[color=mcblue,anchor=base west] (b) at (\lm,10.04in) { \normalsize stdf2xls4  };
-            \shade[left color=mcblue, right color=white] (2.54,2) rectangle (19.05,2.05);
-            \node[color=mcblue,anchor=west] (c) at (2.54,1.8) { \footnotesize \copyright 2017 makechip.com };
-            \node[color=mcblue,anchor=east] (d) at (19.05,1.8) { \footnotesize \partnum\ Page \pagenum };
+            \draw[color=itblue,fill=itblue] (\lm,9.9in) rectangle (\rm,10.0in);
+            \draw[color=itblue,fill=itblue] (\lm,2) rectangle (19.05,2.05);
+            \node[color=itblue,anchor=base west] (b) at (\lm,10.04in) { \normalsize stdf2xls5  };
+            \node[color=itblue,anchor=west] (c) at (\lm,1.8) { \footnotesize \copyright 2020 Itest Inc. };
+            \node[color=itblue,anchor=east] (d) at (19.05,1.8) { \footnotesize \partnum\ Page \pagenum };
         \end{tikzpicture}
     }
 }
@@ -94,15 +78,15 @@
     {%
         \setlength{\unitlength}{1cm}
         \begin{tikzpicture}(0,0)(22,28)
+            \node {\scalebox{\logoscale}{\pgfputat{\pgfxy(\logox ,\logoy)}{\pgfbox[left,base] {\pgfimage{itest_logo}}}}};
             \path [help lines, color=white] (0,0) grid (22,28);
-            \node[color=mcblue,anchor=west] (e) at (2.54,9.7in) {\scalebox{1.5}{\Huge\bf makechip.com}};
-            \shade[left color=mcblue, right color=white] (\lm,9.2in) rectangle (\rm,9.3in);
-            \shade[left color=mcblue, right color=white] (2.54,2) rectangle (19.05,2.05);
-            \node[color=mcblue,anchor=west] (c) at (2.54,1.8) { \footnotesize \copyright 2017 makechip.com };
-            \node[color=mcblue,anchor=east] (d) at (19.05,1.8) { \footnotesize \partnum\ Page \pagenum };
+            \draw[color=itblue,fill=itblue] (\lm,9.2in) rectangle (\rm,9.3in);
+            \draw[color=itblue,fill=itblue] (\lm,2) rectangle (19.05,2.05);
+            \node[color=itblue,anchor=west] (c) at (\lm,1.8) { \footnotesize \copyright 2020 Itest Inc. };
+            \node[color=itblue,anchor=east] (d) at (19.05,1.8) { \footnotesize \partnum\ Page \pagenum };
         \end{tikzpicture}%
     }
-    {\centering {\large stdf2xls4 User Manual}\\
+    {\centering {\large stdf2xls5 User Manual}\\
     \vspace{0.1in}
     {\large \date}\\
     }

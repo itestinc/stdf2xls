@@ -742,8 +742,6 @@ class StdfDB
                     uint site = prr.SITE_NUM;
                     //if (prr.HARD_BIN == 1) dvdDone = true; // this doesn't work if test flow is not consistent
                     time += prr.TEST_T;
-                    writeln("prr.TEST_T = ", prr.TEST_T, " time = ", time);
-                    stdout.flush();
                     dr[site - minSite][head - minHead].devId = pid;
                     dr[site - minSite][head - minHead].site = site;
                     dr[site - minSite][head - minHead].head = head;
