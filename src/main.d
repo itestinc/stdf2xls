@@ -71,7 +71,8 @@ int main(string[] args)
             if (options.outputDir != "")
             {
                 import std.path;
-                string outname = options.outputDir ~ dirSeparator ~ file.filename;
+                string fname = baseName(file.filename);
+                string outname = options.outputDir ~ dirSeparator ~ fname;
                 File f = File(outname, "w");
                 foreach (r; file.records)
                 {
