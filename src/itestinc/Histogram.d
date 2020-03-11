@@ -29,7 +29,6 @@ import std.algorithm.searching : count, canFind;
 
 /**
 */
-
 public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 {
     const double bin_width_divider = 40;    // larger = more bins
@@ -37,24 +36,24 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
     const double cutoff_compensator = options.cutoff*aggressive_multiplier*6;   // increases the number of inner bins after cutting off the outlier bins; larger = more bins
     //const double cutoff_compensator = 20;
 
-    uint MPR_count = 0;
-    uint histo_count = 0;
 
     foreach(hdr; stdfdb.deviceMap.keys) {
 
         string hfile = options.hfile;	// "%device%_histograms.xlsx";
         const bool separateFileForDevice = canFind(hfile, "%device%");
 
-        string devName_nospace = replace(hdr.devName, " ", "_");    // spaces are evil
+        uint MPR_count = 0;
+        uint histo_count = 0;
 
-        string fname = replace(hfile, "%device%", devName_nospace);
+        string devName = replace(hdr.devName, " ", "_");    // spaces are evil
+        string fname = replace(hfile, "%device%", devName);
         if (options.verbosityLevel > 9) writeln(fname);
 
         if(separateFileForDevice) {
-            fname = replace(hfile, "%device%", devName_nospace);
+            fname = replace(hfile, "%device%", devName);
         }
         else {
-            // ...
+            // ... 
         }
 
         //foreach(i, dr; stdfdb.deviceMap[hdr]) {
@@ -119,9 +118,9 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
         ws1.mergeRange(cast(uint)(header_row+7), cast(ushort)(header_col+2), cast(uint)(header_row+7), cast(ushort)(header_col+4), "\"--binCount "~to!string(options.binCount)~" --cutoff "~to!string(options.cutoff)~"\"", headerValueFmt);
 
         ws1.write(8, 10, "Right-click on the sheet scroll arrows (bottom left) for easy navigation.");
-        ws1.write(sh1_row, sh1_col, "Sheet #", listNameFmt);
-        ws1.write(sh1_row, cast(ushort)(sh1_col + 1), "Test #", listNameFmt);
-        ws1.write(sh1_row, cast(ushort)(sh1_col + 2), "Duplicate #", listNameFmt);
+        ws1.write(sh1_row, sh1_col, "Test #", listNameFmt);
+        ws1.write(sh1_row, cast(ushort)(sh1_col + 1), "Duplicate #", listNameFmt);
+        ws1.write(sh1_row, cast(ushort)(sh1_col + 2), "Sheet #", listNameFmt);
         ws1.mergeRange( sh1_row, cast(ushort)(sh1_col + 3),  sh1_row, cast(ushort)(sh1_col + 8), "Test Name", listNameFmt);
         sh1_row++;
 
@@ -132,6 +131,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 // case 1. packaged device with same test on different pins
                 if( id.sameMPRTest(id) ) {
                     //writeln("MPR: ", id.testName, " | ", id.testNumber, " | ", id.dup);
+                    MPR_count++;
                     if( hdr.isWafersort() ) {
                         writeln("Is Wafer Sort");
                     }
@@ -216,9 +216,9 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 }
 
                 // write a list of tests that has histograms
-                ws1.write(sh1_row, sh1_col, histo_count, headerValueFmt);
-                ws1.write(sh1_row, cast(ushort)(sh1_col + 1), id.testNumber, headerValueFmt);
-                ws1.write(sh1_row, cast(ushort)(sh1_col + 2), id.dup, headerValueFmt);
+                ws1.write(sh1_row, sh1_col, id.testNumber, headerValueFmt);
+                ws1.write(sh1_row, cast(ushort)(sh1_col + 1), id.dup, headerValueFmt);
+                ws1.write(sh1_row, cast(ushort)(sh1_col + 2), histo_count, headerValueFmt);
                 ws1.mergeRange( sh1_row, cast(ushort)(sh1_col + 3),  sh1_row, cast(ushort)(sh1_col + 8), id.testName, headerValueFmt);
                 sh1_row++;
 
@@ -251,7 +251,10 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 Chart ch = wb.addChart(LXW_CHART_COLUMN);
                 ch.titleSetName(id.testName~"\n"~"");
                 ch.titleSetNameFont(&TitleFont);
-                Chartsheet sh = wb.addChartsheet(to!string(histo_count));
+
+                string testName = replace(id.testName, " ", "_");
+                testName = replace(id.testName, ":", "_");
+                Chartsheet sh = wb.addChartsheet(to!string(histo_count)~"-"~testName);
                 histo_count++;
                 Chartseries[] series;
 
@@ -362,7 +365,6 @@ unittest {
     series2.setCategories("Sheet1", 1, 0, 8, 0);  // same: a, b, c.. 
 
     //ws.insertChart(10, 2, ch);
-
     sh.setChart(ch);  // cannot insert chart in both worksheet and chartsheet.
     sh.activate();
 
