@@ -31,18 +31,11 @@ lxw_chart_line GridLineY;
 */
 public void initHistoFormats(Workbook wb, CmdOptions options, Config config) {
 
-    if(options.binCount > 0) {
-        writeln("Using manual bin count: ", options.binCount);
-    }
-    if(options.cutoff > 0) {
-        writeln("Using manual cutoff: ", options.cutoff);
-    }
-    if(options.binCount < 1) {
-        writeln("Defaulting to automatic bin count.");
-    }
-    if(options.cutoff <= 0) {
-        writeln("Defaulting to automatic outlier cutoff.");
-    }
+    if(options.binCount > 0) { writeln("Using manual bin count: ", options.binCount); }
+    else                     { writeln("Using automatic bin count."); }
+    
+    if(options.cutoff > 0) { writeln("Using manual cutoff: ", options.cutoff); }
+    else                   { writeln("Using automatic outlier cutoff."); }
 
     import libxlsxd.xlsxwrap : lxw_format_borders, lxw_format_alignments, lxw_format_underlines;
     headerNameFmt = wb.addFormat();
