@@ -126,7 +126,7 @@ Options:
 -b          --dumpBytes dump the STDF in ascii byte form
 -d           --dumptext dump the STDF in text form
 -m             --modify modify a string field in specified record type.
-     Example: -m 'MIR TST\_TEMP "TEMPERATURE :" "TEMPERATURE:"'
+Example: -m 'MIR TST\_TEMP "TEMPERATURE :" "TEMPERATURE:"'
 -o          --outputDir write out the STDF to this directory. Specifying this will cause the STDF to be written back out.
 -p      --pin-delimiter Delimiter character that separates pin name from test name (Default = '@')
 -i --ignoreSerialMarker Ignore the serial marker and use STDF part ID instead
@@ -135,25 +135,27 @@ Options:
 -S                 --so Spreadsheet output filename(s); name may contain variables for device, and/or lot
 Default = %device%_%lot%.xlsx
 -r             --rotate Transpose spreadsheet so there is one device per column instead of one device per row
-             --sortType Sort devices by alphanumeric serial number, then by time. See the manual for valid sort types
+--sortType Sort devices by alphanumeric serial number, then by time. See the manual for valid sort types
 -c              --1kcol limit to 1000 columns for libreoffice - default is 16360 columns
 -Y    --noDynamicLimits Don't check for and show dynamic limits
 -w       --genWafermaps Generate wafer map(s)
 -W                 --wo Wafermap output filename(s); name may contain variables for device, wafer, and/or lot
 Default = %device%_%lot%_%wafer%.xlsx
--P            --pattern fill wafermap bins with patterns instead of color
+-P            --pattern fill wafermap bins with patterns instead of colors
 -A          --dumpAscii dump the wafer map in ASCII form
--n              --notch Rotate the wafer map for desired notch position: top|bottom|left|right.
+-R       --rotate-wafer Rotate the wafer map clockwise in degrees: 0|90|180|270.
 -h      --genHistograms Generate histogram(s)
 -H                 --ho Histogram output filename(s); name may contain variables for device, step, lot, and/or testID
 Default = %device%_histograms.pdf
-          --binCategory Specify if bins should be divided by SITE, LOT, TEMPerature or NONE. Default = NONE
+--binCategory Specify if bins should be divided by SITE, LOT, TEMPerature or NONE. Default = NONE
 Note: if --ho contains %lot% then dividing bins by lot does not make sense
+--binCount Manually set the number of bins across all histograms. Set to 0 (zero) for automatic.
+--cutoff Define how much of the outliers to cut, in terms of standard deviation. Set to 0 (zero) for no cutoff.
 -g     --generateRCFile Generate a default ".stdf2xlsxrc" file
 -t       --channel-type Channel type: AUTO, CHANNEL, PHYSICAL, or LOGICAL. Only use this if you know what you are doing.
 -v            --verbose Verbosity level. Default is 1 which means print only warnings.  0 means don't print anything
--V             --verify Verify written STDF; only useful if \texttt{-{}-}outputDir is specified. For testing purposes only.
-   --noIgnoreMiscHeader Don't ignore custom user header items when comparing headers from different STDF files
+-V             --verify Verify written STDF; only useful if --outputDir is specified. For testing purposes only.
+--noIgnoreMiscHeader Don't ignore custom user header items when comparing headers from different STDF files
 -h               --help This help information.
 \end{verbatim}
 \endgroup
@@ -456,36 +458,6 @@ that may be modified are shown below:
     \item Field Name: "EXC\_DESC"
     \end{itemize}
 \end{itemize}
-
-\subsection{\bf -h or \texttt{-{}-}genHistograms}
-
-\subsection{-w or \texttt{-{}-}genWafermaps}
-
-\subsubsection{-W or --wo}
-\subsubsection{-P or --pattern}
-\subsubsection{-A or --dumpAscii}
-\subsubsection{-n or --notch}
-
-\subsection{-d or \texttt{-{}-}dumptext}
-
-
-\subsection{-b or \texttt{-{}-}dumpBytes}
-
-
-\subsection{-D or \texttt{-{}-}digest}
-
-
-\subsection{-m or \texttt{-{}-}modify}
-
-
-\subsection{-g or \texttt{-{}-}generateRCFile}
-
-
-\subsection{-o or \texttt{-{}-}outputDir}
-
-
-\subsection{\bf -w or \texttt{-{}-}genWafermaps}
-
 
 \subsection{\bf -d or \texttt{-{}-}dumptext}
 This option prints the contents of the STDF file(s) in ASCII form to the standard output.
@@ -940,10 +912,22 @@ supported a legacy format for header items.  The legacy format is still supporte
 it is no longer documented.
 
 \section{Wafermaps}
-
+\subsection{\bf -w or \texttt{-{}-}genWafermaps}
+\subsubsection{\bf -P or \texttt{-{}-}pattern}
+This option fills the wafer map with patterns instead of colors to distinguish the bins.
+\subsubsection{\bf -A or \texttt{-{}-}dumpAscii}
+This option outputs the wafer map in ASCII into the stream. You can save the output by redirecting the stream into a file.
+\begin{verbatim}
+./stdf2xls -w -A device.stdf > file.txt
+\end{verbatim}
+\subsubsection{\bf -R or \texttt{-{}-}rotate-wafer}
+By default the x and y coordinates of wafer dies are unchanged, and the origin point is located at the top-left corner of a map. The map can be rotated by 90, 180, and 270 degrees around the origin. Negative rotations are also allowed.
 
 \section{Histograms}
-
-
+\subsection{\bf -h or \texttt{-{}-}genHistograms}
+\subsubsection{\bf \texttt{-{}-}binCount}
+By default the number of bins for each histogram is calculated using Scott's normal reference rule. Manually setting this value will apply the same number of bins across all histograms, except for the ones that have only one bin.
+\subsubsection{\bf \texttt{-{}-}cutoff}
+This defines how much of the outlier data should be excluded from histogram view, in terms of standard deviation. By default the cutoff is 1.5, which means that any data outside the range of mean$\pm$1.5$\sigma$ is excluded. To disable cutoff altogether, set this option to 0.
 
 \end{document}
