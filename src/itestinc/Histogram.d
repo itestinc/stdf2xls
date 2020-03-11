@@ -6,6 +6,7 @@ import itestinc.Util;
 import itestinc.Spreadsheet;
 import itestinc.StdfDB;
 import itestinc.Stdf;
+import itestinc.StdfFile;
 import itestinc.CmdOptions;
 import itestinc.Config;
 
@@ -24,6 +25,7 @@ import std.array : replace;
 import std.algorithm.iteration : uniq, mean;
 import std.algorithm.sorting : sort;
 import std.algorithm.searching : count, canFind;
+//import std.algorithm.searching : maxElement, minElement;
 
 /**
 */
@@ -33,8 +35,10 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
     const double bin_width_divider = 40;    // larger = more bins
     const double aggressive_multiplier = 0.15;  // smaller = more aggressive
     const double cutoff_compensator = options.cutoff*aggressive_multiplier*6;   // increases the number of inner bins after cutting off the outlier bins; larger = more bins
+    //const double cutoff_compensator = 20;
 
     uint MPR_count = 0;
+    uint histo_count = 0;
 
     foreach(hdr; stdfdb.deviceMap.keys) {
 
@@ -53,33 +57,33 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
             // ...
         }
 
-        foreach(i, dr; stdfdb.deviceMap[hdr]) {
-            foreach(tr; dr.tests) {
-                writeln(tr.id.testName, " ", tr.id.testNumber, " | lolimit = ", tr.loLimit, " | hilimit = ", tr.hiLimit);
-            }
-        }
+        //foreach(i, dr; stdfdb.deviceMap[hdr]) {
+        //    foreach(tr; dr.tests) {
+        //        writeln(tr.id.testName, " ", tr.id.testNumber, " | lolimit = ", tr.loLimit, " | hilimit = ", tr.hiLimit);
+         //   }
+        //}
 
         // create sheets and track row/col indices
         string sheet1 = "Histograms";
         string sheet2 = "Occurrences";
         string sheet3 = "Bin Values";
-        string sheet5 = "MPR";
+        //string sheet5 = "MPR";
         Workbook wb = newWorkbook(fname);
         Worksheet ws1 = wb.addWorksheet(sheet1);
         Worksheet ws2 = wb.addWorksheet(sheet2);
         Worksheet ws3 = wb.addWorksheet(sheet3);
-        Worksheet ws5 = wb.addWorksheet(sheet5);
+        //Worksheet ws5 = wb.addWorksheet(sheet5);
 
         initHistoFormats(wb, options, config);
 
         uint sh1_row = 8;
-        uint sh2_row = 0;
-        uint sh3_row = 0;
-        //uint sh5_row = 0;
         const ushort sh1_col = 0;
+        uint sh2_row = 0;
         ushort sh2_col = 0;
+        uint sh3_row = 0;
         ushort sh3_col = 0;
-        ushort sh5_col = 0;
+        //uint sh5_row = 0;
+        //ushort sh5_col = 0;
 
         // draw logo
         import libxlsxd.xlsxwrap : lxw_image_options, lxw_object_position;
@@ -115,9 +119,9 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
         ws1.mergeRange(cast(uint)(header_row+7), cast(ushort)(header_col+2), cast(uint)(header_row+7), cast(ushort)(header_col+4), "\"--binCount "~to!string(options.binCount)~" --cutoff "~to!string(options.cutoff)~"\"", headerValueFmt);
 
         ws1.write(8, 10, "Right-click on the sheet scroll arrows (bottom left) for easy navigation.");
-        ws1.write(sh1_row, sh1_col, "Test #", listNameFmt);
-        ws1.write(sh1_row, cast(ushort)(sh1_col + 1), "Duplicate #", listNameFmt);
-        ws1.write(sh1_row, cast(ushort)(sh1_col + 2), "", listNameFmt);
+        ws1.write(sh1_row, sh1_col, "Sheet #", listNameFmt);
+        ws1.write(sh1_row, cast(ushort)(sh1_col + 1), "Test #", listNameFmt);
+        ws1.write(sh1_row, cast(ushort)(sh1_col + 2), "Duplicate #", listNameFmt);
         ws1.mergeRange( sh1_row, cast(ushort)(sh1_col + 3),  sh1_row, cast(ushort)(sh1_col + 8), "Test Name", listNameFmt);
         sh1_row++;
 
@@ -125,39 +129,35 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
         foreach(id; ids) {
             if(id.type == Record_t.PTR ) {
 
-                // write the list of histograms created
-                ws1.write(sh1_row, sh1_col, id.testNumber, headerValueFmt);
-                ws1.write(sh1_row, cast(ushort)(sh1_col + 1), id.dup, headerValueFmt);
-                ws1.write(sh1_row, cast(ushort)(sh1_col + 2), "", headerValueFmt);
-                ws1.mergeRange( sh1_row, cast(ushort)(sh1_col + 3),  sh1_row, cast(ushort)(sh1_col + 8), id.testName, headerValueFmt);
-                sh1_row++;
-
-                sh2_row = 0;
-                sh3_row = 0;
-                ws2.write(sh2_row, sh2_col, id.testName);
-                ws3.write(sh3_row, sh3_col, id.testName);
-                sh2_row++;
-                sh3_row++;
-
-                // store all histo values from all sites into one array
-                double[] histvalues_allsites;
-                HistoData histodata_allsites = getResults(hdr, id);
-
-                if(histodata_allsites.values.length == 0) {         //when is this the case?
-                    continue;
+                // case 1. packaged device with same test on different pins
+                if( id.sameMPRTest(id) ) {
+                    //writeln("MPR: ", id.testName, " | ", id.testNumber, " | ", id.dup);
+                    if( hdr.isWafersort() ) {
+                        writeln("Is Wafer Sort");
+                    }
+                    else {
+                        writeln("NOT Wafer");
+                    }
                 }
+                else {
+                    writeln(id.type);
+                    writeln(id.pin);
+                }
+
+                // store all of a test's values from all sites into one array
+                HistoData histodata_allsites = getResults(hdr, id);
+                if(histodata_allsites.values.length == 0) { continue; }     // some tests have no values
+                double[] histvalues_allsites;
 
                 foreach(i, value; histodata_allsites.values) {
                     histvalues_allsites.length +=1;
                     histvalues_allsites[i] = value;
                 }
-                histvalues_allsites.sort();
+                histvalues_allsites.sort();     // need this to get min, max values
                 
-                // quantize the array into bins
-                double bin_width = (3.5*histodata_allsites.stdDev)/pow(histvalues_allsites.length, 1/3);    // Scott's normal reference formula (bin width is too wide for our case)
-                bin_width = bin_width / bin_width_divider;       // adjust the bin width with custom divider
-                //bin_width = round(bin_width*10_000)/10_000;
-                //import std.algorithm.searching : maxElement, minElement;
+                // quantize the values into bins
+                double bin_width = (3.5*histodata_allsites.stdDev)/pow(histvalues_allsites.length, 1/3);    // Scott's normal reference formula (bin width is too wide for our usage)
+                bin_width = bin_width / bin_width_divider;                                                  // so, adjust the bin width with custom divider
 
                 // cut off outliers based on mean vs. standard deviation of each site
                 double min_value_new;
@@ -187,7 +187,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                             min_value_new = (min_value_new < min_value_eachsite) ? min_value_new : min_value_eachsite;
                             max_value_new = (max_value_new > max_value_eachsite) ? max_value_new : max_value_eachsite;
                          }
-                        else {  // only the first index
+                        else {  // initialize values at the first index
                             min_value_new = min_value_eachsite;
                             max_value_new = max_value_eachsite;
                         }
@@ -201,9 +201,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 if(options.binCount < 1) {
                     uint auto_number_of_bins =cast(uint)ceil( (max_value_new - min_value_new)/bin_width );  // general formula
 
-                    if(auto_number_of_bins == 0) {                 //happens when min value == max value. All values in histodata are the same, so assign just 1 bin.
-                        auto_number_of_bins = 1;
-                    }
+                    if(auto_number_of_bins == 0) { auto_number_of_bins = 1; }   //All values in histodata are the same, so assign just 1 bin.
                     quantized_values = new double[](auto_number_of_bins);
                 }
                 else {
@@ -211,16 +209,22 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                     quantized_values = new double[](options.binCount);
                 }
 
-                // calculate the bin ranges using bin width, using the minimum value as base
+                // calculate the bin ranges using bin width, using the minimum value as base. Round to 3 decimals for better readability.
                 foreach(i, value; quantized_values) {
-
-                    if(options.binCount < 1) {
-                        quantized_values[i] = (round(bin_width*(i+1) + min_value_new)*1_000)/1_000;      // quantized_values is already sorted by this
-                    }
-                    else {
-                        quantized_values[i] = (round(custom_bin_width*(i+1) + min_value_new)*1_000)/1_000;
-                    }
+                    if(options.binCount < 1) { quantized_values[i] = (bin_width*(i+1) + min_value_new); }     // quantized_values is automatically sorted with this
+                    else { quantized_values[i] = (custom_bin_width*(i+1) + min_value_new); }
                 }
+
+                // write a list of tests that has histograms
+                ws1.write(sh1_row, sh1_col, histo_count, headerValueFmt);
+                ws1.write(sh1_row, cast(ushort)(sh1_col + 1), id.testNumber, headerValueFmt);
+                ws1.write(sh1_row, cast(ushort)(sh1_col + 2), id.dup, headerValueFmt);
+                ws1.mergeRange( sh1_row, cast(ushort)(sh1_col + 3),  sh1_row, cast(ushort)(sh1_col + 8), id.testName, headerValueFmt);
+                sh1_row++;
+
+                // write testname headers to raw data sheets for debug.
+                sh2_row = 0; ws2.write(sh2_row, sh2_col, id.testName); sh2_row++;
+                sh3_row = 0; ws3.write(sh3_row, sh3_col, id.testName); sh3_row++;
 
                 // write histogram categories (bins) for each site
                 double[] quantized_values_unique;
@@ -247,10 +251,11 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 Chart ch = wb.addChart(LXW_CHART_COLUMN);
                 ch.titleSetName(id.testName~"\n"~"");
                 ch.titleSetNameFont(&TitleFont);
-                Chartsheet sh = wb.addChartsheet(to!string(id.testNumber)~"-"~to!string(id.dup));
+                Chartsheet sh = wb.addChartsheet(to!string(histo_count));
+                histo_count++;
                 Chartseries[] series;
 
-                // write histogram data (number of occurrences) for each site
+                // count the data frequency (number of occurrences) for each site
                 foreach(s, site; sites) {
                     HistoData histodata = getResults(hdr, id, site);
 
@@ -262,14 +267,13 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                                 break;
                             }
                             else {
-                                if(j == number_of_bins-1 ) {
-                                    bin_count[j]++;
-                                }
+                                if(j == number_of_bins-1 ) { bin_count[j]++; }      // last value goes into last bin
                                 continue;
                             }
                         }
                     }
-
+                    
+                    // write data frequency
                     foreach(value; bin_count) {
                         ws2.write(sh2_row, sh2_col, value);
                         sh2_row++;
@@ -307,31 +311,11 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 ch.legendSetFont(&LegendFont);
                 sh.setChart(ch);
             }
-            
-            else if(id.type == Record_t.MPR) {
-
-                if( id.sameMPRTest(id) ) {
-                    //writeln("MPR: ", id.testName, " | ", id.testNumber, " | ", id.dup);
-                    MPR_count++;
-                }
-                sh5_col = 0;
-                ubyte[] sites = getSites(hdr);
-                ws5.write(0, sh5_col, id.testName);
-                foreach(s, site; sites) {
-                    HistoData histodata = getResults(hdr, id, site);
-                    ws5.write(1, sh5_col, site);
-                    foreach(v, val; histodata.values) {
-                        ws5.write(cast(uint)(v+2), sh5_col, val);
-                        ws5.write(cast(uint)(v+2), cast(ushort)(sh5_col+1), id.pin);
-                    }
-                    sh5_col+=2;
-                }
-            }
         }
         writeln("MPR Count = ", MPR_count);
         ws2.hide();
         ws3.hide();
-        ws5.hide();
+        //ws5.hide();
         ws1.select();
         wb.close();
     }
