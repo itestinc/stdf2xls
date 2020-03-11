@@ -25,6 +25,7 @@ import std.array : replace;
 import std.algorithm.iteration : uniq, mean;
 import std.algorithm.sorting : sort;
 import std.algorithm.searching : count, canFind;
+import std.string : chop;
 //import std.algorithm.searching : maxElement, minElement;
 
 /**
@@ -140,8 +141,8 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                     }
                 }
                 else {
-                    writeln(id.type);
-                    writeln(id.pin);
+                    //writeln(id.type);
+                    //writeln(id.pin);
                 }
 
                 // store all of a test's values from all sites into one array
@@ -252,9 +253,22 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 ch.titleSetName(id.testName~"\n"~"");
                 ch.titleSetNameFont(&TitleFont);
 
-                string testName = replace(id.testName, " ", "_");
-                testName = replace(id.testName, ":", "_");
-                Chartsheet sh = wb.addChartsheet(to!string(histo_count)~"-"~testName);
+                // replace any invalid characters for sheet name
+                string sheetName = replace(id.testName, " ", "_");
+                sheetName = replace(sheetName, ":", "-");
+                sheetName = replace(sheetName, "[", "(");
+                sheetName = replace(sheetName, "]", ")");
+                sheetName = replace(sheetName, "*", "_");
+                sheetName = replace(sheetName, "?", "_");
+                sheetName = replace(sheetName, "\\", "_");
+                sheetName = replace(sheetName, "/", "_");
+
+                // max excel sheet name length is 31 characters
+                sheetName = to!string(histo_count)~"-"~sheetName;
+                while(sheetName.length > 30) {
+                    sheetName = chop(sheetName);
+                }
+                Chartsheet sh = wb.addChartsheet(sheetName);
                 histo_count++;
                 Chartseries[] series;
 

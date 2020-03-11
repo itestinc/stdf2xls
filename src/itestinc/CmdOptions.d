@@ -94,13 +94,6 @@ enum BinCategory_t
     SITE,
     LOT,
     TEMP
-};
-
-enum Notch {
-    top,
-    bottom,
-    left,
-    right
 }
 
 import std.regex;
@@ -124,7 +117,9 @@ class CmdOptions
     bool noDynamicLimits = false;
     bool asciiDump = false;
     bool pattern = false;
-    Notch notch = Notch.right;
+    int rotateWafer = 0;
+    uint binCount = 0;
+    double cutoff = 1.5;
     Sort_t sortType = Sort_t.SN_UP_TIME_UP; 
     private string[] modify;
     PMRNameType channelType = PMRNameType.AUTO;
@@ -141,9 +136,6 @@ class CmdOptions
     char[] delims;
 
     bool success;
-
-    uint binCount = 0;
-    double cutoff = 1.5;
 
     this(string[] args)
     {
@@ -173,7 +165,7 @@ class CmdOptions
             "wo|W", "Wafermap output filename(s); name may contain variables for device, wafer, and/or lot\nDefault = %device%_%lot%_%wafer%.xlsx", &wfile,
             "pattern|P", "fill wafermap bins with patterns instead of colors", &pattern,
             "dumpAscii|A", "dump the wafer map in ASCII form", &asciiDump,
-            "notch|n", "Rotate the wafer map for desired notch position: top|bottom|left|right.", &notch,
+            "rotate-wafer|R", "Rotate the wafer map clockwise in degrees: 0|90|180|270.", &rotateWafer,
 
             "genHistograms|h", "Generate histogram(s)", &genHistogram,
             "ho|H", "Histogram output filename(s); name may contain variables for device, step, lot, and/or testID\nDefault = %device%_histograms.pdf", &hfile,

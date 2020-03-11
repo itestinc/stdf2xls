@@ -29,7 +29,6 @@ static Format waferBin13Fmt;
 static Format waferBin14Fmt;
 static Format waferBin15Fmt;
 static Format waferBin16Fmt;
-
 static Format blankBinFmt;
 
 public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
@@ -53,8 +52,6 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     config.setFontColor(headerValueFmt, Config.wafer_header_text_color);
     headerValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_LEFT);
     headerValueFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_CENTER);
-    //headerValueFmt.setRight(lxw_format_borders.LXW_BORDER_THIN);
-    //headerValueFmt.setBorderColor(0x1000000);
 
     waferPassFmt = wb.addFormat();
     waferPassFmt.setFontName("Arial");
@@ -403,24 +400,3 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     }
  
 }
-
-/*    enum LXW_PATTERN_NONE = lxw_format_patterns.LXW_PATTERN_NONE;
-    enum LXW_PATTERN_SOLID = lxw_format_patterns.LXW_PATTERN_SOLID;
-    enum LXW_PATTERN_MEDIUM_GRAY = lxw_format_patterns.LXW_PATTERN_MEDIUM_GRAY;
-    enum LXW_PATTERN_DARK_GRAY = lxw_format_patterns.LXW_PATTERN_DARK_GRAY;
-    enum LXW_PATTERN_LIGHT_GRAY = lxw_format_patterns.LXW_PATTERN_LIGHT_GRAY;
-    enum LXW_PATTERN_DARK_HORIZONTAL = lxw_format_patterns.LXW_PATTERN_DARK_HORIZONTAL;
-    enum LXW_PATTERN_DARK_VERTICAL = lxw_format_patterns.LXW_PATTERN_DARK_VERTICAL;
-    enum LXW_PATTERN_DARK_DOWN = lxw_format_patterns.LXW_PATTERN_DARK_DOWN;
-    enum LXW_PATTERN_DARK_UP = lxw_format_patterns.LXW_PATTERN_DARK_UP;
-    enum LXW_PATTERN_DARK_GRID = lxw_format_patterns.LXW_PATTERN_DARK_GRID;
-    enum LXW_PATTERN_DARK_TRELLIS = lxw_format_patterns.LXW_PATTERN_DARK_TRELLIS;
-    enum LXW_PATTERN_LIGHT_HORIZONTAL = lxw_format_patterns.LXW_PATTERN_LIGHT_HORIZONTAL;
-    enum LXW_PATTERN_LIGHT_VERTICAL = lxw_format_patterns.LXW_PATTERN_LIGHT_VERTICAL;
-    enum LXW_PATTERN_LIGHT_DOWN = lxw_format_patterns.LXW_PATTERN_LIGHT_DOWN;
-    enum LXW_PATTERN_LIGHT_UP = lxw_format_patterns.LXW_PATTERN_LIGHT_UP;
-    enum LXW_PATTERN_LIGHT_GRID = lxw_format_patterns.LXW_PATTERN_LIGHT_GRID;
-    enum LXW_PATTERN_LIGHT_TRELLIS = lxw_format_patterns.LXW_PATTERN_LIGHT_TRELLIS;
-    enum LXW_PATTERN_GRAY_125 = lxw_format_patterns.LXW_PATTERN_GRAY_125;
-    enum LXW_PATTERN_GRAY_0625 = lxw_format_patterns.LXW_PATTERN_GRAY_0625;
-    */
