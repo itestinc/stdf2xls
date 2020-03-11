@@ -1266,9 +1266,7 @@ class StdfReader
             rs ~= r;
             if (type == Record_t.MRR) break;
         }
-        writeln("end of read"); stdout.flush();
         records = rs.data;
-        writeln("end of read"); stdout.flush();
     }
 } // end class StdfReader
 import std.array;
