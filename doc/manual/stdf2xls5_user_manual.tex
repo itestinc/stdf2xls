@@ -59,8 +59,8 @@ stdf2xls 4.0 java program, and is significantly faster too.  It has many new fea
 \item New algorithm correctly orders tests even if the testflow varies from device to device
 \item Spreadsheet colors and fonts are now customizable
 \item Improved spreadsheet layout
-\item Many ways to sort and order device data, including by timestamp.
-\item Ability to modifiy any STDF text field with regular expressions
+\item Many ways to sort and order device data, including by timestamp
+\item Ability to modify any STDF text field with regular expressions
 \item Ability to write out STDF files
 \item Multiple different devices types can be processed simultaneously
 \end{itemize}
@@ -78,7 +78,7 @@ a little more difficult.
 \section{\bf Getting the program}
 
 The source code is available on github. The source code can be downloaded
-from github with git, or just the exececutable for Windows or GNU/Linux
+from github with git, or just the executable for Windows or GNU/Linux
 may be downloaded from the github web page.  This manual may also be copied
 from the github webpage.\\
 \\
@@ -198,11 +198,11 @@ Some testers like the Advantest 93K will append a pin name on to the end of a te
 to indicate the pin that is being tested.  By default it uses an \makeatletter '@' \makeatother
 to delimit the test name from the pin name.  For example \makeatletter "myTestName@VCC". \makeatother
 This option will remove the delimiter and pin name from the test name, and put the pin name
-in the pin column or row of the spreadsheet.  You may use any character for the deliter,
+in the pin column or row of the spreadsheet.  You may use any character for the delimiter,
 but \makeatletter '@' \makeatother is used by default.  See next section.
 
 \subsubsection{\bf -p or --pinDelimiter}
-This option allows you to specifiy the delimiter that is used to separate the test name and pin name.
+This option allows you to specify the delimiter that is used to separate the test name and pin name.
 It is only necessary to use this option if the delimiter is not \makeatletter '@'. \makeatother.
 
 \subsubsection{\bf -i or --ignoreSerialMarker}
@@ -225,7 +225,7 @@ the Datalog Text Record serial marker, then use this option.  Generally you won'
 to use this option.
 
 \subsubsection{\bf -S or --so}
-This option is used to specify the spreadsheet filname.  It is not necessary to use this option.
+This option is used to specify the spreadsheet filename.  It is not necessary to use this option.
 By default the spreadsheet filename will be <deviceName>\_<lot\_id>.xlsx.  Note that you can process
 multiple device types simultaneously and each device and lot will be sent to a different spreadsheet
 file.  With this option you can specify the datalog spreadsheet filename, and you can use variables
@@ -253,7 +253,7 @@ exceeds these limits then the data will be continued on another tab in the workb
 \subsubsection{\bf -Y or --noDynamicLimits}
 By default all parametric tests are scanned for non-constant limits.  If non-constant
 limits are detected for certain tests, then the spreadsheet is formatted differently
-for those tests such that each test result is surounded by the limits used for that
+for those tests such that each test result is surrounded by the limits used for that
 test.  If you don't want this behavior then use this option, but realize the limits
 will not be accurate.
 
@@ -262,7 +262,7 @@ For Multiple Parametric Test Records the pin information is obtained from
 the Pin Map Records which map a pin index number to a pin name.  Unfortunately
 the Pin Map Record has three fields where a pin name {\it might} be stored.
 Most of the time stdf2xls will use the correct field to get the correct
-pin name, but occasionnaly a new tester may use the wrong field.  In that
+pin name, but occasionally a new tester may use the wrong field.  In that
 case this option can be used for force stdf2xls to use the correct field.
 If your pin names are not coming out correctly for Multiple Parametric Test Result
 records, then do an ASCII dump of the STDF file, and look at the Pin Map Records,
@@ -300,8 +300,8 @@ of the second pair of parenthesis is accessed in the <toFormatString> with \$2, 
 \\
 \\
 \noindent
-The <record> parameter is the three-letter record name as it is specfied
-in the STDF specfication.  The <field> parameter is the field name as
+The <record> parameter is the three-letter record name as it is specified
+in the STDF specification.  The <field> parameter is the field name as
 given in the STDF specification.  The valid record and field names
 that may be modified are shown below:
 \begin{itemize}
@@ -818,7 +818,7 @@ wafer.pass.bg_color                 22C600
 \clearpage
 
 \subsubsection{Logo Configuration}
-Most of the fields in the preceeding section should be self-explanitory.
+Most of the fields in the preceding section should be self-explanatory.
 However, configuring your own logo to fit correctly in the spreadsheet
 is not easy.  It is very dependent on how the image was created,
 and the resolution of your monitor.  So it is a trial and error
@@ -848,10 +848,10 @@ ss.logo.font_style                  normal
 By default header information in the spreadsheet is obtained from
 standard STDF fields.  For example the lot number is obtained
 from the LOT\_ID field of the Master Information Record.  Header
-information is lot specific, so it includes things like traveller
+information is lot specific, so it includes things like traveler
 step number, wafer number, temperature, etc.  Some of this information
 can be obtained from standard fields in the STDF, but sometimes
-the tester does not fill in these fields, so they can be overriden 
+the tester does not fill in these fields, so they can be override 
 by printing text to the datalogger.  Note that printing to the datalogger
 must generate a Datalog Text Record in the STDF for this to work.
 
@@ -864,10 +864,10 @@ The standard header fields that can be obtained from STDF are:
 \item Wafer number (WIR.WAFER\_ID)
 \item Device Name (MIR.PART\_TYP)
 \end{itemize}
-Additionally the progam also uses a traveller STEP number to identify
+Additionally the program also uses a traveler STEP number to identify
 a unique lot, but there doesn't seem to be an STDF field that corresponds
-to this.  The above fields, including the STEP number can be overidden
-using Datalog Text Records.  The above fields can be overriden by using
+to this.  The above fields, including the STEP number can be overridden
+using Datalog Text Records.  The above fields can be override by using
 the following syntax with Datalog Text Records:
 \begin{center}
 \begin{table}[H]\caption*{Standard Header Text Records}
@@ -896,13 +896,13 @@ Step number     & "\gT\gT\gT STEP \# : <step\_number>\\
 \subsubsection{\bf User-defined Header fields}
 In addition to the standard header fields, the user may add custom header fields with Datalog
 Text Records.  By default, user-defined header fields are not used to identify
-a unique lot, however, this behavior can be overriden with the -{}-noIgnoreMiscHeader command-line option.
+a unique lot, however, this behavior can be overridden with the -{}-noIgnoreMiscHeader command-line option.
 The format for a user-defined header item is:
 \begin{verbatim}
 >>> <header_name> : <header\_value>
 \end{verbatim}
 There is limited space in the spreadsheet for user-defined header items, so if there
-are too many header items, the list will get trucated.  Additionally older versions of stdf2xls
+are too many header items, the list will get truncated.  Additionally older versions of stdf2xls
 supported a legacy format for header items.  The legacy format is still supported, but
 it is no longer documented.
 
