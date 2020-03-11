@@ -6,7 +6,6 @@ import itestinc.Config;
 import std.stdio;
 
 static Format headerNameFmt;
-static Format headerNameFmt2;
 static Format headerValueFmt;
 static Format waferPassFmt;
 static Format waferFailFmt;
@@ -46,16 +45,6 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     config.setFontColor(headerNameFmt, Config.wafer_header_text_color);
     headerNameFmt.setAlign(lxw_format_alignments.LXW_ALIGN_RIGHT);
     headerNameFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_CENTER);
-
-    headerNameFmt2 = wb.addFormat();
-    headerNameFmt2.setFontName("Arial");
-    headerNameFmt2.setFontSize(8.0);
-    headerNameFmt2.setBold();
-    headerNameFmt2.setUnderline(lxw_format_underlines.LXW_UNDERLINE_SINGLE);
-    config.setBGColor(headerNameFmt2, Config.wafer_header_bg_color);
-    config.setFontColor(headerNameFmt2, Config.wafer_header_text_color);
-    headerNameFmt2.setAlign(lxw_format_alignments.LXW_ALIGN_LEFT);
-    headerNameFmt2.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_CENTER);
 
     headerValueFmt = wb.addFormat();
     headerValueFmt.setFontName("Arial");

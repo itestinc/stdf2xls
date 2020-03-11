@@ -13,6 +13,7 @@ import itestinc.StdfFile;
 
 int main(string[] args)
 {
+    if ((args.length == 2) && (args[1] == "-h")) args[1] = "--help";
     CmdOptions options = new CmdOptions(args);
     import std.path;
     import std.digest;
@@ -49,12 +50,13 @@ int main(string[] args)
                     {
                         ubyte[] bs = rec.getBytes();
                         writeln("[");
-                        size_t cnt = 0;
+                        size_t cnt = 1;
                         foreach (b; bs)
                         {
-                            if (b < 0xF) std.stdio.write("0", toHexString([b]), " ");
-                            else std.stdio.write(toHexString([b]), " ");
-                            if (cnt == 40)
+                            string by = toHexString([b]);
+                            if (by.length < 2) std.stdio.write("0", by, " ");
+                            else std.stdio.write(by, " ");
+                            if (cnt == 24)
                             {
                                 writeln("");
                                 cnt = 0;
@@ -122,6 +124,7 @@ import std.regex;
 void modify(StdfRecord rec, Modifier m)
 {
     auto re = regex(m.regexp);
+    //writeln("regex = ", re, " repl = ", m.repl);
     switch (m.recordType.ordinal)
     {
         case Record_t.ATR.ordinal:  Record!ATR r = cast(Record!ATR) rec;
