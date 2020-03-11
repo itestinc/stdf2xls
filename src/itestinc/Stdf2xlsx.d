@@ -35,14 +35,10 @@ private StdfDB stdfdb;
 
 public StdfFile[][HeaderInfo] processStdf(CmdOptions options)
 {
-    writeln("processStdf()");
     foreach(file; options.stdfFiles) 
     {
-        writeln("AA"); stdout.flush();
         processFile(file, options);
-        writeln("BB"); stdout.flush();
     }
-    writeln("process done");
     stdout.flush();
     return stdfFiles;
 }
@@ -85,7 +81,6 @@ public StdfDB loadDb(CmdOptions options)
                     {
                         if (!loLims.contains(hdr, id)) 
                         {
-                            writeln("id = ", id, " ll2 = ", test.loLimit); // ll2 incorrect here
                             loLims.put(test.loLimit, hdr, id);
                         }
                         else
@@ -198,21 +193,17 @@ private void processFile(string file, CmdOptions options)
 {
     auto sfile = StdfFile(file, options);
     sfile.load();
-    writeln("file loaded"); stdout.flush();
     if (sfile.hdr !in stdfFiles)
     {
-        writeln("CC"); stdout.flush();
         StdfFile[] s;
         s ~= sfile;
         stdfFiles[sfile.hdr] = s;
     }
     else
     {
-        writeln("DD"); stdout.flush();
         StdfFile[] s = stdfFiles[sfile.hdr];
         s ~= sfile;
         stdfFiles[sfile.hdr] = s;
     }
-    writeln("end processFile()"); stdout.flush();
 }
 
