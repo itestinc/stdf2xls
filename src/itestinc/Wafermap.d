@@ -30,6 +30,8 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 			hwbin.length +=1;
 			x_coord.length +=1;
 			y_coord.length +=1;
+			if(dr.hwbin == 65535) { writeln("WARNING: One of your HW bins carries a value of -1. Something may have gone wrong during wafer probing."); }
+			else if(dr.hwbin > 65000) { writefln("WARNING: Your datalog contains an unusually high HW bin value that may have underflowed from a negative number: %s", dr.hwbin); }
 			hwbin[i] = cast(ushort)dr.hwbin;
 			x_coord[i] = cast(short)dr.devId.id.xy.x;
 			y_coord[i] = cast(short)dr.devId.id.xy.y;
@@ -55,17 +57,9 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		// Create 2D array map of bins.
 		ushort col = cast(ushort)(x_max + 1);
 		ushort row = cast(ushort)(y_max + 1);
-		ushort goodbins = 0;
-		ushort badbins = 0;
-		ushort[][] matrix_uint = new ushort[][](row,col);	// mat[][]=0
-
+		ushort[][] matrix_org = new ushort[][](row,col);	// initial mat[][] = 0
 		foreach(i, bin; hwbin) {
-			matrix_uint[y_shifted[i]][x_shifted[i]] = bin;
-
-			switch(bin) {
-				case 1: goodbins++; break;
-				default: badbins++; break;
-			}
+			matrix_org[y_shifted[i]][x_shifted[i]] = bin;
 		}
 
 		// Rotate wafer according to option.
@@ -73,12 +67,12 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		switch(options.rotateWafer)
 		{
 			case 0:
-				matrix = matrix_uint.dup;
+				matrix = matrix_org.dup;
 				break;
 			case -270:
 			case 90:
 				ushort[][] matrix_rot90 = new ushort[][](col,row);
-				rotate90(matrix_uint, matrix_rot90);
+				rotate90(matrix_org, matrix_rot90);
 				matrix = matrix_rot90.dup;
 				if(row != col) {
 					row ^= col;
@@ -89,13 +83,13 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 			case -180:
 			case 180:
 				ushort[][] matrix_rot180 = new ushort[][](row,col);
-				rotate180(matrix_uint, matrix_rot180);
+				rotate180(matrix_org, matrix_rot180);
 				matrix = matrix_rot180.dup;
 				break;
 			case -90:
 			case 270:
 				ushort[][] matrix_rot270 = new ushort[][](col,row);
-				rotate270(matrix_uint, matrix_rot270);
+				rotate270(matrix_org, matrix_rot270);
 				matrix = matrix_rot270.dup;
 				if(row != col) {
 					row ^= col;
@@ -104,30 +98,40 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 				}
 				break;
 			default:
-				throw new Exception("Invalid wafer rotation. Must be +/- 0, 90, 180, 270.");
+				throw new Exception("Invalid wafer rotation. Must be +/- 0, 90, 180, or 270.");
 		}
 
 		// Generate file name
 		import std.algorithm: canFind;
+
 		string wfile = options.wfile;
 		const bool separateFileForDevice = canFind(wfile, "%device%");
 		const bool separateFileForLot = canFind(wfile, "%lot%");
 		const bool separateFileForWafer = canFind(wfile, "%wafer%");
-		
-		import std.array : replace;
-		string fname = replace(wfile, "%device%", hdr.devName).replace("%lot%", hdr.lot_id).replace("%wafer%", hdr.wafer_id);
 
+		// handle invalid characters for filename
+		import std.array : replace;
+		string devName = replace(hdr.devName, " ", "-");
+		devName = replace(devName, "/", "-");
+
+		string waferID = replace(hdr.wafer_id, " ", "-");
+		waferID = replace(waferID, "/", "-");
+
+		string lotID = replace(hdr.lot_id, " ", "-");
+		lotID = replace(lotID, "/", "-");
+
+		string fname = replace(wfile, "%device%", devName).replace("%lot%", lotID).replace("%wafer%", waferID);
 		
 		if(separateFileForDevice && separateFileForLot && separateFileForWafer) {
 			import std.array : replace;
-			fname = replace(wfile, "%device%", hdr.devName).replace("%lot%", hdr.lot_id).replace("%wafer%", hdr.wafer_id);
+			fname = replace(wfile, "%device%", devName).replace("%lot%", lotID).replace("%wafer%", waferID);
 		}
 		else {
 			// ...
 		}
 
 		Workbook wb = newWorkbook(fname);
-		Worksheet ws1 = wb.addWorksheet("Wafermap");
+		Worksheet ws1 = wb.addWorksheet("HW Bins");
 		Worksheet ws3 = wb.addWorksheet("Bin Filter (experimental)");
 		Worksheet[] ws;
 
@@ -136,21 +140,14 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		lxw_image_options img_options;
 		const double ss_width = 449 * 0.350;
 		const double ss_height = 245 * 0.324;
-		img_options.x_scale = (2.5 * 70.0) / ss_width;
-		img_options.y_scale = (5.0 * 20.0) / ss_height;
+		img_options.x_scale = (4.0 * 70.0) / ss_width;
+		img_options.y_scale = (7.0 * 20.0) / ss_height;
 		ws1.mergeRange(0, 0, 7, 3, null);
 		img_options.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
-		ws1.insertImageBufferOpt(cast(uint) 0, cast(ushort) 1, img.dup.ptr, img.length, &img_options);
-
-		// !!: header location with respect to logo WILL change with different wafer sizes, due to changing row/col size
-		ws1.setColumn(0, 0, 4.29);
+		ws1.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, img.dup.ptr, img.length, &img_options);
 
 		// Write headers to excel
-		const double good_per = round(100*goodbins/(goodbins+badbins));
-		const double bad_per = round(100*badbins/(goodbins+badbins));
-
 		initWaferFormats(wb, options, config);
-
 		ws1.mergeRange( 8, 0,  8, 1, "Wafer ID:", headerNameFmt);
 		ws1.mergeRange( 9, 0,  9, 1, "Lot ID:", headerNameFmt);
 		ws1.mergeRange(10, 0, 10, 1, "Sublot ID:", headerNameFmt);
@@ -163,40 +160,27 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		ws1.mergeRange(17, 0, 17, 1, "Good Bins:", headerNameFmt);
 		ws1.mergeRange(18, 0, 18, 1, "Bad Bins:", headerNameFmt);
 		ws1.mergeRange(19, 0, 19, 1, "Total Bins:", headerNameFmt);
-
-		ws1.write( 8, 2, hdr.wafer_id, headerValueFmt);
-		ws1.write( 9, 2, hdr.lot_id, headerValueFmt);
-		ws1.write(10, 2, hdr.sublot_id, headerValueFmt);
-		ws1.write(11, 2, hdr.devName, headerValueFmt);
-		ws1.write(12, 2, hdr.temperature, headerValueFmt);
-		ws1.write(13, 2, hdr.step, headerValueFmt);
-		ws1.write(14, 2, row, headerValueFmt);
-		ws1.write(15, 2, col, headerValueFmt);
-		ws1.write(16, 2, options.rotateWafer, headerValueFmt);
-		ws1.write(17, 2, to!string(goodbins)~" ("~to!string(good_per)~"%)", headerValueFmt);
-		ws1.write(18, 2, to!string(badbins)~" ("~to!string(bad_per)~"%)", headerValueFmt);
-		ws1.write(19, 2, (goodbins+badbins), headerValueFmt);
-
-		ws1.mergeRange( 8, 2,  8, 3, null);
-		ws1.mergeRange( 9, 2,  9, 3, null);
-		ws1.mergeRange(10, 2, 10, 3, null);
-		ws1.mergeRange(11, 2, 11, 3, null);
-		ws1.mergeRange(12, 2, 12, 3, null);
-		ws1.mergeRange(13, 2, 13, 3, null);
-		ws1.mergeRange(14, 2, 14, 3, null);
-		ws1.mergeRange(15, 2, 15, 3, null);
-		ws1.mergeRange(16, 2, 16, 3, null);
-		ws1.mergeRange(17, 2, 17, 3, null);
-		ws1.mergeRange(18, 2, 18, 3, null);
-		ws1.mergeRange(19, 2, 19, 3, null);
-
+		ws1.mergeRange( 8, 2,  8, 3, hdr.wafer_id, headerValueFmt);
+		ws1.mergeRange( 9, 2,  9, 3, hdr.lot_id, headerValueFmt);
+		ws1.mergeRange(10, 2, 10, 3, hdr.sublot_id, headerValueFmt);
+		ws1.mergeRange(11, 2, 11, 3, hdr.devName, headerValueFmt);
+		ws1.mergeRange(12, 2, 12, 3, hdr.temperature, headerValueFmt);
+		ws1.mergeRange(13, 2, 13, 3, hdr.step, headerValueFmt);
+		ws1.mergeRange(14, 2, 14, 3, to!string(row), headerValueFmt);
+		ws1.mergeRange(15, 2, 15, 3, to!string(col), headerValueFmt);
+		ws1.mergeRange(16, 2, 16, 3, to!string(options.rotateWafer)~" deg", headerValueFmt);
+		
 		// Set widths so that each bin cell is a square.
-		const double colWidth = 1;
-		const double rowWidth = 9;
+		const double colWidth = 2.57;
+		const double rowWidth = 15;
+
+		for(uint i = 0; i < 37; i++) {
+			ws1.setRow(i, rowWidth);	// consistent header size for any wafer size
+		}
 
 		// Start drawing wafermap at defined offset cell position.
 		const ushort offset_row = 2;
-		const ushort offset_col = 6;
+		const ushort offset_col = 7;
 
 		ushort bin1 = 0;
 		ushort bin2 = 0;
@@ -263,18 +247,26 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 				}
 			}
 		}
-		// Set cell widths for row/col numbering cells.
-		ws1.setColumn(offset_col, cast(ushort) (col + offset_col - 1), colWidth);
-		ws1.setRow(cast(uint)(offset_row - 1), 16);
-		ws1.setRow(cast(uint)(row + offset_row), 16);		// why setting column is (first, last) ; setting row is just (one row) ??
-		ws1.setColumn(offset_col -1 , offset_col -1 , colWidth+2);
-		ws1.setColumn(cast(ushort) (col + offset_col), cast(ushort) (col + offset_col), colWidth+2);
 
-		ws3.setColumn(offset_col, cast(ushort) (col + offset_col - 1), colWidth);
-		ws3.setRow(cast(uint)(offset_row - 1), 16);
-		ws3.setRow(cast(uint)(row + offset_row), 16);
-		ws3.setColumn(offset_col -1 , offset_col -1 , colWidth+2);
-		ws3.setColumn(cast(ushort) (col + offset_col), cast(ushort) (col + offset_col), colWidth+2);
+		// write bin counts to headers
+		uint goodbins = bin1;
+		uint badbins = bin2+bin3+bin4+bin5+bin6+bin7+bin8+bin9+bin10+bin11+bin12+bin13+bin14+bin15+bin16;
+		const double good_per = round(100*goodbins/(goodbins+badbins));
+		const double bad_per = round(100*badbins/(goodbins+badbins));
+		
+		ws1.mergeRange(17, 2, 17, 3, to!string(goodbins)~" ("~to!string(good_per)~"%)", headerValueFmt);
+		ws1.mergeRange(18, 2, 18, 3, to!string(badbins)~" ("~to!string(bad_per)~"%)", headerValueFmt);
+		ws1.write(19, 2, (goodbins+badbins), headerValueFmt);
+		ws1.mergeRange(19, 2, 19, 3, null);
+
+		// set row/col width for label numbers
+		ws1.setColumn(cast(ushort)(offset_col - 2), cast(ushort)(col + offset_col + 1), colWidth);
+		ws1.setRow(cast(uint)(offset_row - 1), rowWidth);
+		ws1.setRow(cast(uint)(row + offset_row), rowWidth);
+
+		ws3.setColumn(cast(ushort)(offset_col - 2), cast(ushort)(col + offset_col + 1), colWidth);
+		ws3.setRow(cast(uint)(offset_row - 1), rowWidth);
+		ws3.setRow(cast(uint)(row + offset_row), rowWidth);
 
 		ws1.mergeRange(20, 0, 20, 1, "bin 1:", headerNameFmt);
 		ws1.mergeRange(21, 0, 21, 1, "bin 2:", headerNameFmt);
@@ -291,7 +283,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		ws1.mergeRange(32, 0, 32, 1, "bin 13:", headerNameFmt);
 		ws1.mergeRange(33, 0, 33, 1, "bin 14:", headerNameFmt);
 		ws1.mergeRange(34, 0, 34, 1, "bin 15:", headerNameFmt);
-		ws1.mergeRange(35, 0, 35, 1, "others:", headerNameFmt);
+		ws1.mergeRange(35, 0, 35, 1, "other:", headerNameFmt);
 
 		ws1.write(20, 2, bin1, headerValueFmt);
 		ws1.write(21, 2, bin2, headerValueFmt);
@@ -325,8 +317,9 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		ws1.write(32, 3, 13, waferBin13Fmt);
 		ws1.write(33, 3, 14, waferBin14Fmt);
 		ws1.write(34, 3, 15, waferBin15Fmt);
-		ws1.write(35, 3, "other", waferBin16Fmt);
+		ws1.write(35, 3, 16, waferBin16Fmt);
 
+		// experimental bin filter
 		ws3.mergeRange(5, 0, 5, 3, "2. Enter the desired bin number to filter:", headerNameFmt);
 		ws3.write(6, 3, 1, blankBinFmt);
 
@@ -338,7 +331,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		//validator.value_list = &val_list;
 
 		validator.validate = lxw_validation_types.LXW_VALIDATION_TYPE_LIST_FORMULA;
-		char* list = cast(char*)"=$F$4:$F$18";
+		char* list = cast(char*)"=Wafermap!$D$21:$D$36";
 		validator.value_formula = list;
 
 
@@ -351,48 +344,122 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		//ws2.write(2, 6, "=IF(Sheet1!G10:BY80=$A$2, $A$2, \"\")", headerValueFmt);	// only works in Microsoft Excel. Not working on libreoffice/openoffice.
 		//ws3.write(2, 6, "=IF(Colored!G3:BY73=$A$2, $A$2, \"\")", waferEmptyFmt);
 
+		ws3.hide();
 		wb.close();
 
-		// ASE
-		if(options.asciiDump) {
-			writeln("wafer_id: ", hdr.wafer_id);
-			writeln("lot_id: ", hdr.lot_id);
-			writeln("sublot_id: ", hdr.sublot_id);
-			writeln("device_name: ", hdr.devName);
-			writeln("temperature: ", hdr.temperature);
-			writeln("step: ", hdr.step);
-			writeln("row: ", row);
-			writeln("col: ", col);
-			writeln("rotation: ", options.rotateWafer);
-			writeln("good_bins: ", goodbins);
-			writeln("bad_bins: ", badbins);
-			writeln("total_bins: ", goodbins+badbins);
+		if(options.dumpAscii) {
+			switch(options.wformat) with (WafermapFormat_t) {
+			case ASY:
+				writeln("wafer_id: ", hdr.wafer_id);
+				writeln("lot_id: ", hdr.lot_id);
+				writeln("sublot_id: ", hdr.sublot_id);
+				writeln("device_name: ", hdr.devName);
+				writeln("temperature: ", hdr.temperature);
+				writeln("step: ", hdr.step);
+				writeln("row: ", row);
+				writeln("col: ", col);
+				writeln("rotation: ", options.rotateWafer);
+				writeln("good_bins: ", goodbins);
+				writeln("bad_bins: ", badbins);
+				writeln("total_bins: ", goodbins+badbins);
 
-			foreach(i, row_arr; matrix) {
-				// write("RowData:");
-				foreach(j, val; row_arr) {
-					switch(val) {
-						case 0: write("."); break;
-						case 1: write("1"); break;
-						default: write("X");
+				foreach(i, row_arr; matrix) {
+					foreach(j, val; row_arr) {
+						switch(val) {
+							case 0: write("."); break;
+							case 1: write("1"); break;
+							default: write("X");
+						}
 					}
-					/* temporarily for sentons SINF format
-					switch(val) {
-						case 0: write("___ "); break;
-						case 1: write("000 "); break;
-						case 2: write("002 "); break;
-						case 3: write("003 "); break;
-						case 4: write("004 "); break;
-						case 5: write("005 "); break;
-						case 6: write("006 "); break;
-						default: write("___ ");
-					}*/
+					write("\n");
 				}
-				write("\n");
+				break;
+			case SINF:
+				writeln("wafer_id: ", hdr.wafer_id);
+				writeln("lot_id: ", hdr.lot_id);
+				writeln("sublot_id: ", hdr.sublot_id);
+				writeln("device_name: ", hdr.devName);
+				writeln("temperature: ", hdr.temperature);
+				writeln("step: ", hdr.step);
+				writeln("row: ", row);
+				writeln("col: ", col);
+				writeln("rotation: ", options.rotateWafer);
+				writeln("good_bins: ", goodbins);
+				writeln("bad_bins: ", badbins);
+				writeln("total_bins: ", goodbins+badbins);
+
+				foreach(i, row_arr; matrix) { write("RowData:");
+					foreach(j, val; row_arr) {
+						switch(val) {
+							case  0: write("__ "); break;
+							case  1: write("01 "); break;
+							case  2: write("02 "); break;
+							case  3: write("03 "); break;
+							case  4: write("04 "); break;
+							case  5: write("05 "); break;
+							case  6: write("06 "); break;
+							case  7: write("07 "); break;
+							case  8: write("08 "); break;
+							case  9: write("09 "); break;
+							case 10: write("0A "); break;
+							case 11: write("0B "); break;
+							case 12: write("0C "); break;
+							case 13: write("0D "); break;
+							case 14: write("0E "); break;
+							case 15: write("0F "); break;
+							case 16: write("10 "); break;
+							case -1: write("ER "); break;
+							default: write("__ ");
+						}
+					}
+					write("\n");
+				}
+				break;
+			case SINF_SENTONS:
+				writeln("DEVICE:", hdr.devName);
+				writeln("LOT:", hdr.lot_id);
+				writeln("WAFER:", hdr.wafer_id);
+				writeln("FNLOC:", options.rotateWafer);
+				writeln("BCEQU:", "000");
+				writeln("ROWCT:", row);
+				writeln("COLCT:", col);
+				writeln("BCEQU:", "000");
+				writeln("REFPX:");
+				writeln("REFPY:");
+				writeln("DUTMS:");
+				writeln("XDIES");
+				writeln("YDIES");
+				foreach(i, row_arr; matrix) { write("RowData:");
+					foreach(j, val; row_arr) {
+						switch(val) {
+							case  0: write("___ "); break;
+							case  1: write("000 "); break;
+							case  2: write("002 "); break;
+							case  3: write("003 "); break;
+							case  4: write("004 "); break;
+							case  5: write("005 "); break;
+							case  6: write("006 "); break;
+							case  7: write("007 "); break;
+							case  8: write("008 "); break;
+							case  9: write("009 "); break;
+							case 10: write("00A "); break;
+							case 11: write("00B "); break;
+							case 12: write("00C "); break;
+							case 13: write("00D "); break;
+							case 14: write("00E "); break;
+							case 15: write("00F "); break;
+							case 16: write("010 "); break;
+							case -1: write("ERR "); break;
+							default: write("___ ");
+						}
+					}
+					write("\n");
+				}
+				break;
+			default:
+				throw new Exception("Unsupported format for ASCII dump.");
 			}
 		}
-
-
 	}
 }
 
@@ -462,4 +529,15 @@ unittest {
 	max rows = 2^20	= 1,048,576	-> uint @ 2^32
 	max cols = 2^14	= 16,384	-> ushort @ 2^16
 	*/
+}
+
+unittest {
+	// underflow behavior test for hw bin #s
+	ushort test1 = cast(ushort)-1;
+	ushort test2 = cast(ushort)-2;
+	writeln("test1 = ", test1);
+	writeln("test2 = ", test2);
+
+	assert( test1 == 65_535 );
+	assert( test2 == 65_534 );
 }

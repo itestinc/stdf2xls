@@ -96,6 +96,14 @@ enum BinCategory_t
     TEMP
 }
 
+
+enum WafermapFormat_t {
+    ASY,
+    SINF,
+    SINF_SENTONS
+}
+
+
 import std.regex;
 import itestinc.StdfFile;
 class CmdOptions
@@ -115,8 +123,10 @@ class CmdOptions
     bool generateRC = false;
     bool limit1k = false;
     bool noDynamicLimits = false;
-    bool asciiDump = false;
+    bool dumpAscii = false;
+    WafermapFormat_t wformat = WafermapFormat_t.ASY;
     bool pattern = false;
+    bool showNum = false;
     int rotateWafer = 0;
     uint binCount = 0;
     double cutoff = 1.5;
@@ -163,9 +173,11 @@ class CmdOptions
 
             "genWafermaps|w", "Generate wafer map(s)", &genWafermap,
             "wo|W", "Wafermap output filename(s); name may contain variables for device, wafer, and/or lot\nDefault = %device%_%lot%_%wafer%.xlsx", &wfile,
+            "dumpAscii|A", "dump the wafer map in ASCII form", &dumpAscii,
+            "wformat", "Specify the wafermap format for the ASCII dump (default:ASY)", &wformat,
             "pattern|P", "fill wafermap bins with patterns instead of colors", &pattern,
-            "dumpAscii|A", "dump the wafer map in ASCII form", &asciiDump,
-            "rotate-wafer|R", "Rotate the wafer map clockwise in degrees: 0|90|180|270.", &rotateWafer,
+            "rotateWafer|R", "Rotate the wafer map clockwise in degrees: +/- 0|90|180|270", &rotateWafer,
+            "showNum|N", "Show the bin numbers on the wafer map, along with colors or patterns.", &showNum,
 
             "genHistograms|h", "Generate histogram(s)", &genHistogram,
             "ho|H", "Histogram output filename(s); name may contain variables for device, step, lot, and/or testID\nDefault = %device%_histograms.pdf", &hfile,
