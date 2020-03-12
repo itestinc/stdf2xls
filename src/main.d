@@ -11,9 +11,12 @@ import std.getopt;
 import std.typecons;
 import itestinc.StdfFile;
 
+immutable string _version_ = "5.0.0";
+
 int main(string[] args)
 {
     if ((args.length == 2) && (args[1] == "-h")) args[1] = "--help";
+    writeln("stdf2xls version ", _version_);
     CmdOptions options = new CmdOptions(args);
     import std.path;
     import std.digest;
