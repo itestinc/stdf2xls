@@ -45,6 +45,8 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
         uint histo_count = 0;
 
         string devName = replace(hdr.devName, " ", "_");    // spaces are evil
+        devName = replace(hdr.devName, "/", "_");
+        
         string fname = replace(hfile, "%device%", devName);
         if (options.verbosityLevel > 9) writeln(fname);
 
