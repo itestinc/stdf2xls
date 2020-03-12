@@ -43,7 +43,7 @@
 \end{center}
 }
 \maketitle
-\setcounter{tocdepth}{2}
+\setcounter{tocdepth}{3}
 \tableofcontents
 \clearpage
 \makebg
@@ -101,6 +101,10 @@ put it in a directory that in in your executable search path.
 
 \subsection{\bf Windows Installation}
 
+First, you must have the Windows SDK installed on your computer.  It can be obtained at:\\
+https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk The program will also work on Windows7.\\
+\\
+\noindent
 For Windows go to https://github.com/itestinc/stdf2xls, click on the dist folder, then 
 click on the stdf2xls.exe file, then press the Download button.  After the file has downloaded
 put it in a directory that in in your executable search path.
@@ -204,6 +208,7 @@ but \makeatletter '@' \makeatother is used by default.  See next section.
 \subsubsection{\bf -p or --pinDelimiter}
 This option allows you to specify the delimiter that is used to separate the test name and pin name.
 It is only necessary to use this option if the delimiter is not \makeatletter '@'. \makeatother.
+\clearpage
 
 \subsubsection{\bf -i or --ignoreSerialMarker}
 There are two ways to specify a serial number for a device.  If you do nothing then stdf2xls
