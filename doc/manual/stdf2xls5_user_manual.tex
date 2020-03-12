@@ -906,8 +906,14 @@ are too many header items, the list will get truncated.  Additionally older vers
 supported a legacy format for header items.  The legacy format is still supported, but
 it is no longer documented.
 
-\section{Wafermaps}
+\section{\bf Wafermaps}
 \subsection{\bf -w or \texttt{-{}-}genWafermaps}
+Wafermap generation has three main associated options:
+\begin{itemize}
+	\item -P or \texttt{-{}-}pattern
+	\item -A or \texttt{-{}-}dumpAscii
+	\item -R or \texttt{-{}-}rotate-wafer
+\end{itemize}
 \subsubsection{\bf -P or \texttt{-{}-}pattern}
 This option fills the wafer map with patterns instead of colors to distinguish the bins.
 \subsubsection{\bf -A or \texttt{-{}-}dumpAscii}
@@ -918,7 +924,7 @@ This option outputs the wafer map in ASCII into the stream. You can save the out
 \subsubsection{\bf -R or \texttt{-{}-}rotate-wafer}
 By default the x and y coordinates of wafer dies are unchanged, and the origin point is located at the top-left corner of a map. The map can be rotated by 90, 180, and 270 degrees around the origin. Negative rotations are also allowed.
 
-\section{Histograms}
+\section{\bf Histograms}
 \subsection{\bf -h or \texttt{-{}-}genHistograms}
 \subsubsection{\bf \texttt{-{}-}binCount}
 By default the number of bins for each histogram is calculated using Scott's normal reference rule. Manually setting this value will apply the same number of bins across all histograms, except for the ones that have only one bin.

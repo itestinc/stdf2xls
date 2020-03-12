@@ -19,14 +19,13 @@ import libxlsxd.chartseries;
 import libxlsxd.chartsheet;
 
 import std.stdio;
-import std.math : pow, ceil, round;
+import std.math : pow, ceil, round, isNaN;
 import std.conv : to;
 import std.array : replace;
 import std.algorithm.iteration : uniq, mean;
 import std.algorithm.sorting : sort;
-import std.algorithm.searching : count, canFind;
+import std.algorithm.searching : count, canFind;    // maxElement, minElement;
 import std.string : chop;
-//import std.algorithm.searching : maxElement, minElement;
 
 /**
 */
@@ -37,10 +36,9 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
     const double cutoff_compensator = options.cutoff*aggressive_multiplier*6;   // increases the number of inner bins after cutting off the outlier bins; larger = more bins
     //const double cutoff_compensator = 20;
 
-
     foreach(hdr; stdfdb.deviceMap.keys) {
 
-        string hfile = options.hfile;	// "%device%_histograms.xlsx";
+        string hfile = options.hfile;
         const bool separateFileForDevice = canFind(hfile, "%device%");
 
         uint MPR_count = 0;
@@ -148,6 +146,13 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 // store all of a test's values from all sites into one array
                 HistoData histodata_allsites = getResults(hdr, id);
                 if(histodata_allsites.values.length == 0) { continue; }     // some tests have no values
+
+                //const double all_mean = histodata_allsites.mean;
+                //if(isNaN(all_mean)) { throw new Exception("all_mean is NaN."); }
+
+                //const double all_stdDev = histodata_allsites.stdDev;
+                //if(isNaN(all_stdDev)) { throw new Exception("all_stdDev is NaN."); }
+
                 double[] histvalues_allsites;
 
                 foreach(i, value; histodata_allsites.values) {
@@ -194,6 +199,9 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                         }
                     }
                 }
+
+                //if(isNaN(min_value_new)) { throw new Exception("min_value_new is NaN."); }
+                //if(isNaN(max_value_new)) { throw new Exception("max_value_new is NaN."); }
 
                 // calculate number of bins based on bin width and ranges
                 double[] quantized_values;
@@ -250,7 +258,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 
                 // set up histogram chart for each PTR
                 Chart ch = wb.addChart(LXW_CHART_COLUMN);
-                ch.titleSetName(id.testName~"\n"~"");
+                ch.titleSetName(id.testName~"\n"~"(Low limit: "~to!string(0)~", High limit: "~to!string(0)~")");
                 ch.titleSetNameFont(&TitleFont);
 
                 // replace any invalid characters for sheet name
