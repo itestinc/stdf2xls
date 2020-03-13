@@ -913,22 +913,71 @@ are too many header items, the list will get truncated.  Additionally older vers
 supported a legacy format for header items.  The legacy format is still supported, but
 it is no longer documented.
 
-\section{Wafermaps}
+\section{\bf Wafermaps}
+This operation creates a wafer map in an excel spreadsheet where each hardware bin is represented by a cell.
 \subsection{\bf -w or \texttt{-{}-}genWafermaps}
+Wafermap generation has the following associated options:
+\begin{itemize}
+	\item -A or \texttt{-{}-}dumpAscii to display the wafer map in plain ASCII
+	\item -P or \texttt{-{}-}pattern to fill the cells with different patterns per bin
+	\item -R or \texttt{-{}-}rotateWafer to rotate the wafer
+	\item -N or \texttt{-{}-}showNum to show bin numbers in excel
+\end{itemize}
+\subsubsection{\bf -A or \texttt{-{}-}dumpAscii}
+This option outputs the wafer map in plain ASCII into the stream, as well as generating the excel wafer map. The default wafermap format is ASY (see next section). Good dies are labeled as '1' and the rest of the bins are simply 'X's.
+\begin{verbatim}
+wafer_id: WAFERID1234
+lot_id: LOTID1234
+sublot_id: SUBLOTID1234
+device_name: MyDevice.1a
+temperature: 25
+step: 1.0
+row: 11
+col: 19
+rotation: 0
+good_bins: 102
+bad_bins: 69
+total_bins: 171
+......X11XX11......
+..XX11X1X1X1X1X1...
+.XXX11X1XX1X11X1XX.
+X1XX11111XX1111X1XX
+X1X1111X1111X11X111
+XX1111111X11X11111X
+XX1XX11111X111X1111
+X11X1XX111111XX111X
+.XX111X1XX1X11X1XX.
+..X111X1X1X11XX1...
+......X11XX11......
+\end{verbatim}
+You can save the ASCII output by redirecting the stream into a text file.
+\begin{verbatim}
+./stdf2xls -w -A datalog.stdf > wafermap.txt
+\end{verbatim}
+\subsubsection{\bf -A or \texttt{-{}-}wformat}
+This option is used in conjunction with dumpAscii to specify the format type. The default format, unless otherwise specified, is ASY. Supported formats are:
+\begin{itemize}
+	\item ASY
+	\item SINF
+	\item SINF\_SENTONS (a variant of SINF specifically for Sentons)
+\end{itemize}
 \subsubsection{\bf -P or \texttt{-{}-}pattern}
 This option fills the wafer map with patterns instead of colors to distinguish the bins.
-\subsubsection{\bf -A or \texttt{-{}-}dumpAscii}
-This option outputs the wafer map in ASCII into the stream. You can save the output by redirecting the stream into a file.
-\begin{verbatim}
-./stdf2xls -w -A device.stdf > file.txt
-\end{verbatim}
-\subsubsection{\bf -R or \texttt{-{}-}rotate-wafer}
-By default the x and y coordinates of wafer dies are unchanged, and the origin point is located at the top-left corner of a map. The map can be rotated by 90, 180, and 270 degrees around the origin. Negative rotations are also allowed.
+\subsubsection{\bf -R or \texttt{-{}-}rotateWafer}
+By default, the x and y coordinates of wafer dies are translated directly into rows and columns of the spreadsheet. Therefore, the origin point is located at the top-left corner of a map. This option allows the map to be rotated by 90, 180, and 270 degrees clockwise around the origin. Negative (counter-clockwise) rotations are also allowed.
+\subsubsection{\bf -N or \texttt{-{}-}showNum}
+This option shows the corresponding bin number on top of each colored/patterned cell. By default this option is off. It is not recommended to use this option along with patterns since they make it very hard to see the numbers.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.5\textwidth]{showNum.png}
+	\caption{Bin numbers visible with showNum}
+	\label{fig:showNum}
+\end{figure}
 
-\section{Histograms}
+\section{\bf Histograms}
 \subsection{\bf -h or \texttt{-{}-}genHistograms}
 \subsubsection{\bf \texttt{-{}-}binCount}
-By default the number of bins for each histogram is calculated using Scott's normal reference rule. Manually setting this value will apply the same number of bins across all histograms, except for the ones that have only one bin.
+By default, the number of bins for each histogram is calculated using Scott's normal reference rule. Manually setting this value will apply the same number of bins across all histograms, except for the ones that have only one bin.
 \subsubsection{\bf \texttt{-{}-}cutoff}
 This defines how much of the outlier data should be excluded from histogram view, in terms of standard deviation. By default the cutoff is 1.5, which means that any data outside the range of mean$\pm$1.5$\sigma$ is excluded. To disable cutoff altogether, set this option to 0.
 

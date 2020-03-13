@@ -55,7 +55,7 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
 
     waferPassFmt = wb.addFormat();
     waferPassFmt.setFontName("Arial");
-    waferPassFmt.setFontSize(7.0);
+    waferPassFmt.setFontSize(8.0);
     // config.setBGColor(waferPassFmt, Config.wafer_pass_bg_color);
     config.setFontColor(waferPassFmt, Config.wafer_pass_text_color);
     waferPassFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -68,7 +68,7 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
 
     waferFailFmt = wb.addFormat();
     waferFailFmt.setFontName("Arial");
-    waferFailFmt.setFontSize(7.0);
+    waferFailFmt.setFontSize(8.0);
     //config.setBGColor(waferFailFmt, Config.wafer_fail_bg_color);
     config.setFontColor(waferFailFmt, Config.wafer_pass_text_color);
     waferFailFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -80,7 +80,7 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
 
     waferEmptyFmt = wb.addFormat();
     waferEmptyFmt.setFontName("Arial");
-    waferEmptyFmt.setFontSize(7.0);
+    waferEmptyFmt.setFontSize(8.0);
     config.setBGColor(waferEmptyFmt, Config.wafer_empty_bg_color);
     config.setFontColor(waferEmptyFmt, Config.wafer_pass_text_color);
     waferEmptyFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -89,7 +89,7 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
 
     blankBinFmt = wb.addFormat();
     blankBinFmt.setFontName("Arial");
-    blankBinFmt.setFontSize(7.0);
+    blankBinFmt.setFontSize(8.0);
     // config.setBGColor(waferPassFmt, Config.wafer_pass_bg_color);
     config.setFontColor(blankBinFmt, Config.wafer_pass_text_color);
     blankBinFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -125,7 +125,7 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
 
     waferBin01Fmt = wb.addFormat();
     waferBin01Fmt.setFontName("Arial");
-    waferBin01Fmt.setFontSize(7.0);
+    waferBin01Fmt.setFontSize(8.0);
     config.setBGColor(waferBin01Fmt, Config.wafer_bin01_bg_color);
     //config.setFontColor(waferBin01Fmt, Config.wafer_pass_text_color);
     waferBin01Fmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -135,12 +135,10 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     waferBin01Fmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
     waferBin01Fmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
     waferBin01Fmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
-    //waferBin01Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_TRELLIS);
-    waferBin01Fmt.setNumFormat(";;;");
 
     waferBin02Fmt = wb.addFormat();
     waferBin02Fmt.setFontName("Arial");
-    waferBin02Fmt.setFontSize(7.0);
+    waferBin02Fmt.setFontSize(8.0);
     config.setBGColor(waferBin02Fmt, Config.wafer_bin02_bg_color);
     //config.setFontColor(waferBin02Fmt, Config.wafer_pass_text_color);
     waferBin02Fmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -150,12 +148,10 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     waferBin02Fmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
     waferBin02Fmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
     waferBin02Fmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
-    //waferBin02Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_GRAY_0625);
-    waferBin02Fmt.setNumFormat(";;;");
 
     waferBin03Fmt = wb.addFormat();
     waferBin03Fmt.setFontName("Arial");
-    waferBin03Fmt.setFontSize(7.0);
+    waferBin03Fmt.setFontSize(8.0);
     config.setBGColor(waferBin03Fmt, Config.wafer_bin03_bg_color);
     //config.setFontColor(waferBin03Fmt, Config.wafer_pass_text_color);
     waferBin03Fmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -165,12 +161,10 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     waferBin03Fmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
     waferBin03Fmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
     waferBin03Fmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
-    //waferBin03Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_MEDIUM_GRAY);
-    waferBin03Fmt.setNumFormat(";;;");
 
     waferBin04Fmt = wb.addFormat();
     waferBin04Fmt.setFontName("Arial");
-    waferBin04Fmt.setFontSize(7.0);
+    waferBin04Fmt.setFontSize(8.0);
     config.setBGColor(waferBin04Fmt, Config.wafer_bin04_bg_color);
     //config.setFontColor(waferBin04Fmt, Config.wafer_pass_text_color);
     waferBin04Fmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -180,12 +174,10 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     waferBin04Fmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
     waferBin04Fmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
     waferBin04Fmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
-    //waferBin04Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_GRAY);
-    waferBin04Fmt.setNumFormat(";;;");
 
     waferBin05Fmt = wb.addFormat();
     waferBin05Fmt.setFontName("Arial");
-    waferBin05Fmt.setFontSize(7.0);
+    waferBin05Fmt.setFontSize(8.0);
     config.setBGColor(waferBin05Fmt, Config.wafer_bin05_bg_color);
     //config.setFontColor(waferBin05Fmt, Config.wafer_pass_text_color);
     waferBin05Fmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -195,12 +187,10 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     waferBin05Fmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
     waferBin05Fmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
     waferBin05Fmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
-    //waferBin05Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_GRAY);
-    waferBin05Fmt.setNumFormat(";;;");
 
     waferBin06Fmt = wb.addFormat();
     waferBin06Fmt.setFontName("Arial");
-    waferBin06Fmt.setFontSize(7.0);
+    waferBin06Fmt.setFontSize(8.0);
     config.setBGColor(waferBin06Fmt, Config.wafer_bin06_bg_color);
     //config.setFontColor(waferBin06Fmt, Config.wafer_pass_text_color);
     waferBin06Fmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -210,12 +200,10 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     waferBin06Fmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
     waferBin06Fmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
     waferBin06Fmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
-    //waferBin06Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_HORIZONTAL);
-    waferBin06Fmt.setNumFormat(";;;");
 
     waferBin07Fmt = wb.addFormat();
     waferBin07Fmt.setFontName("Arial");
-    waferBin07Fmt.setFontSize(7.0);
+    waferBin07Fmt.setFontSize(8.0);
     config.setBGColor(waferBin07Fmt, Config.wafer_bin07_bg_color);
     //config.setFontColor(waferBin07Fmt, Config.wafer_pass_text_color);
     waferBin07Fmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -225,12 +213,10 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     waferBin07Fmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
     waferBin07Fmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
     waferBin07Fmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
-    //waferBin07Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_VERTICAL);
-    waferBin07Fmt.setNumFormat(";;;");
 
     waferBin08Fmt = wb.addFormat();
     waferBin08Fmt.setFontName("Arial");
-    waferBin08Fmt.setFontSize(7.0);
+    waferBin08Fmt.setFontSize(8.0);
     config.setBGColor(waferBin08Fmt, Config.wafer_bin08_bg_color);
     //config.setFontColor(waferBin08Fmt, Config.wafer_pass_text_color);
     waferBin08Fmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -240,12 +226,10 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     waferBin08Fmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
     waferBin08Fmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
     waferBin08Fmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
-    //waferBin08Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_DOWN);
-    waferBin08Fmt.setNumFormat(";;;");
 
     waferBin09Fmt = wb.addFormat();
     waferBin09Fmt.setFontName("Arial");
-    waferBin09Fmt.setFontSize(7.0);
+    waferBin09Fmt.setFontSize(8.0);
     config.setBGColor(waferBin09Fmt, Config.wafer_bin09_bg_color);
     //config.setFontColor(waferBin09Fmt, Config.wafer_pass_text_color);
     waferBin09Fmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -255,12 +239,10 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     waferBin09Fmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
     waferBin09Fmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
     waferBin09Fmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
-    //waferBin09Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_UP);
-    waferBin09Fmt.setNumFormat(";;;");
 
     waferBin10Fmt = wb.addFormat();
     waferBin10Fmt.setFontName("Arial");
-    waferBin10Fmt.setFontSize(7.0);
+    waferBin10Fmt.setFontSize(8.0);
     config.setBGColor(waferBin10Fmt, Config.wafer_bin10_bg_color);
     //config.setFontColor(waferBin10Fmt, Config.wafer_pass_text_color);
     waferBin10Fmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -270,12 +252,10 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     waferBin10Fmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
     waferBin10Fmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
     waferBin10Fmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
-    //waferBin10Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_GRID);
-    waferBin10Fmt.setNumFormat(";;;");
 
     waferBin11Fmt = wb.addFormat();
     waferBin11Fmt.setFontName("Arial");
-    waferBin11Fmt.setFontSize(7.0);
+    waferBin11Fmt.setFontSize(8.0);
     config.setBGColor(waferBin11Fmt, Config.wafer_bin11_bg_color);
     //config.setFontColor(waferBin11Fmt, Config.wafer_pass_text_color);
     waferBin11Fmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -285,12 +265,10 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     waferBin11Fmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
     waferBin11Fmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
     waferBin11Fmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
-    //waferBin11Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_TRELLIS);
-    waferBin11Fmt.setNumFormat(";;;");
 
     waferBin12Fmt = wb.addFormat();
     waferBin12Fmt.setFontName("Arial");
-    waferBin12Fmt.setFontSize(7.0);
+    waferBin12Fmt.setFontSize(8.0);
     config.setBGColor(waferBin12Fmt, Config.wafer_bin12_bg_color);
     //config.setFontColor(waferBin12Fmt, Config.wafer_pass_text_color);
     waferBin12Fmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -300,12 +278,10 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     waferBin12Fmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
     waferBin12Fmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
     waferBin12Fmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
-    //waferBin12Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_HORIZONTAL);
-    waferBin12Fmt.setNumFormat(";;;");
 
     waferBin13Fmt = wb.addFormat();
     waferBin13Fmt.setFontName("Arial");
-    waferBin13Fmt.setFontSize(7.0);
+    waferBin13Fmt.setFontSize(8.0);
     config.setBGColor(waferBin13Fmt, Config.wafer_bin13_bg_color);
     //config.setFontColor(waferBin13Fmt, Config.wafer_pass_text_color);
     waferBin13Fmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -315,12 +291,10 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     waferBin13Fmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
     waferBin13Fmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
     waferBin13Fmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
-    //waferBin13Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_VERTICAL);
-    waferBin13Fmt.setNumFormat(";;;");
 
     waferBin14Fmt = wb.addFormat();
     waferBin14Fmt.setFontName("Arial");
-    waferBin14Fmt.setFontSize(7.0);
+    waferBin14Fmt.setFontSize(8.0);
     config.setBGColor(waferBin14Fmt, Config.wafer_bin14_bg_color);
     //config.setFontColor(waferBin14Fmt, Config.wafer_pass_text_color);
     waferBin14Fmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -330,12 +304,10 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     waferBin14Fmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
     waferBin14Fmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
     waferBin14Fmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
-    //waferBin14Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_DOWN);
-    waferBin14Fmt.setNumFormat(";;;");
 
     waferBin15Fmt = wb.addFormat();
     waferBin15Fmt.setFontName("Arial");
-    waferBin15Fmt.setFontSize(7.0);
+    waferBin15Fmt.setFontSize(8.0);
     config.setBGColor(waferBin15Fmt, Config.wafer_bin15_bg_color);
     //config.setFontColor(waferBin15Fmt, Config.wafer_pass_text_color);
     waferBin15Fmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -346,11 +318,10 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     waferBin15Fmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
     waferBin15Fmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
     //waferBin15Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_UP);
-    waferBin15Fmt.setNumFormat(";;;");
 
     waferBin16Fmt = wb.addFormat();
     waferBin16Fmt.setFontName("Arial");
-    waferBin16Fmt.setFontSize(7.0);
+    waferBin16Fmt.setFontSize(8.0);
     config.setBGColor(waferBin16Fmt, Config.wafer_bin16_bg_color);
     //config.setFontColor(waferBin16Fmt, Config.wafer_pass_text_color);
     waferBin16Fmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
@@ -360,10 +331,9 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
     waferBin16Fmt.setBottom(lxw_format_borders.LXW_BORDER_THIN);
     waferBin16Fmt.setTop(lxw_format_borders.LXW_BORDER_THIN);
     waferBin16Fmt.setLeft(lxw_format_borders.LXW_BORDER_THIN);
-    //waferBin16Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_GRID);
-    waferBin16Fmt.setNumFormat(";;;");
 
     if(options.pattern) {
+        
         config.setBGColor(waferBin01Fmt, Config.wafer_empty_bg_color);
         config.setBGColor(waferBin02Fmt, Config.wafer_empty_bg_color);
         config.setBGColor(waferBin03Fmt, Config.wafer_empty_bg_color);
@@ -380,23 +350,43 @@ public void initWaferFormats(Workbook wb, CmdOptions options, Config config)
         config.setBGColor(waferBin14Fmt, Config.wafer_empty_bg_color);
         config.setBGColor(waferBin15Fmt, Config.wafer_empty_bg_color);
         config.setBGColor(waferBin16Fmt, Config.wafer_empty_bg_color);
+        
 
-        waferBin01Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_NONE);
-        waferBin02Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_GRAY);
-        waferBin03Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_HORIZONTAL);
-        waferBin04Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_VERTICAL);
-        waferBin05Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_DOWN);
-        waferBin06Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_UP);
-        waferBin07Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_GRID);
-        waferBin08Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_TRELLIS);
-        waferBin09Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_GRAY_0625);
-        waferBin10Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_GRAY);
+        waferBin01Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_GRAY_0625);
+        waferBin02Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_UP);
+        waferBin03Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_DOWN);
+        waferBin04Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_HORIZONTAL);
+        waferBin05Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_VERTICAL);
+        waferBin06Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_GRAY);
+        waferBin07Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_TRELLIS);
+        waferBin08Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_GRAY_125);
+        waferBin09Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_UP);
+        waferBin10Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_DOWN);
         waferBin11Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_HORIZONTAL);
-        waferBin12Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_VERTICAL);
-        waferBin13Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_DOWN);
-        waferBin14Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_UP);
+        waferBin12Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_VERTICAL);
+        waferBin13Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_GRID);
+        waferBin14Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_LIGHT_GRAY);
         waferBin15Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_GRID);
         waferBin16Fmt.setPattern(lxw_format_patterns.LXW_PATTERN_DARK_TRELLIS);
+    }
+
+    if(!options.showNum) {
+        waferBin01Fmt.setNumFormat(";;;");
+        waferBin02Fmt.setNumFormat(";;;");
+        waferBin03Fmt.setNumFormat(";;;");
+        waferBin04Fmt.setNumFormat(";;;");
+        waferBin05Fmt.setNumFormat(";;;");
+        waferBin06Fmt.setNumFormat(";;;");
+        waferBin07Fmt.setNumFormat(";;;");
+        waferBin08Fmt.setNumFormat(";;;");
+        waferBin09Fmt.setNumFormat(";;;");
+        waferBin10Fmt.setNumFormat(";;;");
+        waferBin11Fmt.setNumFormat(";;;");
+        waferBin12Fmt.setNumFormat(";;;");
+        waferBin13Fmt.setNumFormat(";;;");
+        waferBin14Fmt.setNumFormat(";;;");
+        waferBin15Fmt.setNumFormat(";;;");
+        waferBin16Fmt.setNumFormat(";;;");
     }
  
 }
