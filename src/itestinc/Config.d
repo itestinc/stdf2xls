@@ -569,12 +569,12 @@ class Config
         cfgMap[wafer_label_bg_color]              = "DEE6EF";
         cfgMap[wafer_label_text_color]            = "000000";
         cfgMap[wafer_bin01_bg_color]              = "22C600";
-        cfgMap[wafer_bin02_bg_color]              = "f79646";
+        cfgMap[wafer_bin02_bg_color]              = "d55e00";
         cfgMap[wafer_bin03_bg_color]              = "f0e442";
         cfgMap[wafer_bin04_bg_color]              = "61E7F7";
         cfgMap[wafer_bin05_bg_color]              = "8064a2";
         cfgMap[wafer_bin06_bg_color]              = "0072b2";
-        cfgMap[wafer_bin07_bg_color]              = "d55e00";
+        cfgMap[wafer_bin07_bg_color]              = "f79646";
         cfgMap[wafer_bin08_bg_color]              = "009e73";
         cfgMap[wafer_bin09_bg_color]              = "cc79a7";
         cfgMap[wafer_bin10_bg_color]              = "56b4e9";
