@@ -123,23 +123,11 @@ public class BinarySource : ByteReader
             import std.string;
             File f1 = File(fileName, "r");
             bufferSize = fileSize = f1.size();
-            writeln("bufferSize = ", bufferSize);
             f1.close();
             auto f = File(fileName, "r");
             auto buf = f.rawRead(new ubyte[bufferSize]);
-            writeln("length = ", buf.length);
             buffer = buf.ptr;
             f.close();
-            /*
-            import core.stdc.stdio;
-            import core.stdc.stdlib;
-            auto f = fopen(toStringz(fileName), "r");
-            buffer = cast(ubyte*) malloc(fileSize);
-            size_t len = 0L;
-            len = fread(buffer + len, 1L, fileSize, f);
-            writeln("bufferSize = ", bufferSize, " fileSize = ", fileSize, " len = ", len);
-            fclose(f);
-            */
         }
         else
         {
@@ -315,7 +303,6 @@ public class BinarySource : ByteReader
         {
             version(Windows)
             {
-                writeln("src.close()"); stdout.flush();
             }
             else
             {
@@ -327,7 +314,6 @@ public class BinarySource : ByteReader
                 }
             }
         }
-        writeln("XX src.close()"); stdout.flush();
     }
 }
 
