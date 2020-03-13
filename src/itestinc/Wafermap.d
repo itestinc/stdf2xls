@@ -12,6 +12,9 @@ import libxlsxd.worksheet;
 import std.stdio;
 import std.math : round;
 import std.conv : to;
+import std.algorithm: canFind;
+import std.array : replace;
+import std.algorithm.sorting : sort;
 
 /**
 	Read from the STDF database to generate a wafer map in excel.
@@ -40,7 +43,6 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		// Sort to get min and max coordinates.
 		short[] x_sorted = x_coord.dup;
 		short[] y_sorted = y_coord.dup;
-		import std.algorithm.sorting : sort;
 		x_sorted.sort();
 		y_sorted.sort();
 		const short x_min = x_sorted[0];
@@ -55,8 +57,8 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		y_shifted[] = y_coord[] - y_min;
 
 		// Create 2D array map of bins.
-		ushort col = cast(ushort)(x_max + 1);
-		ushort row = cast(ushort)(y_max + 1);
+		ushort col = cast(ushort)(x_max + 1);				// Excel 2007-2019: max rows = 2^20	= 1,048,576	-> uint @ 2^32
+		ushort row = cast(ushort)(y_max + 1);				// Excel 2007-2019: max cols = 2^14	= 16,384	-> ushort @ 2^16
 		ushort[][] matrix_org = new ushort[][](row,col);	// initial mat[][] = 0
 		foreach(i, bin; hwbin) {
 			matrix_org[y_shifted[i]][x_shifted[i]] = bin;
@@ -102,28 +104,21 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		}
 
 		// Generate file name
-		import std.algorithm: canFind;
-
 		string wfile = options.wfile;
 		const bool separateFileForDevice = canFind(wfile, "%device%");
 		const bool separateFileForLot = canFind(wfile, "%lot%");
 		const bool separateFileForWafer = canFind(wfile, "%wafer%");
 
 		// handle invalid characters for filename
-		import std.array : replace;
 		string devName = replace(hdr.devName, " ", "-");
 		devName = replace(devName, "/", "-");
-
 		string waferID = replace(hdr.wafer_id, " ", "-");
 		waferID = replace(waferID, "/", "-");
-
 		string lotID = replace(hdr.lot_id, " ", "-");
 		lotID = replace(lotID, "/", "-");
 
 		string fname = replace(wfile, "%device%", devName).replace("%lot%", lotID).replace("%wafer%", waferID);
-		
 		if(separateFileForDevice && separateFileForLot && separateFileForWafer) {
-			import std.array : replace;
 			fname = replace(wfile, "%device%", devName).replace("%lot%", lotID).replace("%wafer%", waferID);
 		}
 		else {
@@ -133,7 +128,6 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		Workbook wb = newWorkbook(fname);
 		Worksheet ws1 = wb.addWorksheet("HW Bins");
 		Worksheet ws3 = wb.addWorksheet("Bin Filter (experimental)");
-		Worksheet[] ws;
 
 		// Draw logo (7 rows, 3 cols)
 		import libxlsxd.xlsxwrap : lxw_image_options, lxw_object_position;
@@ -171,7 +165,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		ws1.mergeRange(16, 2, 16, 3, to!string(options.rotateWafer)~" deg", headerValueFmt);
 		
 		// Set widths so that each bin cell is a square.
-		const double colWidth = 2.57;
+		const double colWidth = 2.29;
 		const double rowWidth = 15;
 
 		for(uint i = 0; i < 37; i++) {
@@ -211,7 +205,6 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 			ws3.write(cast(uint)(i + offset_row), cast(ushort)(col + offset_col), i, waferRowNumberFmt);
 
 			foreach(j, val; row_arr) {
-				import std.conv : to;
 
 				// Label column numbers on top and bottom of the wafermap.
 				ws1.write(cast(uint)(offset_row - 1), cast(ushort)(j + offset_col), j, waferColNumberFmt);
@@ -237,7 +230,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 					case 13: ws1.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin13Fmt); bin13++; break;
 					case 14: ws1.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin14Fmt); bin14++; break;
 					case 15: ws1.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col),  val, waferBin15Fmt); bin15++; break;
-					case 65535: ws1.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), -1, waferBin16Fmt); bin16++; break;
+					case 65_535: ws1.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), -1, waferBin16Fmt); bin16++; break;
 					default: ws1.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin16Fmt); bin16++;
 				}
 
@@ -247,6 +240,14 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 				}
 			}
 		}
+		// set row/col width for label numbers
+		ws1.setColumn(cast(ushort)(offset_col - 2), cast(ushort)(col + offset_col + 1), colWidth);
+		ws1.setRow(cast(uint)(offset_row - 1), rowWidth);
+		ws1.setRow(cast(uint)(row + offset_row), rowWidth);
+
+		ws3.setColumn(cast(ushort)(offset_col - 2), cast(ushort)(col + offset_col + 1), colWidth);
+		ws3.setRow(cast(uint)(offset_row - 1), rowWidth);
+		ws3.setRow(cast(uint)(row + offset_row), rowWidth);
 
 		// write bin counts to headers
 		uint goodbins = bin1;
@@ -258,15 +259,6 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		ws1.mergeRange(18, 2, 18, 3, to!string(badbins)~" ("~to!string(bad_per)~"%)", headerValueFmt);
 		ws1.write(19, 2, (goodbins+badbins), headerValueFmt);
 		ws1.mergeRange(19, 2, 19, 3, null);
-
-		// set row/col width for label numbers
-		ws1.setColumn(cast(ushort)(offset_col - 2), cast(ushort)(col + offset_col + 1), colWidth);
-		ws1.setRow(cast(uint)(offset_row - 1), rowWidth);
-		ws1.setRow(cast(uint)(row + offset_row), rowWidth);
-
-		ws3.setColumn(cast(ushort)(offset_col - 2), cast(ushort)(col + offset_col + 1), colWidth);
-		ws3.setRow(cast(uint)(offset_row - 1), rowWidth);
-		ws3.setRow(cast(uint)(row + offset_row), rowWidth);
 
 		ws1.mergeRange(20, 0, 20, 1, "bin 1:", headerNameFmt);
 		ws1.mergeRange(21, 0, 21, 1, "bin 2:", headerNameFmt);
@@ -319,7 +311,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		ws1.write(34, 3, 15, waferBin15Fmt);
 		ws1.write(35, 3, 16, waferBin16Fmt);
 
-		// experimental bin filter
+		// experimental bin filter using data validation
 		ws3.mergeRange(5, 0, 5, 3, "2. Enter the desired bin number to filter:", headerNameFmt);
 		ws3.write(6, 3, 1, blankBinFmt);
 
@@ -333,10 +325,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		validator.validate = lxw_validation_types.LXW_VALIDATION_TYPE_LIST_FORMULA;
 		char* list = cast(char*)"=Wafermap!$D$21:$D$36";
 		validator.value_formula = list;
-
-
 		ws3.dataValidationCell(6, 3, &validator);
-
 		ws3.mergeRange(offset_row, cast(ushort)(offset_col - 3), offset_row, cast(ushort)(offset_col - 1), "1. Apply this formula →", headerNameFmt);
 		string formula = "=IF(Wafermap!G3:BY73=$D$7, $D$7, \"\")";
 		ws3.writeArrayFormula(offset_row, offset_col, offset_row, offset_col, formula, waferBin01Fmt);
@@ -520,15 +509,6 @@ public void rotate180(ushort[][] a, ushort[][] a_rot180) {
 	ushort[][] temp = new ushort[][](col,row);
 	rotate90(a, temp);
 	rotate90(temp, a_rot180);
-}
-
-
-unittest {
-	/*
-	Excel 2007-2019
-	max rows = 2^20	= 1,048,576	-> uint @ 2^32
-	max cols = 2^14	= 16,384	-> ushort @ 2^16
-	*/
 }
 
 unittest {

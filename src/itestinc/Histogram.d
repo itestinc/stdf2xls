@@ -46,7 +46,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 
         string devName = replace(hdr.devName, " ", "_");    // spaces are evil
         devName = replace(hdr.devName, "/", "_");
-        
+
         string fname = replace(hfile, "%device%", devName);
         if (options.verbosityLevel > 9) writeln(fname);
 
@@ -56,12 +56,6 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
         else {
             // ... 
         }
-
-        //foreach(i, dr; stdfdb.deviceMap[hdr]) {
-        //    foreach(tr; dr.tests) {
-        //        writeln(tr.id.testName, " ", tr.id.testNumber, " | lolimit = ", tr.loLimit, " | hilimit = ", tr.hiLimit);
-         //   }
-        //}
 
         // create sheets and track row/col indices
         string sheet1 = "Histograms";
@@ -125,9 +119,18 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
         ws1.mergeRange( sh1_row, cast(ushort)(sh1_col + 3),  sh1_row, cast(ushort)(sh1_col + 8), "Test Name", listNameFmt);
         sh1_row++;
 
+        /*
+        foreach(i, dev_records; stdfdb.deviceMap[hdr]) {
+            foreach(test_records; dev_records.tests) {
+               // writeln(tr.id.testName, " ", tr.id.testNumber, " | lolimit = ", tr.loLimit, " | hilimit = ", tr.hiLimit);
+                writeln(test_records.id.type);
+            }
+        }
+        */
+
         const TestID[] ids = getTestIDs(hdr);
         foreach(id; ids) {
-            if(id.type == Record_t.PTR ) {
+            if(id.type == Record_t.PTR || id.type == Record_t.MPR) {
 
                 // case 1. packaged device with same test on different pins
                 if( id.sameMPRTest(id) ) {
