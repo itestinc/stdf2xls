@@ -240,6 +240,8 @@ void initFormats(Workbook wb, CmdOptions options, Config config)
     if (options.verbosityLevel > 9) writeln("initFormats()");
     import libxlsxd.xlsxwrap;
     logoFmt            = setFormat(wb, Config.ss_logo_bg_color, config); 
+    logoFmt.setAlign(lxw_format_alignments.LXW_ALIGN_VERTICAL_CENTER);
+    logoFmt.setAlign(lxw_format_alignments.LXW_ALIGN_CENTER);
 
     hdrNameFmt         = setFormat(wb, Config.ss_header_name_bg_color, config);
     hdrNameFmt.setAlign(lxw_format_alignments.LXW_ALIGN_RIGHT);
@@ -702,6 +704,12 @@ private void setLogo(CmdOptions options, Config config, Worksheet w)
     double logo_area_x_pixels = lcol * 10.746;
     double logo_area_y_pixels = lrow * 1.292;
     opts.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
+    string text = config.getLogoText();
+    if (text != "")
+    {
+        w.mergeRange(0, 0, 6, 2, text, logoFmt);
+        return;
+    }
     w.mergeRange(0, 0, 6, 2, null);
     if (logoPath == "") // use ITest logo
     {

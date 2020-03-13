@@ -273,6 +273,12 @@ class Config
         string path = cfgMap.get(ss_logo_file_path, "");
         return path;
     }
+
+    public string getLogoText()
+    {
+        string text = cfgMap.get(ss_logo_text, "");
+        return text;
+    }
  
     public string getValue(string name)
     {
@@ -339,15 +345,15 @@ class Config
 
         cfgMap[monitor_x_dpi]                     = "96";
         cfgMap[monitor_y_dpi]                     = "96";
-        cfgMap[ss_logo_x_scale]                   = "0_0";
-        cfgMap[ss_logo_y_scale]                   = "0_0";
+        cfgMap[ss_logo_x_scale]                   = "0.0";
+        cfgMap[ss_logo_y_scale]                   = "0.0";
         cfgMap[ss_logo_file_path]                 = "";
         cfgMap[ss_logo_text]                      = "";
         cfgMap[ss_logo_bg_color]                  = "NONE";
-        cfgMap[ss_logo_text_color]                = "000000";
+        cfgMap[ss_logo_text_color]                = "15B8D7";
         cfgMap[ss_logo_font_name]                 = "Arial";
-        cfgMap[ss_logo_font_size]                 = "8";
-        cfgMap[ss_logo_font_style]                = "normal";
+        cfgMap[ss_logo_font_size]                 = "31";
+        cfgMap[ss_logo_font_style]                = "bold";
         cfgMap[ss_title_bg_color]                 = "15B8D7";
         cfgMap[ss_title_text_color]               = "FFFFFF";
         cfgMap[ss_title_font_name]                = "Arial";
