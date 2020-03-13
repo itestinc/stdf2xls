@@ -525,7 +525,7 @@ Not all of this information is available in every STDF file, so some of these
 fields will be empty.  By default, the list of user-defined header items
 is ignored when comparing this data with the data from another file.
 If you don't want to ignore the user-defined header data when deciding to
-create a new worksheet, then use the --noIgnoreMiscHeader option.
+create a new worksheet, then use the -{}-noIgnoreMiscHeader option.
 
 \subsection{\bf -m or \texttt{-{}-}modify}
 This option may be used when generating a spreadsheet, however it can also
@@ -834,6 +834,8 @@ get the iTest logo, and you can also specify text instead of a logo.
 If you want to use your own logo, you must supply the path of the logo
 file in the rc file, and then you must scale it.  To scale the logo
 first set the monitor\_x\_dpi and monitor\_y\_dpi to match your monitor.
+Then adjust the ss.logo.x\_scale and the ss.logo.y\_scale until the 
+logo correctly fits in the spreadsheet.
 
 \begin{verbatim}
 monitor_x_dpi                       96

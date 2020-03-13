@@ -128,7 +128,6 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         LinkedMap!(const TestID, uint) rowOrColMap = new LinkedMap!(const TestID, uint);
         DeviceResult[] dr = stdfdb.deviceMap[key];
         bool removeDups = false;
-        writeln("options.sortType = ", options.sortType);
         switch (options.sortType) with (Sort_t)
         {
             case SN_UP_TIME_UP_NO_DUPS:
