@@ -28,3 +28,4 @@ build/
 *.log
 *.toc
 *.synctex.gz
+*.xlsx

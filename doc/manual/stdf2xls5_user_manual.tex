@@ -141,16 +141,18 @@ Default = %device%_%lot%.xlsx
 -w       --genWafermaps Generate wafer map(s)
 -W                 --wo Wafermap output filename(s); name may contain variables for device, wafer, and/or lot
 Default = %device%_%lot%_%wafer%.xlsx
--P            --pattern fill wafermap bins with patterns instead of colors
 -A          --dumpAscii dump the wafer map in ASCII form
--R       --rotate-wafer Rotate the wafer map clockwise in degrees: 0|90|180|270.
+-f            --wformat Specify the wafermap format for the ASCII dump (default:ASY)
+-P            --pattern fill wafermap bins with patterns instead of colors
+-R        --rotateWafer Rotate the wafer map clockwise in degrees: +/- 0|90|180|270
+-N            --showNum Show the bin numbers on the wafer map, along with colors or patterns.
 -h      --genHistograms Generate histogram(s)
 -H                 --ho Histogram output filename(s); name may contain variables for device, step, lot, and/or testID
 Default = %device%_histograms.pdf
 --binCategory Specify if bins should be divided by SITE, LOT, TEMPerature or NONE. Default = NONE
 Note: if --ho contains %lot% then dividing bins by lot does not make sense
---binCount Manually set the number of bins across all histograms. Set to 0 (zero) for automatic.
---cutoff Define how much of the outliers to cut, in terms of standard deviation. Set to 0 (zero) for no cutoff.
+-B         --manualBins Manually set the number of bins across all histograms. Set to 0 (zero) for automatic.
+-C         --cutOutlier Define how much of the outliers to cut off, in terms of standard deviation. Set to 0 (zero) for no cutoff.
 -g     --generateRCFile Generate a default ".stdf2xlsxrc" file
 -t       --channel-type Channel type: AUTO, CHANNEL, PHYSICAL, or LOGICAL. Only use this if you know what you are doing.
 -v            --verbose Verbosity level. Default is 1 which means print only warnings.  0 means don't print anything
@@ -952,7 +954,7 @@ You can save the ASCII output by redirecting the stream into a text file.
 \begin{verbatim}
 ./stdf2xls -w -A datalog.stdf > wafermap.txt
 \end{verbatim}
-\subsubsection{\bf -A or \texttt{-{}-}wformat}
+\subsubsection{\bf -f or \texttt{-{}-}wformat}
 This option is used in conjunction with dumpAscii to specify the format type. The default format, unless otherwise specified, is ASY. Supported formats are:
 \begin{itemize}
 	\item ASY
@@ -974,9 +976,9 @@ This option shows the corresponding bin number on top of each colored/patterned 
 
 \section{\bf Histograms}
 \subsection{\bf -h or \texttt{-{}-}genHistograms}
-\subsubsection{\bf \texttt{-{}-}binCount}
-By default, the number of bins for each histogram is calculated using Scott's normal reference rule. Manually setting this value will apply the same number of bins across all histograms, except for the ones that have only one bin.
-\subsubsection{\bf \texttt{-{}-}cutoff}
+\subsubsection{\bf -B or \texttt{-{}-}manualBins}
+By default, the number of bins for each histogram is automatically calculated using a modified version of Scott's normal reference rule. Manually setting this value will apply the same number of bins across all histograms, except for the ones that have only one bin.
+\subsubsection{\bf -C or \texttt{-{}-}cutOutlier}
 This defines how much of the outlier data should be excluded from histogram view, in terms of standard deviation. By default the cutoff is 1.5, which means that any data outside the range of mean$\pm$1.5$\sigma$ is excluded. To disable cutoff altogether, set this option to 0.
 
 \end{document}
