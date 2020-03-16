@@ -129,7 +129,7 @@ class CmdOptions
     bool showNum = false;
     int rotateWafer = 0;
     uint binCount = 0;
-    double cutoff = 1.5;
+    double cutoff = 2.0;
     Sort_t sortType = Sort_t.SN_UP_TIME_UP; 
     private string[] modify;
     PMRNameType channelType = PMRNameType.AUTO;
