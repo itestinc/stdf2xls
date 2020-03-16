@@ -36,16 +36,16 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
     const double cutoff_compensator = options.cutoff*aggressive_multiplier*6;   // increases the number of inner bins after cutting off the outlier bins; larger = more bins
     //const double cutoff_compensator = 20;
 
-    foreach(hdr; stdfdb.deviceMap.keys) {
+    uint counter = 0;
+    foreach(hdr_i, hdr; stdfdb.deviceMap.keys) {
 
         string hfile = options.hfile;
         const bool separateFileForDevice = canFind(hfile, "%device%");
-
-        uint MPR_count = 0;
+        
         uint histo_count = 0;
 
         string devName = replace(hdr.devName, " ", "_");    // spaces are evil
-        devName = replace(hdr.devName, "/", "_");
+        devName = replace(devName, "/", "_");
 
         string fname = replace(hfile, "%device%", devName);
         if (options.verbosityLevel > 9) writeln(fname);
@@ -61,11 +61,13 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
         string sheet1 = "Histograms";
         string sheet2 = "Occurrences";
         string sheet3 = "Bin Values";
+        string sheet4 = "Limits";
         //string sheet5 = "MPR";
         Workbook wb = newWorkbook(fname);
         Worksheet ws1 = wb.addWorksheet(sheet1);
         Worksheet ws2 = wb.addWorksheet(sheet2);
         Worksheet ws3 = wb.addWorksheet(sheet3);
+        Worksheet ws4 = wb.addWorksheet(sheet4);
         //Worksheet ws5 = wb.addWorksheet(sheet5);
 
         initHistoFormats(wb, options, config);
@@ -76,6 +78,8 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
         ushort sh2_col = 0;
         uint sh3_row = 0;
         ushort sh3_col = 0;
+        uint sh4_row = 0;
+        ushort sh4_col = 0;
         //uint sh5_row = 0;
         //ushort sh5_col = 0;
 
@@ -119,34 +123,42 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
         ws1.mergeRange( sh1_row, cast(ushort)(sh1_col + 3),  sh1_row, cast(ushort)(sh1_col + 8), "Test Name", listNameFmt);
         sh1_row++;
 
-        /*
-        foreach(i, dev_records; stdfdb.deviceMap[hdr]) {
-            foreach(test_records; dev_records.tests) {
-               // writeln(tr.id.testName, " ", tr.id.testNumber, " | lolimit = ", tr.loLimit, " | hilimit = ", tr.hiLimit);
-                writeln(test_records.id.type);
+        // get limits
+        float[] LoLimit;
+        float[] HiLimit;
+        uint i_lim = 0;
+        DeviceResult dev_result = stdfdb.deviceMap[hdr][0];
+        foreach(test_rec; dev_result.tests) {
+            writeln(test_rec.id.type, " | ", test_rec.id.testName, " | ", test_rec.id.testNumber);
+            if(test_rec.id.type == Record_t.PTR || test_rec.id.type == Record_t.MPR) {               
+                //writeln(test_rec.id.type, " | ", test_rec.id.testName, " | ", test_rec.id.testNumber);
+                
+                ws4.write(sh4_row, sh4_col, test_rec.id.testName);
+                sh4_row++;
+                ws4.write(sh4_row, sh4_col, test_rec.loLimit);
+                sh4_row++;
+                ws4.write(sh4_row, sh4_col, test_rec.hiLimit);
+                sh4_row++;
+                ws4.write(sh4_row, sh4_col, test_rec.id.pin);
+                sh4_col++;
+                sh4_row = 0;
+
+                LoLimit.length++;
+                HiLimit.length++;
+                LoLimit[i_lim] = test_rec.loLimit;
+                HiLimit[i_lim] = test_rec.hiLimit;
+                i_lim++;
             }
         }
-        */
+        
+        uint lim = 0;
 
         const TestID[] ids = getTestIDs(hdr);
         foreach(id; ids) {
+            writeln(id.type, " | ", id.testName, " | ", id.testNumber);
             if(id.type == Record_t.PTR || id.type == Record_t.MPR) {
 
-                // case 1. packaged device with same test on different pins
-                if( id.sameMPRTest(id) ) {
-                    //writeln("MPR: ", id.testName, " | ", id.testNumber, " | ", id.dup);
-                    MPR_count++;
-                    if( hdr.isWafersort() ) {
-                        writeln("Is Wafer Sort");
-                    }
-                    else {
-                        writeln("NOT Wafer");
-                    }
-                }
-                else {
-                    //writeln(id.type);
-                    //writeln(id.pin);
-                }
+                //writeln(id.type, " | ", id.testName, " | ", id.testNumber);
 
                 // store all of a test's values from all sites into one array
                 HistoData histodata_allsites = getResults(hdr, id);
@@ -263,7 +275,8 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 
                 // set up histogram chart for each PTR
                 Chart ch = wb.addChart(LXW_CHART_COLUMN);
-                ch.titleSetName(id.testName~"\n"~"(Low limit: "~to!string(0)~", High limit: "~to!string(0)~")");
+                //ch.titleSetName(id.testName~"\n"~"(Low limit: "~to!string( LoLimit[lim] )~", High limit: "~to!string( HiLimit[lim] )~")"); lim++;
+                ch.titleSetName(id.testName);
                 ch.titleSetNameFont(&TitleFont);
 
                 // replace any invalid characters for sheet name
@@ -304,6 +317,8 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                     }
                     
                     // write data frequency
+                    ws2.write(sh2_row, sh2_col, "site "~to!string(site)~":");
+                    sh2_row++;
                     foreach(value; bin_count) {
                         ws2.write(sh2_row, sh2_col, value);
                         sh2_row++;
@@ -312,15 +327,17 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                     // assign data cells to histogram
                     series.length++;
                     series[s] = ch.addChartseries(null, null);
-                    series[s].setName("site "~to!string(site)~" (std="~to!string(histodata.stdDev)~", cpk = "~to!string(histodata.cpk)~", mean = "~to!string(histodata.mean)~")");
-                    series[s].setValues(sheet2, cast(uint)(sh2_row - number_of_bins), sh2_col, cast(uint)(sh2_row-1), sh2_col);
+                    //string seriesName = "site "~to!string(site)~" (std="~to!string(histodata.stdDev)~", cpk="~to!string(histodata.cpk)~", mean="~to!string(histodata.mean)~")";
+                    string seriesName = "site "~to!string(site)~" (std="~to!string(histodata.stdDev)~", cpk="~to!string(histodata.cpk)~")";
+                    series[s].setName(seriesName);
+                    series[s].setValues(sheet2, cast(uint)(sh2_row - number_of_bins), sh2_col, cast(uint)(sh2_row - 1), sh2_col);
                     //series[s].setLabels();
                     //series[s].setLabelsFont(&LabelsFont);
                     //series[s].setLabelsPosition(LXW_CHART_LABEL_POSITION_OUTSIDE_END);
-                    series[s].setCategories(sheet3, cast(uint)1, sh3_col, cast(uint)(number_of_bins), sh3_col);
-                    sh3_col++;
-                    sh3_row = 0;
+                    series[s].setCategories(sheet3, cast(uint)1, cast(ushort)(sh3_col + s), cast(uint)(number_of_bins), cast(ushort)(sh3_col + s));
                 }
+                sh3_col++;
+                sh3_row = 0;
                 sh2_col++;
                 sh2_row = 0;
 
@@ -342,7 +359,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 sh.setChart(ch);
             }
         }
-        writeln("MPR Count = ", MPR_count);
+
         ws2.hide();
         ws3.hide();
         //ws5.hide();
