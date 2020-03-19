@@ -36,7 +36,6 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
     const double cutoff_compensator = options.cutoff*aggressive_multiplier*6;   // increases the number of inner bins after cutting off the outlier bins; larger = more bins
     //const double cutoff_compensator = 20;
 
-    uint counter = 0;
     foreach(hdr_i, hdr; stdfdb.deviceMap.keys) {
 
         string hfile = options.hfile;
@@ -123,7 +122,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
         ws1.mergeRange( sh1_row, cast(ushort)(sh1_col + 3),  sh1_row, cast(ushort)(sh1_col + 8), "Test Name", listNameFmt);
         sh1_row++;
 
-        // get limits
+        /* get limits
         float[] LoLimit;
         float[] HiLimit;
         uint i_lim = 0;
@@ -150,20 +149,24 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 i_lim++;
             }
         }
-        
-        uint lim = 0;
+        */
 
         const TestID[] ids = getTestIDs(hdr);
         foreach(id; ids) {
-            writeln(id.type, " | ", id.testName, " | ", id.testNumber);
             if(id.type == Record_t.PTR || id.type == Record_t.MPR) {
-
-                //writeln(id.type, " | ", id.testName, " | ", id.testNumber);
 
                 // store all of a test's values from all sites into one array
                 HistoData histodata_allsites = getResults(hdr, id);
                 if(histodata_allsites.values.length == 0) { continue; }     // some tests have no values
 
+                ws4.write(sh4_row, sh4_col, id.testName);
+                sh4_row++;
+                ws4.write(sh4_row, sh4_col, histodata_allsites.lolimit);
+                sh4_row++;
+                ws4.write(sh4_row, sh4_col, histodata_allsites.hilimit);
+                sh4_col++;
+                sh4_row = 0;
+                
                 //const double all_mean = histodata_allsites.mean;
                 //if(isNaN(all_mean)) { throw new Exception("all_mean is NaN."); }
 
@@ -275,8 +278,8 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 
                 // set up histogram chart for each PTR
                 Chart ch = wb.addChart(LXW_CHART_COLUMN);
-                //ch.titleSetName(id.testName~"\n"~"(Low limit: "~to!string( LoLimit[lim] )~", High limit: "~to!string( HiLimit[lim] )~")"); lim++;
-                ch.titleSetName(id.testName);
+                ch.titleSetName(id.testName~"\n"~"(Low limit: "~to!string( histodata_allsites.lolimit )~", High limit: "~to!string( histodata_allsites.hilimit )~")");
+                //ch.titleSetName(id.testName);
                 ch.titleSetNameFont(&TitleFont);
 
                 // replace any invalid characters for sheet name
@@ -362,6 +365,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 
         ws2.hide();
         ws3.hide();
+        ws4.hide();
         //ws5.hide();
         ws1.select();
         wb.close();

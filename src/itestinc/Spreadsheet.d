@@ -24,6 +24,8 @@ struct HistoData
     double mean;
     double cpk;
     double[] values;
+    double lolimit;
+    double hilimit;
 
     string toString() const
     {
@@ -412,7 +414,6 @@ HistoData getResults(HeaderInfo hdr, const(TestID) testId)
         {
             auto rslt = rsltMap.get(dummy, hdr, d.devId.getID(), testId, s);
             if (rslt == dummy) continue;
-//            writeln("devID = ", d.devId.getID(), " testID = ", testId, " rslt = ", rslt.rslt);
             r ~= rslt.rslt;
             sum += rslt.rslt;
             n++;
@@ -445,7 +446,7 @@ HistoData getResults(HeaderInfo hdr, const(TestID) testId)
         double cpk1 = llave / (3.0 * stdDev);
         double cpk2 = hlave / (3.0 * stdDev);
         Cpk = (cpk1 < cpk2) ? cpk1 : cpk2;
-        return HistoData(testId, stdDev, mean, Cpk, r);
+        return HistoData(testId, stdDev, mean, Cpk, r, llmean, hlmean);
     }
     else
     {
@@ -460,6 +461,8 @@ HistoData getResults(HeaderInfo hdr, const(TestID) testId)
                 if (rslt == dummy) continue;
                 ll = rslt.lolimit;
                 hl = rslt.hilimit;
+                llmean = ll;
+                hlmean = hl;
                 exit = true;
                 break;
             }
@@ -469,7 +472,7 @@ HistoData getResults(HeaderInfo hdr, const(TestID) testId)
         double cpk2 = (hl - mean) / (3.0 * stdDev);
         Cpk = (cpk1 < cpk2) ? cpk1 : cpk2;
     }
-    return HistoData(testId, stdDev, mean, Cpk, r);
+    return HistoData(testId, stdDev, mean, Cpk, r, llmean, hlmean);
 }
 
 HistoData getResults(HeaderInfo hdr, const(TestID) testId, ubyte site)
@@ -513,7 +516,7 @@ HistoData getResults(HeaderInfo hdr, const(TestID) testId, ubyte site)
         double cpk1 = llave / (3.0 * stdDev);
         double cpk2 = hlave / (3.0 * stdDev);
         Cpk = (cpk1 < cpk2) ? cpk1 : cpk2;
-        return HistoData(testId, stdDev, mean, Cpk, r);
+        return HistoData(testId, stdDev, mean, Cpk, r, llmean, hlmean);
     }
     else
     {
@@ -525,13 +528,15 @@ HistoData getResults(HeaderInfo hdr, const(TestID) testId, ubyte site)
             if (rslt == dummy) continue;
             ll = rslt.lolimit;
             hl = rslt.hilimit;
+            llmean = ll;
+            hlmean = hl;
             break;
         }
         double cpk1 = (mean - ll) / (3.0 * stdDev);
         double cpk2 = (hl - mean) / (3.0 * stdDev);
         Cpk = (cpk1 < cpk2) ? cpk1 : cpk2;
     }
-    return HistoData(testId, stdDev, mean, Cpk, r);
+    return HistoData(testId, stdDev, mean, Cpk, r, llmean, hlmean);
 }
 
 ubyte[] getSites(HeaderInfo hdr)
