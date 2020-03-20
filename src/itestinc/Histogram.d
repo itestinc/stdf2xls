@@ -93,6 +93,8 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 		img_options.object_position = lxw_object_position.LXW_OBJECT_MOVE_AND_SIZE;
 		ws1.insertImageBufferOpt(cast(uint) 0, cast(ushort) 0, img.dup.ptr, img.length, &img_options);
 
+        ws1.insertImage(9,  10, "src/img/nav.png");
+
         // write useful headers
         const uint header_row = 0;
         const ushort header_col = 4;
@@ -115,7 +117,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
         ws1.mergeRange(cast(uint)(header_row+6), cast(ushort)(header_col+2), cast(uint)(header_row+6), cast(ushort)(header_col+4), to!string(getSites(hdr)), headerValueFmt);
         ws1.mergeRange(cast(uint)(header_row+7), cast(ushort)(header_col+2), cast(uint)(header_row+7), cast(ushort)(header_col+4), "\"--binCount "~to!string(options.binCount)~" --cutoff "~to!string(options.cutoff)~"\"", headerValueFmt);
 
-        ws1.write(8, 10, "Right-click on the sheet scroll arrows (bottom left) for easy navigation.");
+        ws1.mergeRange(8, 10, 8, 17, "NAVIGATION: Right-click on the navigation arrow at the Bottom-Left of excel window.", listNameFmt);
         ws1.write(sh1_row, sh1_col, "Test #", listNameFmt);
         ws1.write(sh1_row, cast(ushort)(sh1_col + 1), "Duplicate #", listNameFmt);
         ws1.write(sh1_row, cast(ushort)(sh1_col + 2), "Sheet #", listNameFmt);
@@ -294,8 +296,11 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 
                 // max excel sheet name length is 31 characters
                 sheetName = to!string(histo_count)~"-"~sheetName;
-                while(sheetName.length > 30) {
-                    sheetName = chop(sheetName);
+                if(sheetName.length > 28) {
+                    while(sheetName.length > 28) {
+                        sheetName = chop(sheetName);
+                    }
+                    sheetName = sheetName~"...";
                 }
                 Chartsheet sh = wb.addChartsheet(sheetName);
                 histo_count++;
@@ -347,7 +352,7 @@ public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
                 // set histogram formats and insert into excel
                 Chartaxis x_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_X);
                 Chartaxis y_axis = ch.axisGet(LXW_CHART_AXIS_TYPE_Y);
-                x_axis.setName("Bins (min: "~to!string( histvalues_allsites[0] )~", max: "~to!string( histvalues_allsites[$-1] )~")");
+                x_axis.setName("Bins\n(min val = "~to!string( histvalues_allsites[0] )~", max val = "~to!string( histvalues_allsites[$-1] )~")");
                 y_axis.setName("Number of Occurrences");
                 x_axis.setNameFont(&AxisNameFont);
                 y_axis.setNameFont(&AxisNameFont);
