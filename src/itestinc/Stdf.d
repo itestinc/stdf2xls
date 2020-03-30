@@ -1101,7 +1101,14 @@ unittest
                 f.rawWrite(bs);
             }
             f.close();
-            string cmd = "./bdiff " ~ name ~ ".tmp " ~ name;
+            version(Windows)
+            {
+                string cmd = ".\\bdiff.exe " ~ name ~ ".tmp " ~ name;
+            }
+            else
+            {
+                string cmd = "./bdiff " ~ name ~ ".tmp " ~ name;
+            }
             writeln("DIFF: ", cmd); stdout.flush();
             int rv = system(toStringz(cmd));
             if (rv != 0) writeln("FILE = ", name);
