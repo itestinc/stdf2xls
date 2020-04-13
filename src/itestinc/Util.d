@@ -332,7 +332,6 @@ class MultiMap(V, K...) if (K.length > 1)
         V[] v;
         foreach (k; map.keys)
         {
-            writeln("k = ", k);
             MultiMap!(V, K[1..$]) m = map[k];
             v ~= m.getValues();
         }
@@ -411,7 +410,6 @@ class MultiMap(V, K...) if (K.length == 1)
         V[] v;
         foreach(k; map.keys) 
         {
-            writeln("k = ", k);
             v ~= map[k];
         }
         return v;

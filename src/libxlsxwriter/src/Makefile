@@ -75,7 +75,7 @@ endif
 
 # Library names.
 LIBXLSXWRITER_A  = libxlsxwriter.a
-LIBXLSXWRITER_SO = libxlsxwriter.so
+#LIBXLSXWRITER_SO = libxlsxwriter.so
 
 # Library with additional non-static functions for testing.
 LIBXLSXWRITER_TO = libxlsxwriter_test.a
@@ -85,15 +85,15 @@ ARFLAGS = rc
 
 # Flags passed to dynamic linker.
 FPIC = -fPIC
-SOFLAGS = -shared $(FPIC)
+#SOFLAGS = -shared $(FPIC)
 
 # Get Env/OS name.
 UNAME := $(shell uname)
 
 # Change make options on OS X.
 ifeq ($(UNAME), Darwin)
-LIBXLSXWRITER_SO = libxlsxwriter.dylib
-SOFLAGS = -dynamiclib $(FPIC) -install_name $(PREFIX)/lib/$(LIBXLSXWRITER_SO)
+#LIBXLSXWRITER_SO = libxlsxwriter.dylib
+#SOFLAGS = -dynamiclib $(FPIC) -install_name $(PREFIX)/lib/$(LIBXLSXWRITER_SO)
 endif
 
 # Check for MinGW/MinGW64/Cygwin environments.
@@ -126,8 +126,8 @@ TOBJS = $(patsubst %.c,%.to,$(SRCS))
 # End of OBJS
 
 # Build the object files and the libraries.
-all : $(LIBXLSXWRITER_A) $(LIBXLSXWRITER_SO)
-	$(Q)cp $(LIBXLSXWRITER_A) $(LIBXLSXWRITER_SO) ../lib
+all : $(LIBXLSXWRITER_A)
+	$(Q)cp $(LIBXLSXWRITER_A) ../lib
 
 test_lib : libxlsxwriter_test.a
 
@@ -140,8 +140,8 @@ ifeq ($(findstring m32,$(CFLAGS)),m32)
 ARCH = -m32
 endif
 
-$(LIBXLSXWRITER_SO) : $(SOBJS)
-	$(Q)$(CC) $(LDFLAGS) $(SOFLAGS) $(ARCH) -o $@ $(MINIZIP_SO) $(TMPFILEPLUS_SO) $(MD5_SO) $^ $(LIBS)
+#$(LIBXLSXWRITER_SO) : $(SOBJS)
+#	$(Q)$(CC) $(LDFLAGS) $(SOFLAGS) $(ARCH) -o $@ $(MINIZIP_SO) $(TMPFILEPLUS_SO) $(MD5_SO) $^ $(LIBS)
 
 # The test library.
 $(LIBXLSXWRITER_TO) : $(TOBJS)

@@ -6,6 +6,7 @@ import itestinc.CmdOptions;
 import itestinc.Config;
 import std.stdio;
 import libxlsxd.workbook;
+import libxlsxd.worksheet; // deleteme
 import itestinc.SpreadsheetWriter;
 import itestinc.Util;
 
@@ -364,9 +365,9 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         if (options.genSpreadsheet)
         {
             writeSheet(options, wb, rowOrColMap, key, devices, config);
-            wb.close();
         }
     } 
+    foreach (xwb; wbMap.getValues()) xwb.close();
 }
 
 const(TestID)[] getTestIDs(HeaderInfo hdr)

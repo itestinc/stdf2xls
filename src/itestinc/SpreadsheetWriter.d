@@ -580,7 +580,6 @@ private Worksheet[] createSheetsRotated(CmdOptions options, Config config, Workb
     {
         size_t col = i * maxCols;
         string title = getTitle(options, hdr, i);
-        if (title.length > 31) title = title[0..31];
         Worksheet w = wb.addWorksheet(title);
         ws ~= w;
         setTitle(ws[i], hdr, Yes.rotated);
