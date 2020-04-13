@@ -1626,7 +1626,6 @@ workbook_add_worksheet(lxw_workbook *self, const char *sheetname)
     lxw_error error;
     lxw_worksheet_init_data init_data = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     char *new_name = NULL;
-
     if (sheetname) {
         /* Use the user supplied name. */
         init_data.name = lxw_strdup(sheetname);
@@ -2252,11 +2251,9 @@ workbook_get_worksheet_by_name(lxw_workbook *self, const char *name)
 
     if (!name)
         return NULL;
-
     worksheet_name.name = name;
     found = RB_FIND(lxw_worksheet_names,
                     self->worksheet_names, &worksheet_name);
-
     if (found)
         return found->worksheet;
     else
