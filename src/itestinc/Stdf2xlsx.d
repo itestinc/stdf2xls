@@ -28,12 +28,12 @@ import itestinc.Wafermap;
 import itestinc.Histogram;
 import itestinc.Util;
 
-private StdfFile[][HeaderInfo] stdfFiles;
+private StdfData[string] stdfFiles;
 private string[string] devices;
 private string[string] steps;
 private StdfDB stdfdb;
 
-public StdfFile[][HeaderInfo] processStdf(CmdOptions options)
+public StdfData[string] processStdf(CmdOptions options)
 {
     foreach(file; options.stdfFiles) 
     {
@@ -47,18 +47,10 @@ public StdfDB loadDb(CmdOptions options)
 {
     if (stdfdb is null) stdfdb = new StdfDB(options);
     // build test results lists here
-    foreach (hdr; stdfFiles.keys)
+    foreach (fname; stdfFiles.keys)
     {
-        StdfFile[] f = stdfFiles[hdr];
-        foreach (file; f) stdfdb.load(file);
-        if (options.verbosityLevel > 10)
-        {
-            writeln("device: ", hdr.devName);
-            writeln("number of devices: ", stdfdb.deviceMap[hdr].length);
-            writeln("number of files with this header = ", f.length);
-            write(hdr.toString());
-            writeln("");
-        }
+        StdfData f = stdfFiles[fname];
+        stdfdb.load(f);
     }
     if (options.verbosityLevel > 2) writeln("Number of unique headers: ", stdfdb.deviceMap.length);
     if (!options.noDynamicLimits)
@@ -193,17 +185,6 @@ private void processFile(string file, CmdOptions options)
 {
     auto sfile = StdfFile(file, options);
     sfile.load();
-    if (sfile.hdr !in stdfFiles)
-    {
-        StdfFile[] s;
-        s ~= sfile;
-        stdfFiles[sfile.hdr] = s;
-    }
-    else
-    {
-        StdfFile[] s = stdfFiles[sfile.hdr];
-        s ~= sfile;
-        stdfFiles[sfile.hdr] = s;
-    }
+    stdfFiles[sfile.data.filename] = sfile.data;
 }
 
