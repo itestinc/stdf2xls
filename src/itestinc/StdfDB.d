@@ -780,6 +780,7 @@ class StdfDB
                 DeviceResult[] drs = deviceMap[hdr];
                 drs ~= devices;
             }
+            devices.length = 0;
         }
     }
 

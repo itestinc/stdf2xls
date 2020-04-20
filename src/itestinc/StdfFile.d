@@ -311,7 +311,7 @@ struct StdfFile
                 if (rec.recordType == Record_t.PRR)
                 {
                     first = false;
-                    data.records[hdr] = rs.dup;
+                    if (step != "end") data.records[hdr] = rs.dup;
                     rs.length = 0;
                 }
             }
@@ -361,29 +361,35 @@ struct StdfFile
                         auto value = miscFields.get(key, "");
                         hdr2.headerItems[key] = value;
                     }
-                    if (hdr2 in data.records)
+                    if (step != "end")
                     {
-                        StdfRecord[] recs = data.records[hdr2];
-                        recs ~= rs.dup;
-                        data.records[hdr2] = recs;
-                    }
-                    else
-                    {
-                        data.records[hdr2] = rs.dup;
+                        if (hdr2 in data.records)
+                        {
+                            StdfRecord[] recs = data.records[hdr2];
+                            recs ~= rs.dup;
+                            data.records[hdr2] = recs;
+                        }
+                        else
+                        {
+                            data.records[hdr2] = rs.dup;
+                        }
                     }
                     rs.length = 0;
                 }
             }
         }
-        if (hdr2 in data.records)
+        if (step != "end")
         {
-            StdfRecord[] recs = data.records[hdr2];
-            recs ~= rs.dup;
-            data.records[hdr2] = recs;
-        }
-        else
-        {
-            data.records[hdr2] = rs.dup;
+            if (hdr2 in data.records)
+            {
+                StdfRecord[] recs = data.records[hdr2];
+                recs ~= rs.dup;
+                data.records[hdr2] = recs;
+            }
+            else
+            {
+                data.records[hdr2] = rs.dup;
+            }
         }
     }
 

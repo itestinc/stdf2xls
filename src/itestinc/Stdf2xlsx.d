@@ -62,7 +62,7 @@ public StdfDB loadDb(CmdOptions options)
         import std.math;
         foreach (hdr; stdfdb.deviceMap.keys)
         {
-            auto map = hdr.getHeaderItems();
+            //auto map = hdr.getHeaderItems();
             DeviceResult[] dr = stdfdb.deviceMap[hdr];
             foreach (ref dev; dr)
             {
