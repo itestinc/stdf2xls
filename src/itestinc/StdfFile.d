@@ -171,6 +171,7 @@ struct StdfData
     StdfRecord[][HeaderInfo] records;
     string filename;
     Record!MIR mir;
+    Record!(HBR)[] hbrs;
 }
 
 struct StdfFile
@@ -290,7 +291,10 @@ struct StdfFile
             if (r.recordType == Record_t.MIR)
             {
                 data.mir = cast(Record!MIR) r;
-                break;
+            }
+            else if (r.recordType == Record_t.HBR)
+            {
+                data.hbrs ~= cast(Record!HBR) r;
             }
         }
         printAndOrModify(records);

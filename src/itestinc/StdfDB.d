@@ -481,6 +481,10 @@ class StdfDB
             string serial_number = "";
             PartID pid;
             bool dvdDone = false;
+            foreach (hbr; data.hbrs)
+            {
+                if (hbr.HBIN_PF == 'P' || hbr.HBIN_PF == 'p') passingHWBins ~= hbr.HBIN_NUM;
+            }
             foreach (rec; data.records[hdr])
             {
                 switch (rec.recordType.ordinal)
@@ -751,10 +755,6 @@ class StdfDB
                         devices ~= dr[site - minSite][head - minHead];
                         dr[site - minSite][head - minHead].tests.length = 0;
                         seq = 0;
-                        break;
-                    case Record_t.HBR.ordinal:
-                        Record!(HBR) hbr = cast(Record!(HBR)) rec;
-                        if (hbr.HBIN_PF == 'P' || hbr.HBIN_PF == 'p') passingHWBins ~= hbr.HBIN_NUM;
                         break;
                     default:
                 }
