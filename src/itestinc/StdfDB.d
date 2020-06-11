@@ -778,6 +778,7 @@ class StdfDB
             {
                 DeviceResult[] drs = deviceMap[hdr];
                 drs ~= devices;
+                deviceMap[hdr] = drs;
             }
             devices.length = 0;
         }
