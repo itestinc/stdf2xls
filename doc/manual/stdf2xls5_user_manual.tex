@@ -135,7 +135,7 @@ Example: -m 'MIR TST\_TEMP "TEMPERATURE :" "TEMPERATURE:"'
 -S                 --so Spreadsheet output filename(s); name may contain variables for device, and/or lot
 Default = %device%_%lot%.xlsx
 -r             --rotate Transpose spreadsheet so there is one device per column instead of one device per row
---sortType Sort devices by alphanumeric serial number, then by time. See the manual for valid sort types
+             --sortType Specify device sort order. Default: by alphanumeric serial number, then by time. See the manual for valid sort types
 -c              --1kcol limit to 1000 columns for libreoffice - default is 16360 columns
 -Y    --noDynamicLimits Don't check for and show dynamic limits
 -w       --genWafermaps Generate wafer map(s)
@@ -461,6 +461,63 @@ that may be modified are shown below:
     \item Field Name: "EXC\_DESC"
     \end{itemize}
 \end{itemize}
+
+
+\subsubsection{\bf \texttt{-{}-}sortType}
+There are 32 different ways to sort devices. 16 of the ways remove duplicate
+serial numbers, and 16 of the ways do not remove duplicate serial numbers.
+For example:
+\begin{verbatim}
+--sortType SN_UP_TIME_UP_NO_DUPS
+\end{verbatim}
+In this case the devices are sorted first by ascending alphanumeric serial number,
+then by the ascending time of test.  Then the duplicates are removed.  When duplicates
+are removed, the first occurence in the sorted list is kept, and the rest
+are removed.  In this example, since time is sorted in ascending order,
+the first time a device is tested will be kept, and the rest will be discarded.
+Generally you would want to keep the last time a device was tested, so
+in that case you would use a sort type of SN\_UP\_TIME\_DOWN\_NO\_DUPS.
+Note in the following list serial number is abbreviated either as SN
+or SNN. SN implies an alpha-numeric sort of the serial numbers and
+SNN implies a numeric sort of the serial numbers.
+
+Possible sortType options are:
+\begin{enumerate}
+\item    SN\_UP\_TIME\_UP\_NO\_DUPS
+\item    SN\_DOWN\_TIME\_UP\_NO\_DUPS
+\item    SN\_UP\_TIME\_DOWN\_NO\_DUPS
+\item    SN\_DOWN\_TIME\_DOWN\_NO\_DUPS
+\item    SNN\_UP\_TIME\_UP\_NO\_DUPS
+\item    SNN\_DOWN\_TIME\_UP\_NO\_DUPS
+\item    SNN\_UP\_TIME\_DOWN\_NO\_DUPS
+\item    SNN\_DOWN\_TIME\_DOWN\_NO\_DUPS
+\item    TIME\_UP\_SN\_UP\_NO\_DUPS
+\item    TIME\_UP\_SN\_DOWN\_NO\_DUPS
+\item    TIME\_DOWN\_SN\_UP\_NO\_DUPS
+\item    TIME\_DOWN\_SN\_DOWN\_NO\_DUPS
+\item    TIME\_UP\_SNN\_UP\_NO\_DUPS
+\item    TIME\_UP\_SNN\_DOWN\_NO\_DUPS
+\item    TIME\_DOWN\_SNN\_UP\_NO\_DUPS
+\item    TIME\_DOWN\_SNN\_DOWN\_NO\_DUPS
+\item    SN\_UP\_TIME\_UP
+\item    SN\_DOWN\_TIME\_UP
+\item    SN\_UP\_TIME\_DOWN
+\item    SN\_DOWN\_TIME\_DOWN
+\item    SNN\_UP\_TIME\_UP
+\item    SNN\_DOWN\_TIME\_UP
+\item    SNN\_UP\_TIME\_DOWN
+\item    SNN\_DOWN\_TIME\_DOWN
+\item    TIME\_UP\_SN\_UP
+\item    TIME\_UP\_SN\_DOWN
+\item    TIME\_DOWN\_SN\_UP
+\item    TIME\_DOWN\_SN\_DOWN
+\item    TIME\_UP\_SNN\_UP
+\item    TIME\_UP\_SNN\_DOWN
+\item    TIME\_DOWN\_SNN\_UP
+\item    TIME\_DOWN\_SNN\_DOWN
+\end{enumerate}
+
+The default sort type is SN\_UP\_TIME\_UP.
 
 \subsection{\bf -d or \texttt{-{}-}dumptext}
 This option prints the contents of the STDF file(s) in ASCII form to the standard output.

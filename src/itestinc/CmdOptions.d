@@ -167,7 +167,7 @@ class CmdOptions
             "genSpreadsheets|s", "Generate spreadsheet(s)", &genSpreadsheet,
             "so|S", "Spreadsheet output filename(s); name may contain variables for device, and/or lot\nDefault = %device%_%lot%.xlsx", &sfile,
             "rotate|r", "Transpose spreadsheet so there is one device per column instead of one device per row", &rotate,
-            "sortType", "Sort devices by alphanumeric serial number, then by time. See the manual for valid sort types", &sortType,
+            "sortType", "Specify device sort order: Default: by alphanumeric serial number, then by time. See the manual for valid sort types", &sortType,
             "1kcol|c", "limit to 1000 columns for libreoffice - default is 16360 columns", &limit1k,
             "noDynamicLimits|Y", "Don't check for and show dynamic limits", &noDynamicLimits,
 
