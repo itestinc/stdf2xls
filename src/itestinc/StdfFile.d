@@ -235,7 +235,6 @@ struct StdfFile
                     writeln("]");
                 }   
             }   
-            stdout.flush();
         }   
         if (options.outputDir != "") 
         {   
@@ -297,7 +296,9 @@ struct StdfFile
                 data.hbrs ~= cast(Record!HBR) r;
             }
         }
+        records = stdf.getRecords();
         printAndOrModify(records);
+        records = stdf.getRecords();
         HeaderInfo hdr = getHeaderInfo(records);
         bool first = true;
         StdfRecord[] rs;
@@ -307,6 +308,7 @@ struct StdfFile
         string[const string] miscFields = hdr.getHeaderItems();
         bool waferFound = false;
         HeaderInfo hdr2;
+        records = stdf.getRecords();
         foreach (rec; records)
         {
             if (first) 
@@ -384,15 +386,24 @@ struct StdfFile
         }
         if (step != "end")
         {
-            if (hdr2 in data.records)
+            if (hdr2 is null)
             {
-                StdfRecord[] recs = data.records[hdr2];
+                StdfRecord[] recs = data.records[hdr];
                 recs ~= rs.dup;
-                data.records[hdr2] = recs;
+                data.records[hdr] = recs;
             }
             else
             {
-                data.records[hdr2] = rs.dup;
+                if (hdr2 in data.records)
+                {
+                        StdfRecord[] recs = data.records[hdr2];
+                        recs ~= rs.dup;
+                        data.records[hdr2] = recs;
+                }
+                else
+                {
+                        data.records[hdr2] = rs.dup;
+                }
             }
         }
     }
