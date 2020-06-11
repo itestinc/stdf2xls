@@ -473,7 +473,6 @@ class StdfDB
             import std.string;
             auto dupNums = new MultiMap!(DupNumber_t, Record_t, TestNumber_t, TestName_t, Site_t, Head_t)();
             DeviceResult[][] dr;
-            writeln("numSites = ", numSites); stdout.flush();
             dr.length = numSites;
             for (int i=0; i<dr.length; i++) dr[i] = new DeviceResult[numHeads];
             stdout.flush();
