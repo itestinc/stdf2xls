@@ -409,15 +409,14 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 				writeln("LOT:", hdr.lot_id);
 				writeln("WAFER:", hdr.wafer_id);
 				writeln("FNLOC:", options.rotateWafer);
-				writeln("BCEQU:", "000");
 				writeln("ROWCT:", row);
 				writeln("COLCT:", col);
 				writeln("BCEQU:", "000");
 				writeln("REFPX:");
 				writeln("REFPY:");
 				writeln("DUTMS:");
-				writeln("XDIES");
-				writeln("YDIES");
+				writeln("XDIES:");
+				writeln("YDIES:");
 				foreach(i, row_arr; matrix) { write("RowData:");
 					foreach(j, val; row_arr) {
 						switch(val) {
