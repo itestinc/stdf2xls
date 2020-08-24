@@ -444,6 +444,61 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 					write("\n");
 				}
 				break;
+			case MICROSOFT:
+				writeln("wafer_id: ", hdr.wafer_id);
+				writeln("lot_id: ", hdr.lot_id);
+				writeln("sublot_id: ", hdr.sublot_id);
+				writeln("device_name: ", hdr.devName);
+				writeln("temperature: ", hdr.temperature);
+				writeln("step: ", hdr.step);
+				writeln("row: ", row);
+				writeln("col: ", col);
+				writeln("rotation: ", options.rotateWafer);
+				writeln("good_bins: ", goodbins);
+				writeln("bad_bins: ", badbins);
+				writeln("total_bins: ", goodbins+badbins);
+
+				foreach(i, row_arr; matrix) { write("[");
+					foreach(j, val; row_arr) {
+						switch(val) {
+							case 0: write(" "); break;
+							case 1: write("p"); break;
+							default: write("F");
+						}
+					}
+					write("]");
+					write("\n");
+				}
+				write("\n");
+				foreach(i, row_arr; matrix) { write("[");
+					foreach(j, val; row_arr) {
+						switch(val) {
+							case  0: write("  "); break;
+							case  1: write("01"); break;
+							case  2: write("02"); break;
+							case  3: write("03"); break;
+							case  4: write("04"); break;
+							case  5: write("05"); break;
+							case  6: write("06"); break;
+							case  7: write("07"); break;
+							case  8: write("08"); break;
+							case  9: write("09"); break;
+							case 10: write("0A"); break;
+							case 11: write("0B"); break;
+							case 12: write("0C"); break;
+							case 13: write("0D"); break;
+							case 14: write("0E"); break;
+							case 15: write("0F"); break;
+							case 16: write("10"); break;
+							case -1: write("ER"); break;
+							default: write("__");
+						}
+					}
+					write("]");
+					write("\n");
+				}
+
+				break;
 			default:
 				throw new Exception("Unsupported format for ASCII dump.");
 			}
