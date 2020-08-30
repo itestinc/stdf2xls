@@ -108,7 +108,7 @@ import std.regex;
 import itestinc.StdfFile;
 class CmdOptions
 {
-    public static immutable string stdf2xlsx_version = "5.0.0";
+    public static immutable string stdf2xlsx_version = "5.0.1";
     bool textDump = false;
     bool byteDump = false;
     bool extractPin = true;
@@ -204,6 +204,71 @@ class CmdOptions
             options = opts;
         }
         for (int i=1; i<args.length; i++) stdfFiles[i-1] = args[i];
+        version(Windows)
+        {
+            import std.string;
+            import std.range;
+            import std.algorithm;
+            string[] paths;     // list of paths in which to search for files with wildcard match
+            ulong p = 0;
+            string[] files;     // output filenames with full path prefix
+            ulong f = 0;
+            bool _debug = false;
+            foreach(i, arg; stdfFiles)
+            {
+                if (i == 0) continue;
+                import std.path : baseName, dirName, absolutePath, asNormalizedPath, driveName, stripDrive, dirSeparator;
+                string dirSep = dirSeparator;
+                string fname = baseName(arg);
+                string path = dirName(arg);
+                path = absolutePath(path);
+                path = to!string(asNormalizedPath(path));
+                string drive = driveName(path);
+                path = stripDrive(path);
+                if(_debug) writeln("drive = ", drive, " path = ", path, " fname = ", fname);
+                if(_debug) writeln("dirSep = ", dirSep);
+                // first expand wildcards in path and build a list of paths
+                string[] dirs = split(path, dirSep);
+                // dirs now has all path elements; now expand their wild cards (if any)
+                string[] allPaths;
+                if(_debug)  writeln("dirs = ", dirs);
+                if(_debug) writeln("dirs length = ", dirs.length);
+
+                ulong index = findWildcard(dirs);
+                if(_debug) writeln("index = ",  index);
+
+                if(index == -1)     // no wildcard
+                {
+                    paths.length++;
+                    paths[0] = drive ~ path ~ dirSeparator;
+                    if(_debug) writeln("paths = ", paths);
+                }
+                else
+                {
+                    string wildcard = dirs[cast(uint)index];
+                    if(_debug) writeln("wildcard = ", wildcard);
+                    string base = drive;
+                    for(int j = 0; j < index; j++)
+                    {
+                        base ~= dirs[j] ~ dirSeparator;
+                    }
+                    if(_debug) writeln("base = ", base);
+
+                    string[] adirs = expandToMatchingDirs(wildcard, base);
+                    if(_debug) writeln("adirs = ", adirs);
+
+                    goDeeper(index, base, dirs, adirs);
+                    if(_debug) writeln("paths = ", paths);
+                }
+
+                getFiles(fname, paths);
+                if(_debug) writeln("files = ", files);
+
+            }
+            if(_debug) writeln("files.length = ", files.length);
+            if(_debug) foreach(f; files) writeln(f);
+            stdfFiles = files;
+        }
         if (rslt.helpWanted)
         {
             defaultGetoptPrinter("Options:", rslt.options);
@@ -418,4 +483,136 @@ class CmdOptions
             }
         }       
     }
+}
+version(Windows)
+{
+/**
+* getFiles()
+* in:
+fileWild = file name with a wildcard inside
+paths = path names in which to find files
+**/
+void getFiles(string fileWild, string[] paths)
+{
+    foreach(path; paths)
+    {
+        string[] fnames = expandToMatchingFiles(fileWild, path);
+        if(_debug) writeln("fnames = ", fnames);
+
+        foreach(fn; fnames)
+        {
+            files.length++;
+            files[cast(uint)f] = path ~ fn;
+            f++;
+        }
+
+    }
+}
+
+/**
+* goDeeper()
+* in:
+index = index number of directory level where there is a wildcard
+base = base path before first wildcard
+dirs = array of directory levels
+adirs = array of directories that match wildcard
+**/
+void goDeeper(ulong index, string base, string[] dirs, string[] adirs)
+{
+    import std.path : dirSeparator;
+
+    index += 1;
+    if(_debug)  writeln("index = ", index);
+
+    if(index <= dirs.length - 1)
+    {
+        string wildcard = dirs[cast(uint)index];
+        if(_debug)  writeln("wildcard = ", wildcard);
+        foreach(ad; adirs)
+        {
+            string newbase = base ~ ad ~ dirSeparator;
+            if(_debug)  writeln("newbase = ", newbase);
+            string[] newadirs = expandToMatchingDirs(wildcard, newbase);
+            if(_debug)  writeln("newadirs = ", newadirs);
+
+            if(index < dirs.length - 1)
+            {
+                goDeeper(index, newbase, dirs, newadirs);
+            }
+            else
+            {
+                //save path
+                foreach(newad; newadirs)
+                {
+                    paths.length++;
+                    paths[cast(uint)p] = newbase ~ newad ~ dirSeparator;
+                    p++;
+                }
+            }
+        }
+    }
+    else    // only 1 deep
+    {
+        foreach(ad; adirs)
+        {
+            paths.length++;
+            paths[cast(uint)p] = base ~ ad ~ dirSeparator;
+            p++;
+        }
+    }
+
+}
+
+/**
+* findWildcard()
+* in: array of directory levels
+* out: index of first wildcard inside dirs array
+**/
+ulong findWildcard(string[] dirs)
+{
+    auto wildcards = ["*", "[", "]", "?"];
+    foreach(i, d; dirs)
+    {
+        foreach(wc; wildcards)
+        {
+            if(canFind(d, wc))
+            {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+/**
+* expandToMatchingDirs()
+* in: wildcard, path on wildcard's level
+* out: list of directories that match
+**/
+string[] expandToMatchingDirs(string wildcard, string base)
+{
+    import std.path : dirSeparator, baseName;
+    import std.file : dirEntries, SpanMode;
+
+    return dirEntries(base, wildcard, SpanMode.shallow)     //get matching dirs without the preceding path (built-in globMatch)
+            .filter!(a => a.isDir)
+            .map!(a => baseName(a.name))
+            .array;   // convert from map to string array
+}
+
+/**
+* expandToMatchingFiles()
+* in: wildcard, path on wildcard's level
+* out: list of files that match
+**/
+string[] expandToMatchingFiles(string wildcard, string base)
+{
+    import std.path : dirSeparator, baseName;
+    import std.file : dirEntries, SpanMode;
+
+    if(_debug) writeln("wildcard = ", wildcard);
+    return dirEntries(base, wildcard, SpanMode.shallow)
+            .map!(a => baseName(a.name))
+            .array;   // convert from map to string array
+}
 }
