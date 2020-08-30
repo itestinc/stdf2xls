@@ -100,7 +100,8 @@ enum BinCategory_t
 enum WafermapFormat_t {
     ASY,
     SINF,
-    SINF_SENTONS
+    SINF_SENTONS,
+    MICROSOFT
 }
 
 
