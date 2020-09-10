@@ -105,6 +105,11 @@ enum WafermapFormat_t {
 }
 
 
+string[] files;     // output filenames with full path prefix
+string[] paths;     // list of paths in which to search for files with wildcard match
+ulong p = 0;
+ulong f = 0;
+bool _debug = false;
 import std.regex;
 import itestinc.StdfFile;
 class CmdOptions
@@ -210,11 +215,6 @@ class CmdOptions
             import std.string;
             import std.range;
             import std.algorithm;
-            string[] paths;     // list of paths in which to search for files with wildcard match
-            ulong p = 0;
-            string[] files;     // output filenames with full path prefix
-            ulong f = 0;
-            bool _debug = false;
             foreach(i, arg; stdfFiles)
             {
                 if (i == 0) continue;
@@ -266,8 +266,8 @@ class CmdOptions
                 if(_debug) writeln("files = ", files);
 
             }
-            if(_debug) writeln("files.length = ", files.length);
-            if(_debug) foreach(f; files) writeln(f);
+            //if(_debug) writeln("files.length = ", files.length);
+            //if(_debug) foreach(f; files) writeln(f);
             stdfFiles = files;
         }
         if (rslt.helpWanted)
@@ -498,7 +498,7 @@ void getFiles(string fileWild, string[] paths)
     foreach(path; paths)
     {
         string[] fnames = expandToMatchingFiles(fileWild, path);
-        if(_debug) writeln("fnames = ", fnames);
+        //if(_debug) writeln("fnames = ", fnames);
 
         foreach(fn; fnames)
         {
@@ -571,6 +571,7 @@ void goDeeper(ulong index, string base, string[] dirs, string[] adirs)
 **/
 ulong findWildcard(string[] dirs)
 {
+    import std.algorithm;
     auto wildcards = ["*", "[", "]", "?"];
     foreach(i, d; dirs)
     {
@@ -592,8 +593,11 @@ ulong findWildcard(string[] dirs)
 **/
 string[] expandToMatchingDirs(string wildcard, string base)
 {
+    import std.algorithm;
+    import std.algorithm : filter, map;
     import std.path : dirSeparator, baseName;
     import std.file : dirEntries, SpanMode;
+    import std.array;
 
     return dirEntries(base, wildcard, SpanMode.shallow)     //get matching dirs without the preceding path (built-in globMatch)
             .filter!(a => a.isDir)
@@ -610,6 +614,9 @@ string[] expandToMatchingFiles(string wildcard, string base)
 {
     import std.path : dirSeparator, baseName;
     import std.file : dirEntries, SpanMode;
+    import std.algorithm;
+    import std.algorithm : filter, map;
+    import std.array;
 
     if(_debug) writeln("wildcard = ", wildcard);
     return dirEntries(base, wildcard, SpanMode.shallow)
