@@ -137,97 +137,98 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
                 removeDups = true;
                 goto case;
             case SN_UP_TIME_UP:
-                multiSort!("a.devId.setNumeric(false) < b.devId.setNumeric(false)", "a.tstamp < b.tstamp")(dr);
+                writeln("SORTING");
+                multiSort!("a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) != 0", "a.tstamp < b.tstamp")(dr);
                 break;
             case SN_DOWN_TIME_UP_NO_DUPS:
                 removeDups = true;
                 goto case;
             case SN_DOWN_TIME_UP:
-                multiSort!("a.devId.setNumeric(false) > b.devId.setNumeric(false)", "a.tstamp < b.tstamp")(dr);
+                multiSort!("a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) == 0", "a.tstamp < b.tstamp")(dr);
                 break;
             case SN_UP_TIME_DOWN_NO_DUPS:
                 removeDups = true;
                 goto case;
             case SN_UP_TIME_DOWN:
-                multiSort!("a.devId.setNumeric(false) < b.devId.setNumeric(false)", "a.tstamp > b.tstamp")(dr);
+                multiSort!("a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) != 0", "a.tstamp > b.tstamp")(dr);
                 break;
             case SN_DOWN_TIME_DOWN_NO_DUPS:
                 removeDups = true;
                 goto case;
             case SN_DOWN_TIME_DOWN:
-                multiSort!("a.devId.setNumeric(false) > b.devId.setNumeric(false)", "a.tstamp > b.tstamp")(dr);
+                multiSort!("a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) == 0", "a.tstamp > b.tstamp")(dr);
                 break;
             case SNN_UP_TIME_UP_NO_DUPS:
                 removeDups = true;
                 goto case;
             case SNN_UP_TIME_UP:
-                multiSort!("a.devId.setNumeric(true) < b.devId.setNumeric(true)", "a.tstamp < b.tstamp")(dr);
+                multiSort!("a.devId.setNumeric(true).opCmp(b.devId.setNumeric(true)) < 0", "a.tstamp > b.tstamp")(dr);
                 break;
             case SNN_DOWN_TIME_UP_NO_DUPS:
                 removeDups = true;
                 goto case;
             case SNN_DOWN_TIME_UP:
-                multiSort!("a.devId.setNumeric(true) > b.devId.setNumeric(true)", "a.tstamp < b.tstamp")(dr);
+                multiSort!("a.devId.setNumeric(true).opCmp(b.devId.setNumeric(true)) > 0", "a.tstamp < b.tstamp")(dr);
                 break;
             case SNN_UP_TIME_DOWN_NO_DUPS:
                 removeDups = true;
                 goto case;
             case SNN_UP_TIME_DOWN:
-                multiSort!("a.devId.setNumeric(true) < b.devId.setNumeric(true)", "a.tstamp > b.tstamp")(dr);
+                multiSort!("a.devId.setNumeric(true).opCmp(b.devId.setNumeric(true)) < 0", "a.tstamp > b.tstamp")(dr);
                 break;
             case SNN_DOWN_TIME_DOWN_NO_DUPS:
                 removeDups = true;
                 goto case;
             case SNN_DOWN_TIME_DOWN:
-                multiSort!("a.devId.setNumeric(true) > b.devId.setNumeric(true)", "a.tstamp > b.tstamp")(dr);
+                multiSort!("a.devId.setNumeric(true).opCmp(b.devId.setNumeric(true)) > 0", "a.tstamp > b.tstamp")(dr);
                 break;
             case TIME_UP_SN_UP_NO_DUPS:
                 removeDups = true;
                 goto case;
             case TIME_UP_SN_UP:
-                multiSort!("a.tstamp < b.tstamp", "a.devId.setNumeric(false) < b.devId.setNumeric(false)")(dr);
+                multiSort!("a.tstamp < b.tstamp", "a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) != 0")(dr);
                 break;
             case TIME_UP_SN_DOWN_NO_DUPS:
                 removeDups = true;
                 goto case;
             case TIME_UP_SN_DOWN:
-                multiSort!("a.tstamp < b.tstamp", "a.devId.setNumeric(false) > b.devId.setNumeric(false)")(dr);
+                multiSort!("a.tstamp < b.tstamp", "a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) == 0")(dr);
                 break;
             case TIME_DOWN_SN_UP_NO_DUPS:
                 removeDups = true;
                 goto case;
             case TIME_DOWN_SN_UP:
-                multiSort!("a.tstamp > b.tstamp", "a.devId.setNumeric(false) < b.devId.setNumeric(false)")(dr);
+                multiSort!("a.tstamp > b.tstamp", "a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) != 0")(dr);
                 break;
             case TIME_DOWN_SN_DOWN_NO_DUPS:
                 removeDups = true;
                 goto case;
             case TIME_DOWN_SN_DOWN:
-                multiSort!("a.tstamp > b.tstamp", "a.devId.setNumeric(false) > b.devId.setNumeric(false)")(dr);
+                multiSort!("a.tstamp > b.tstamp", "a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) == 0")(dr);
                 break;
             case TIME_UP_SNN_UP_NO_DUPS:
                 removeDups = true;
                 goto case;
             case TIME_UP_SNN_UP:
-                multiSort!("a.tstamp < b.tstamp", "a.devId.setNumeric(true) < b.devId.setNumeric(true)")(dr);
+                multiSort!("a.tstamp < b.tstamp", "a.devId.setNumeric(true).opCmp(b.devId.setNumeric(true)) < 0")(dr);
                 break;
             case TIME_UP_SNN_DOWN_NO_DUPS:
                 removeDups = true;
                 goto case;
             case TIME_UP_SNN_DOWN:
-                multiSort!("a.tstamp < b.tstamp", "a.devId.setNumeric(true) > b.devId.setNumeric(true)")(dr);
+                multiSort!("a.tstamp < b.tstamp", "a.devId.setNumeric(true).opCmp(b.devId.setNumeric(true)) > 0")(dr);
                 break;
             case TIME_DOWN_SNN_UP_NO_DUPS:
                 removeDups = true;
                 goto case;
             case TIME_DOWN_SNN_UP:
-                multiSort!("a.tstamp > b.tstamp", "a.devId.setNumeric(true) < b.devId.setNumeric(true)")(dr);
+                multiSort!("a.tstamp > b.tstamp", "a.devId.setNumeric(true).opCmp(b.devId.setNumeric(true)) < 0")(dr);
                 break;
             case TIME_DOWN_SNN_DOWN_NO_DUPS:
                 removeDups = true;
                 goto case;
             case TIME_DOWN_SNN_DOWN:
-                multiSort!("a.tstamp > b.tstamp", "a.devId.setNumeric(true) > b.devId.setNumeric(true)")(dr);
+                multiSort!("a.tstamp > b.tstamp", "a.devId.setNumeric(true).opCmp(b.devId.setNumeric(true)) > 0")(dr);
                 break;
             default: throw new Exception("Unsupported sort type");
         }

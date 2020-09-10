@@ -127,6 +127,7 @@ struct PartID
         }
         if (numericSN)
         {
+            writeln("Calling opCmp");
             int sn1;
             int sn2;
             try
