@@ -586,6 +586,7 @@ class StdfDB
                         byte resScal = mpr.RES_SCAL.isEmpty() ? dvd.getDefaultResScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.RES_SCAL;
                         byte llmScal = mpr.LLM_SCAL.isEmpty() ? dvd.getDefaultLlmScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.LLM_SCAL;
                         byte hlmScal = mpr.HLM_SCAL.isEmpty() ? dvd.getDefaultHlmScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.HLM_SCAL;
+                        writeln("RTN_INDX.empty = ", mpr.RTN_INDX.isEmpty(), " RTN_INDX.length = ", mpr.RTN_INDX.length);
                         U2[] indicies = (mpr.RTN_INDX.isEmpty() || mpr.RTN_INDX.length == 0) ? dvd.getDefaultPinIndicies(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.RTN_INDX.getValue();
                         stdout.flush();
                         stdout.flush();
