@@ -81,7 +81,8 @@ public void initHistoFormats(Workbook wb, CmdOptions options, Config config) {
     AxisNameFont.bold = true;
 
     AxisXNumberFont.size = 9;
-    AxisXNumberFont.rotation = -90;
+    //AxisXNumberFont.rotation = -90;
+    AxisXNumberFont.rotation = 0;
 
     AxisYNumberFont.size = 9;
 
