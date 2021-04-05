@@ -32,8 +32,8 @@ import std.string : chop;
 public void genHistogram(CmdOptions options, StdfDB stdfdb, Config config)
 {
     const double bin_width_divider = 40;    // larger = more bins
-    const double aggressive_multiplier = 0.15;  // smaller = more aggressive
-    const double cutoff_compensator = options.cutoff*aggressive_multiplier*6;   // increases the number of inner bins after cutting off the outlier bins; larger = more bins
+    const double aggressive_multiplier = 1.0;  // smaller = more aggressive
+    const double cutoff_compensator = options.cutoff*aggressive_multiplier*0.15;   // increases the number of inner bins after cutting off the outlier bins; larger = more bins
     //const double cutoff_compensator = 20;
 
     foreach(hdr_i, hdr; stdfdb.deviceMap.keys) {
