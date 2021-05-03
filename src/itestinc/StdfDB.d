@@ -713,7 +713,9 @@ class StdfDB
                                 }
                                 else if (format == "hex_int")
                                 {
-                                    tr = new TestRecord(id, to!ubyte(site), to!ubyte(head), to!(ulong)(value), seq, units);
+                                    import std.bigint : BigInt;
+                                    BigInt bigVal = value;      // convert directly from hex string to int
+                                    tr = new TestRecord(id, to!ubyte(site), to!ubyte(head), to!(ulong)(bigVal), seq, units);
                                 }
                                 else if (format == "dec_int")
                                 {
