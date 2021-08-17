@@ -130,6 +130,7 @@ class CmdOptions
     bool limit1k = false;
     bool noDynamicLimits = false;
     bool dumpAscii = false;
+    bool forceWafer = false;
     WafermapFormat_t wformat = WafermapFormat_t.ASY;
     bool pattern = false;
     bool showNum = false;
@@ -315,6 +316,7 @@ class CmdOptions
             "sortType", "Specify device sort order: Default: by alphanumeric serial number, then by time. See the manual for valid sort types", &sortType,
             "1kcol|c", "limit to 1000 columns for libreoffice - default is 16360 columns", &limit1k,
             "noDynamicLimits|Y", "Don't check for and show dynamic limits", &noDynamicLimits,
+            "forceWafer|F", "Force wafersort in case wafer ID is missing", &forceWafer,
 
             "genWafermaps|w", "Generate wafer map(s)", &genWafermap,
             "wo|W", "Wafermap output filename(s); name may contain variables for device, wafer, and/or lot\nDefault = %device%_%lot%_%wafer%.xlsx", &wfile,

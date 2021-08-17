@@ -86,6 +86,7 @@ class HeaderInfo
     const string devName;
     private string[const string] headerItems;
     private string[const string] hi;
+    private static int wnum;
 
     this(bool ignoreMiscItems, string step, string temperature, string lot_id, string sublot_id, string wafer_id, string devName)
     {
@@ -180,6 +181,7 @@ struct StdfFile
     private const bool ignoreMiscHeaderItems;
     private const string optionString;
     private CmdOptions options;
+    uint wnum = 1;
 
     /**
       Options needed:
@@ -383,6 +385,7 @@ struct StdfFile
                     rs.length = 0;
                 }
             }
+            wnum++;
         }
         if (step != "end")
         {
@@ -435,6 +438,12 @@ struct StdfFile
         string sblot = mir.SBLOT_ID;
         string device = mir.PART_TYP;
         string wafer = (wir is null) ? "" : wir.WAFER_ID;
+        if (options.forceWafer)
+        {
+            wafer = to!string(wnum);
+            wnum++;
+        }
+        
         string[string] miscFields;
         miscFields["stdf2xlsx options"] = optionString;
         miscFields["stdf2xlsx version"] = CmdOptions.stdf2xlsx_version;
