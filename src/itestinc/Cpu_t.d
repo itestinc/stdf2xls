@@ -12,13 +12,13 @@ enum Cpu_t : const(CPU)
     PC  = new const CPU(SUN, 2)
 }
 
-class CPU : EnumValue!(const CPU)
+class CPU //: EnumValue!(const CPU)
 {
     const ubyte type;
 
     private const this(const(CPU) prev, uint type)
     {
-        super(prev);
+        //super(prev);
         this.type = cast(ubyte) type;
     }
 

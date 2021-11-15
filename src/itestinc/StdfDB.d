@@ -478,8 +478,9 @@ class StdfDB
             for (int i=0; i<dr.length; i++) dr[i] = new DeviceResult[numHeads];
             stdout.flush();
             ulong time = mir.START_T;
-            string serial_number = "";
-            PartID pid;
+            string[] serial_number = new string[numSites];
+            for (int i=0; i<numSites; i++) serial_number[i] = "";
+            PartID[] pid = new PartID[numSites];
             bool dvdDone = false;
             foreach (hbr; data.hbrs)
             {
@@ -657,8 +658,11 @@ class StdfDB
                             }
                             else if (strip(toks[1]) == SERIAL_MARKER && !options.ignoreSerialMarker)
                             {
-                                serial_number = strip(toks[2]);
-                                pid = PartID(strip(toks[2]));
+                                string sit = strip(toks[4]);
+                                int site = to!int(sit);
+                                serial_number[site-1] = strip(toks[2]);
+                                pid[site-1] = PartID(strip(toks[2]));
+                                //writeln("A serial number = ", serial_number);
                             }
                             else
                             {
@@ -715,6 +719,7 @@ class StdfDB
                                 {
                                     import std.bigint : BigInt;
                                     BigInt bigVal = value;      // convert directly from hex string to int
+                                    writeln("value = ", bigVal);
                                     tr = new TestRecord(id, to!ubyte(site), to!ubyte(head), to!(ulong)(bigVal), seq, units);
                                 }
                                 else if (format == "dec_int")
@@ -726,6 +731,7 @@ class StdfDB
                                     tr = new TestRecord(id, to!ubyte(site), to!ubyte(head), value, seq, units);
                                 }
                                 seq++;
+                                writeln("site = ", site, " minsite = ", minSite);
                                 dr[to!(ubyte)(site) - minSite][to!(ubyte)(head) - minHead].tests ~= tr;
                             }
                         }
@@ -733,23 +739,23 @@ class StdfDB
                     case Record_t.PRR.ordinal:
                         dupNums = new MultiMap!(uint, Record_t, TestNumber_t, TestName_t, Site_t, Head_t)();
                         Record!(PRR) prr = cast(Record!(PRR)) rec;
-                        if (serial_number == "")
+                        uint head = prr.HEAD_NUM;
+                        uint site = prr.SITE_NUM;
+                        if (serial_number[site-1] == "")
                         {
                             if (hdr.isWafersort())
                             {
-                                pid = PartID(prr.X_COORD, prr.Y_COORD);
+                                pid[site-1] = PartID(prr.X_COORD, prr.Y_COORD);
                             }
                             else
                             {
-                                pid = PartID(prr.PART_ID);
+                                pid[site-1] = PartID(prr.PART_ID);
                             }
                         }
-                        serial_number = "";
-                        uint head = prr.HEAD_NUM;
-                        uint site = prr.SITE_NUM;
+                        serial_number[site-1] = "";
                         //if (prr.HARD_BIN == 1) dvdDone = true; // this doesn't work if test flow is not consistent
                         time += prr.TEST_T;
-                        dr[site - minSite][head - minHead].devId = pid;
+                        dr[site - minSite][head - minHead].devId = pid[site-1];
                         dr[site - minSite][head - minHead].site = site;
                         dr[site - minSite][head - minHead].head = head;
                         dr[site - minSite][head - minHead].tstamp = time;

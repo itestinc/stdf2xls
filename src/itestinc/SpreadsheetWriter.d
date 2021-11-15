@@ -1046,8 +1046,8 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                         break;
                     case HEX_INT:
                         string value = to!string(tr.result.u);
-                        if ((tr.testFlags & 0x80) == 0x80) writeFormula(w, row, lcol, "=DEC2HEX(" ~ value ~ "; 8)", failDataFmt);
-                        else writeFormula(w, row, lcol, "=DEC2HEX(" ~ value ~ "; 8)", passDataHexFmt);
+                        if ((tr.testFlags & 0x80) == 0x80) writeFormula(w, row, lcol, "=DEC2HEX(" ~ value ~ ", 8)", failDataFmt);
+                        else writeFormula(w, row, lcol, "=DEC2HEX(" ~ value ~ ", 8)", passDataHexFmt);
                         break;
                     case DEC_INT:
                         if ((tr.testFlags & 0x80) == 0x80) writeNumber(w, row, lcol, tr.result.l, failDataFmt);
@@ -1110,8 +1110,8 @@ private void setData(CmdOptions options, Config config, Worksheet w, size_t shee
                 break;
             case HEX_INT:
                 string value = to!string(tr.result.u);
-                if ((tr.testFlags & 0x80) == 0x80) writeFormula(w, row, lcol, "=DEC2HEX(" ~ value ~ "; 8)", failDataFmt);
-                else writeFormula(w, row, lcol, "=DEC2HEX(" ~ value ~ "; 8)", passDataHexFmt);
+                if ((tr.testFlags & 0x80) == 0x80) writeFormula(w, row, lcol, "=DEC2HEX(" ~ value ~ ", 8)", failDataFmt);
+                else writeFormula(w, row, lcol, "=DEC2HEX(" ~ value ~ ", 8)", passDataHexFmt);
                 break;
             case DEC_INT:
                 if ((tr.testFlags & 0x80) == 0x80) writeNumber(w, row, lcol, tr.result.l, failDataFmt);
