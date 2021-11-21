@@ -731,7 +731,6 @@ class StdfDB
                                     tr = new TestRecord(id, to!ubyte(site), to!ubyte(head), value, seq, units);
                                 }
                                 seq++;
-                                writeln("site = ", site, " minsite = ", minSite);
                                 dr[to!(ubyte)(site) - minSite][to!(ubyte)(head) - minHead].tests ~= tr;
                             }
                         }
