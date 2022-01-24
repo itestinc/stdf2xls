@@ -646,6 +646,7 @@ class StdfDB
                     case Record_t.DTR.ordinal:
                         auto dtr = cast(Record!DTR) rec;
                         string text = strip(dtr.TEXT_DAT.getValue());
+                        writeln("text = ", text); stdout.flush();
                         if (text.length > 10 && text[0..9] == "TEXT_DATA")
                         {
                             auto toks = text.split(":");
@@ -662,7 +663,7 @@ class StdfDB
                                 int site = to!int(sit);
                                 serial_number[site-1] = strip(toks[2]);
                                 pid[site-1] = PartID(strip(toks[2]));
-                                //writeln("A serial number = ", serial_number);
+                                writeln("A serial number[", site, "] = ", serial_number[site-1]);
                             }
                             else
                             {
@@ -706,10 +707,10 @@ class StdfDB
                                 {
                                     value = valueUnitsOpt;
                                 }
-                                uint dup = dupNums.get(uint.max, rec.recordType, to!uint(testNumber), testName, to!ubyte(site), to!ubyte(head));
+                                uint dup = dupNums.get(uint.max, rec.recordType, to!uint(to!double(testNumber)), testName, to!ubyte(site), to!ubyte(head));
                                 if (dup == uint.max) dup = 1; else dup++;
-                                dupNums.put(dup, rec.recordType, to!uint(testNumber), testName, to!ubyte(site), to!ubyte(head));
-                                TestID id = TestID.getTestID(Record_t.DTR, pin, to!uint(testNumber), testName, dup);
+                                dupNums.put(dup, rec.recordType, to!uint(to!double(testNumber)), testName, to!ubyte(site), to!ubyte(head));
+                                TestID id = TestID.getTestID(Record_t.DTR, pin, to!uint(to!double(testNumber)), testName, dup);
                                 TestRecord tr = null;
                                 if (format == "float")
                                 {
@@ -740,6 +741,7 @@ class StdfDB
                         Record!(PRR) prr = cast(Record!(PRR)) rec;
                         uint head = prr.HEAD_NUM;
                         uint site = prr.SITE_NUM;
+                        writeln("B serial number[", site, "] = ", serial_number[site-1]);
                         if (serial_number[site-1] == "")
                         {
                             if (hdr.isWafersort())
