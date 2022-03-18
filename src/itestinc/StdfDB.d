@@ -477,7 +477,7 @@ class StdfDB
             dr.length = numSites;
             for (int i=0; i<dr.length; i++) dr[i] = new DeviceResult[numHeads];
             stdout.flush();
-            ulong time = mir.START_T;
+            ulong time = mir.START_T * 1000L; // convert to milliseconds
             string[] serial_number = new string[numSites];
             for (int i=0; i<numSites; i++) serial_number[i] = "";
             PartID[] pid = new PartID[numSites];
