@@ -436,7 +436,7 @@ struct StdfFile
         string step = "";
         string lot = mir.LOT_ID;
         string sblot = mir.SBLOT_ID;
-        string device = mir.PART_TYP;
+        string device = mir.PROC_ID;  
         string wafer = (wir is null) ? "" : wir.WAFER_ID;
         if (options.forceWafer)
         {

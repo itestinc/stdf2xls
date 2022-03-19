@@ -74,8 +74,22 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
     foreach (key; stdfdb.deviceMap.keys)
     {
         Workbook wb;
+        writeln("wafersort = ", key.isWafersort(), " dev = ", key.devName, " wafer = ", key.wafer_id);        
         import std.string;
-        if (separateFileForDevice && separateFileForLot)
+        if (key.isWafersort())
+        {
+            string lot = key.lot_id;
+            string dev = key.devName;
+            string fname = key.devName ~ "_" ~ key.lot_id ~ "_" ~ key.wafer_id ~ ".xlsx";
+            wb = wbMap.get(dummyWb, dev, lot);
+            if (wb.filename == "")
+            {
+                wb = newWorkbook(fname);
+                initFormats(wb, options, config);
+                wbMap.put(wb, dev, lot);
+            }
+        }
+        else if (separateFileForDevice && separateFileForLot)
         {
             string lot = replace(key.lot_id, '/', '%');
             string dev = replace(key.devName, '/', '%');
@@ -132,13 +146,14 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
         DeviceResult[] dr = stdfdb.deviceMap[key];
         bool removeDups = false;
         
+        if (!dr[0].devId.ws)
+        {
         switch (options.sortType) with (Sort_t)
         {
             case SN_UP_TIME_UP_NO_DUPS:
                 removeDups = true;
                 goto case;
             case SN_UP_TIME_UP:
-                writeln("SORTING");
                 multiSort!("a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) != 0", "a.tstamp < b.tstamp")(dr);
                 break;
             case SN_DOWN_TIME_UP_NO_DUPS:
@@ -233,7 +248,7 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
                 break;
             default: throw new Exception("Unsupported sort type");
         }
-        
+        } 
         DeviceResult[] devices;
         if (removeDups)
         {

@@ -77,6 +77,13 @@ struct PartID
         return this;
     }
 
+    this(ref return scope PartID pid)
+    {
+        this.ws = pid.ws;
+        this.id = pid.id;
+        this.numericSN = pid.numericSN;
+    }
+
     public string toString() const pure
     {
         return ws ? id.xy.toString() : id.sn;
@@ -122,12 +129,13 @@ struct PartID
     {
         if (ws)
         {
+            int diffx = id.xy.x - sd.id.xy.x;
+            int diffy = id.xy.y - sd.id.xy.y;
             if (id.xy.x != sd.id.xy.x) return id.xy.x - sd.id.xy.x;
             return id.xy.y - sd.id.xy.y;
         }
         if (numericSN)
         {
-            writeln("Calling opCmp");
             int sn1;
             int sn2;
             try
@@ -363,6 +371,19 @@ struct DeviceResult
     ulong tstamp;
     TestRecord[] tests;
 
+    this(ref return scope DeviceResult dr)
+    {
+        devId = PartID(dr.devId);
+        site = dr.site;
+        head = dr.head;
+        hwbin = dr.hwbin;
+        swbin = dr.swbin;
+        goodDevice = dr.goodDevice;
+        tstamp = dr.tstamp;
+        tests = new TestRecord[dr.tests.length];
+        for (int i=0; i<dr.tests.length; i++) tests[i] = dr.tests[i];
+    }
+
 }
 
 enum PMRNameType
@@ -473,9 +494,8 @@ class StdfDB
             import std.stdio;
             import std.string;
             auto dupNums = new MultiMap!(DupNumber_t, Record_t, TestNumber_t, TestName_t, Site_t, Head_t)();
-            DeviceResult[][] dr;
+            DeviceResult[] dr;
             dr.length = numSites;
-            for (int i=0; i<dr.length; i++) dr[i] = new DeviceResult[numHeads];
             stdout.flush();
             ulong time = mir.START_T * 1000L; // convert to milliseconds
             string[] serial_number = new string[numSites];
@@ -515,7 +535,7 @@ class StdfDB
                         }
                         TestID id = TestID.getTestID(Record_t.FTR, pin, ftr.TEST_NUM, testName, dup);
                         TestRecord tr = new TestRecord(id, ftr.SITE_NUM, ftr.HEAD_NUM, ftr.TEST_FLG, seq);
-                        dr[ftr.SITE_NUM - minSite][ftr.HEAD_NUM - minHead].tests ~= tr;
+                        dr[ftr.SITE_NUM - minSite].tests ~= tr;
                         seq++;
                         break;
 
@@ -556,7 +576,7 @@ class StdfDB
                         TestRecord tr = new TestRecord(id, ptr.SITE_NUM, ptr.HEAD_NUM, ptr.TEST_FLG, optFlags,
                                 parmFlags, loLimit, hiLimit, result, units, resScal, llmScal, hlmScal, seq);
                         normalizeValues(tr);
-                        dr[ptr.SITE_NUM - minSite][ptr.HEAD_NUM - minHead].tests ~= tr;
+                        dr[ptr.SITE_NUM - minSite].tests ~= tr;
                         seq++;
                         break;
 
@@ -588,7 +608,6 @@ class StdfDB
                         byte resScal = mpr.RES_SCAL.isEmpty() ? dvd.getDefaultResScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.RES_SCAL;
                         byte llmScal = mpr.LLM_SCAL.isEmpty() ? dvd.getDefaultLlmScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.LLM_SCAL;
                         byte hlmScal = mpr.HLM_SCAL.isEmpty() ? dvd.getDefaultHlmScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.HLM_SCAL;
-                        writeln("RTN_INDX.empty = ", mpr.RTN_INDX.isEmpty(), " RTN_INDX.length = ", mpr.RTN_INDX.length);
                         U2[] indicies = (mpr.RTN_INDX.isEmpty() || mpr.RTN_INDX.length == 0) ? dvd.getDefaultPinIndicies(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.RTN_INDX.getValue();
                         stdout.flush();
                         stdout.flush();
@@ -635,7 +654,7 @@ class StdfDB
                                     else tr.testFlags |= 0x80;
                                 }
                             }
-                            dr[mpr.SITE_NUM - minSite][mpr.HEAD_NUM - minHead].tests ~= tr;
+                            dr[mpr.SITE_NUM - minSite].tests ~= tr;
                             seq++;
                         }
                         break;
@@ -646,7 +665,6 @@ class StdfDB
                     case Record_t.DTR.ordinal:
                         auto dtr = cast(Record!DTR) rec;
                         string text = strip(dtr.TEXT_DAT.getValue());
-                        writeln("text = ", text); stdout.flush();
                         if (text.length > 10 && text[0..9] == "TEXT_DATA")
                         {
                             auto toks = text.split(":");
@@ -661,9 +679,8 @@ class StdfDB
                             {
                                 string sit = strip(toks[4]);
                                 int site = to!int(sit);
-                                serial_number[site-1] = strip(toks[2]);
-                                pid[site-1] = PartID(strip(toks[2]));
-                                writeln("A serial number[", site, "] = ", serial_number[site-1]);
+                                serial_number[site-minSite] = strip(toks[2]);
+                                pid[site-minSite] = PartID(strip(toks[2]));
                             }
                             else
                             {
@@ -720,7 +737,6 @@ class StdfDB
                                 {
                                     import std.bigint : BigInt;
                                     BigInt bigVal = value;      // convert directly from hex string to int
-                                    writeln("value = ", bigVal);
                                     tr = new TestRecord(id, to!ubyte(site), to!ubyte(head), to!(ulong)(bigVal), seq, units);
                                 }
                                 else if (format == "dec_int")
@@ -732,7 +748,7 @@ class StdfDB
                                     tr = new TestRecord(id, to!ubyte(site), to!ubyte(head), value, seq, units);
                                 }
                                 seq++;
-                                dr[to!(ubyte)(site) - minSite][to!(ubyte)(head) - minHead].tests ~= tr;
+                                dr[to!(ubyte)(site) - minSite].tests ~= tr;
                             }
                         }
                         break;
@@ -741,29 +757,28 @@ class StdfDB
                         Record!(PRR) prr = cast(Record!(PRR)) rec;
                         uint head = prr.HEAD_NUM;
                         uint site = prr.SITE_NUM;
-                        writeln("B serial number[", site, "] = ", serial_number[site-1]);
-                        if (serial_number[site-1] == "")
+                        if (serial_number[site-minSite] == "")
                         {
                             if (hdr.isWafersort())
                             {
-                                pid[site-1] = PartID(prr.X_COORD, prr.Y_COORD);
+                                pid[site-minSite] = PartID(prr.X_COORD, prr.Y_COORD);
                             }
                             else
                             {
-                                pid[site-1] = PartID(prr.PART_ID);
+                                pid[site-minSite] = PartID(prr.PART_ID);
                             }
                         }
-                        serial_number[site-1] = "";
+                        serial_number[site-minSite] = "";
                         //if (prr.HARD_BIN == 1) dvdDone = true; // this doesn't work if test flow is not consistent
                         time += prr.TEST_T;
-                        dr[site - minSite][head - minHead].devId = pid[site-1];
-                        dr[site - minSite][head - minHead].site = site;
-                        dr[site - minSite][head - minHead].head = head;
-                        dr[site - minSite][head - minHead].tstamp = time;
-                        dr[site - minSite][head - minHead].hwbin = prr.HARD_BIN;
-                        dr[site - minSite][head - minHead].swbin = prr.SOFT_BIN;
-                        devices ~= dr[site - minSite][head - minHead];
-                        dr[site - minSite][head - minHead].tests.length = 0;
+                        dr[site - minSite].devId = pid[site-minSite];
+                        dr[site - minSite].site = site;
+                        dr[site - minSite].head = head;
+                        dr[site - minSite].tstamp = time;
+                        dr[site - minSite].hwbin = prr.HARD_BIN;
+                        dr[site - minSite].swbin = prr.SOFT_BIN;
+                        devices ~= dr[site - minSite];
+                        dr[site - minSite].tests.length = 0;
                         seq = 0;
                         break;
                     default:
@@ -947,7 +962,6 @@ private int findScale(TestRecord tr)
     else if (val <= 1000000.0f) scale = -3;
     else if (val <= 1E9f) scale = -6;
     else scale = -9;
-//    writeln("scale = ", scale);
     return(scale);
 }
 

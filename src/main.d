@@ -11,7 +11,7 @@ import std.getopt;
 import std.typecons;
 import itestinc.StdfFile;
 
-immutable string _version_ = "5.0.0";
+immutable string _version_ = CmdOptions.stdf2xlsx_version;
 
 int main(string[] args)
 {
