@@ -109,7 +109,7 @@ import std.regex;
 import itestinc.StdfFile;
 class CmdOptions
 {
-    public static immutable string stdf2xlsx_version = "5.0.2";
+    public static immutable string stdf2xlsx_version = "5.0.3";
     string[] files;     // output filenames with full path prefix
     string[] paths;     // list of paths in which to search for files with wildcard match
     ulong p = 0;
@@ -144,7 +144,7 @@ class CmdOptions
     string outputDir = "";
     string sfile = "%device%_%lot%.xlsx";
     string hfile = "%device%_histograms.xlsx";
-    string wfile = "%device%_%lot%_%wafer%.xlsx";
+    string wfile = "%device%_%lot%_%wafer%_wafermap.xlsx";
     BinCategory_t category = BinCategory_t.NONE;
     const string options;
     
