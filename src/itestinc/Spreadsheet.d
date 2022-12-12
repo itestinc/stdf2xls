@@ -75,12 +75,13 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
     {
         Workbook wb;
         writeln("wafersort = ", key.isWafersort(), " dev = ", key.devName, " wafer = ", key.wafer_id);        
+        writeln("key = ", key);
         import std.string;
         if (key.isWafersort())
         {
             string lot = key.lot_id;
             string dev = key.devName;
-            string fname = key.devName ~ "_" ~ key.lot_id ~ "_" ~ key.wafer_id ~ ".xlsx";
+            string fname = key.devName ~ "_" ~ key.lot_id ~ ".xlsx";
             wb = wbMap.get(dummyWb, dev, lot);
             if (wb.filename == "")
             {

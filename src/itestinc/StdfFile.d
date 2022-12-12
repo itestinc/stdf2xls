@@ -84,11 +84,12 @@ class HeaderInfo
     const string sublot_id;
     const string wafer_id;
     const string devName;
+    const string progName;
     private string[const string] headerItems;
     private string[const string] hi;
     private static int wnum;
 
-    this(bool ignoreMiscItems, string step, string temperature, string lot_id, string sublot_id, string wafer_id, string devName)
+    this(bool ignoreMiscItems, string step, string temperature, string lot_id, string sublot_id, string wafer_id, string devName, string progName)
     {
         this.ignoreMiscItems = ignoreMiscItems;
         this.step = step;
@@ -97,6 +98,7 @@ class HeaderInfo
         this.sublot_id = sublot_id;
         this.wafer_id = wafer_id;
         this.devName = devName;
+        this.progName = progName;
     }
 
     public bool isWafersort() @safe pure nothrow { return wafer_id != ""; }
@@ -115,6 +117,7 @@ class HeaderInfo
     {
         string s = "HeaderInfo:\n";
         s ~= "  devName = " ~ devName ~ "\n";
+        s ~= "  progName = " ~ progName ~ "\n";
         s ~= "  step = " ~ step ~ "\n";
         s ~= "  temperature = " ~ temperature ~ "\n";
         s ~= "  lot_id = " ~ lot_id ~ "\n";
@@ -139,6 +142,7 @@ class HeaderInfo
         if (sublot_id != h.sublot_id) return false;
         if (wafer_id != h.wafer_id) return false;
         if (devName != h.devName) return false;
+        if (progName != h.progName) return false;
         if (!ignoreMiscItems)
         {
             if (headerItems.length != h.headerItems.length) return false;
@@ -160,6 +164,7 @@ class HeaderInfo
         hash = sublot_id.hashOf(hash);
         hash = wafer_id.hashOf(hash);
         hash = devName.hashOf(hash);
+        hash = progName.hashOf(hash);
         if (!ignoreMiscItems) hash = headerItems.hashOf(hash);
         hash = ignoreMiscItems ? hash ^ 0xAAAA : hash ^ 0x5555;
         return hash;
@@ -307,6 +312,7 @@ struct StdfFile
         string temp = hdr.temperature;
         string step = hdr.step;
         string wafer = hdr.wafer_id;
+        string prog = hdr.progName;
         string[const string] miscFields = hdr.getHeaderItems();
         bool waferFound = false;
         HeaderInfo hdr2;
@@ -349,6 +355,7 @@ struct StdfFile
                                 if (tok0 == "STEP #") step = tok1;
                                 else if (tok0 == "TEMPERATURE") temp = tok1;
                                 else if (tok0 == "WAFER #") wafer = tok1;
+                                else if (tok0 == "TEST PROGRAM") prog = tok1;
                                 else miscFields[tok0] = tok1;
                             }
                         }
@@ -363,7 +370,7 @@ struct StdfFile
                 else if (rec.recordType == Record_t.PRR)
                 {
                     waferFound = false;
-                    hdr2 = new HeaderInfo(ignoreMiscHeaderItems, step, temp, hdr.lot_id, hdr.sublot_id, wafer, hdr.devName);
+                    hdr2 = new HeaderInfo(ignoreMiscHeaderItems, step, temp, hdr.lot_id, hdr.sublot_id, wafer, hdr.devName, prog);
                     foreach (key; miscFields.keys)
                     {
                         auto value = miscFields.get(key, "");
@@ -438,6 +445,7 @@ struct StdfFile
         string sblot = mir.SBLOT_ID;
         string device = mir.PROC_ID;  
         string wafer = (wir is null) ? "" : wir.WAFER_ID;
+        string prog = mir.JOB_NAM;
         if (options.forceWafer)
         {
             wafer = to!string(wnum);
@@ -461,7 +469,7 @@ struct StdfFile
                 else if (tok0 == "SOW") miscFields["SOW"] = tok1;
                 else if (tok0 == "CUSTOMER PO#") miscFields["CUSTOMER PO#"] = tok1;
                 else if (tok0 == "TESTER") miscFields["TESTER"] = tok1;
-                else if (tok0 == "TEST PROGRAM") miscFields["TEST PROGRAM"] = tok1;
+                else if (tok0 == "TEST PROGRAM") prog = tok1;
                 else if (tok0 == "CONTROL SERIAL #s") miscFields["CONTROL SERIAL #s"] = tok1;
                 else if (tok0 == "JOB #") miscFields["JOB #"] = tok1;
                 else if (tok0 == "LOT #") lot = tok1;
@@ -486,7 +494,7 @@ struct StdfFile
                 }
             }
         }
-        HeaderInfo hdr = new HeaderInfo(ignoreMiscHeaderItems, step, temp, lot, sblot, wafer, device);
+        HeaderInfo hdr = new HeaderInfo(ignoreMiscHeaderItems, step, temp, lot, sblot, wafer, device, prog);
         foreach (key; miscFields.keys)
         {
             auto value = miscFields.get(key, "");

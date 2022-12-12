@@ -580,6 +580,7 @@ private Worksheet[] createSheetsRotated(CmdOptions options, Config config, Workb
     {
         size_t col = i * maxCols;
         string title = getTitle(options, hdr, i);
+        writeln("title = ", title, " numDevices = ", numDevices);
         Worksheet w = wb.addWorksheet(title);
         ws ~= w;
         setTitle(ws[i], hdr, Yes.rotated);
@@ -617,6 +618,7 @@ private Worksheet[] createSheets(CmdOptions options, Config config, Workbook wb,
     {
         string title = getTitle(options, hdr, i);
         if (title.length > 31) title = title[0..31];
+        writeln("title = ", title, " numTests = ", numTests);
         Worksheet w = wb.addWorksheet(title);
         ws ~= w;
     }
@@ -800,6 +802,12 @@ private void setDeviceHeader(CmdOptions options, Config config, Worksheet w, Hea
             mergeRange(w, r, 9, r, 10, hdr.devName, hdrValueFmt);
             r++;
         }
+        if (hdr.progName != "")
+        {
+            mergeRange(w, r, 7, r, 8, "Test Program:", hdrNameFmt);
+            mergeRange(w, r, 9, r, 10, hdr.progName, hdrValueFmt);
+            r++;
+        }
         auto map = hdr.getHeaderItems();
         ushort c = 7;
         foreach (key; map.keys)
@@ -857,6 +865,12 @@ private void setDeviceHeader(CmdOptions options, Config config, Worksheet w, Hea
         {
             mergeRange(w, r, 0, r, 2, "Device:", hdrNameFmt);
             mergeRange(w, r, 3, r, 6, hdr.devName, hdrValueFmt);
+            r++;
+        }
+        if (hdr.progName != "")
+        {
+            mergeRange(w, r, 0, r, 2, "Test Program:", hdrNameFmt);
+            mergeRange(w, r, 3, r, 6, hdr.progName, hdrValueFmt);
             r++;
         }
         auto map = hdr.getHeaderItems();

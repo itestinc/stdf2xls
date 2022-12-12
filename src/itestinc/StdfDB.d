@@ -610,20 +610,21 @@ class StdfDB
                         byte hlmScal = mpr.HLM_SCAL.isEmpty() ? dvd.getDefaultHlmScal(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.HLM_SCAL;
                         U2[] indicies = (mpr.RTN_INDX.isEmpty() || mpr.RTN_INDX.length == 0) ? dvd.getDefaultPinIndicies(Record_t.MPR, mpr.TEST_NUM, testName, dup) : mpr.RTN_INDX.getValue();
                         stdout.flush();
-                        stdout.flush();
+                        bool noRtnIndx = false;
                         if (indicies.length != mpr.RTN_RSLT.length)
                         {
                             writeln("indicies.length = ", indicies.length, " RTN_RSLT.length = ", mpr.RTN_RSLT.length);
                             writeln("ERROR: RTN_INDX array in MPR missing or does not match length of RTN_RSLT");
                             writeln("TEST NUMBER = ", mpr.TEST_NUM);
                             writeln("TEST NAME = ", testName);
+                            noRtnIndx = true;
                         }
                         foreach(i, rslt; mpr.RTN_RSLT.getValue())
                         {
-                            ushort pinIndex = indicies[i];
+                            ushort pinIndex = noRtnIndx ? 0 : indicies[i];
                             float result = mpr.RTN_RSLT.getValue()[i];
-                            string pin = pinData.get(mpr.HEAD_NUM, mpr.SITE_NUM, pinIndex);
-                            if (pin == "") pin = pinData.get(mpr.HEAD_NUM, minSite, pinIndex);
+                            string pin = noRtnIndx ? "" : pinData.get(mpr.HEAD_NUM, mpr.SITE_NUM, pinIndex);
+                            if (pin == "" && !noRtnIndx) pin = pinData.get(mpr.HEAD_NUM, minSite, pinIndex);
                             TestID id = TestID.getTestID(Record_t.MPR, pin, mpr.TEST_NUM, testName, dup);
                             TestRecord tr = new TestRecord(id, mpr.SITE_NUM, mpr.HEAD_NUM, mpr.TEST_FLG, optFlags, parmFlags, 
                                     loLimit, hiLimit, result, units, resScal, llmScal, hlmScal, seq);
