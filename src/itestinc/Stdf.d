@@ -1239,7 +1239,6 @@ class StdfReader
             }
             ubyte rtype = src.getByte();
             ubyte stype = src.getByte();
-            writeln("rtype = ", rtype, " stype = ", stype);
             Record_t type = RecordType.getRecordType(rtype, stype);
             StdfRecord r;
             switch (type.ordinal)
