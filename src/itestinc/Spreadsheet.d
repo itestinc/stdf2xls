@@ -155,25 +155,25 @@ public void genSpreadsheet(CmdOptions options, StdfDB stdfdb, Config config)
                 removeDups = true;
                 goto case;
             case SN_UP_TIME_UP:
-                multiSort!("a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) != 0", "a.tstamp < b.tstamp")(dr);
+                multiSort!("a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) < 0", "a.tstamp < b.tstamp", SwapStrategy.unstable)(dr);
                 break;
             case SN_DOWN_TIME_UP_NO_DUPS:
                 removeDups = true;
                 goto case;
             case SN_DOWN_TIME_UP:
-                multiSort!("a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) == 0", "a.tstamp < b.tstamp")(dr);
+                multiSort!("a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) > 0", "a.tstamp < b.tstamp")(dr);
                 break;
             case SN_UP_TIME_DOWN_NO_DUPS:
                 removeDups = true;
                 goto case;
             case SN_UP_TIME_DOWN:
-                multiSort!("a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) != 0", "a.tstamp > b.tstamp")(dr);
+                multiSort!("a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) < 0", "a.tstamp > b.tstamp")(dr);
                 break;
             case SN_DOWN_TIME_DOWN_NO_DUPS:
                 removeDups = true;
                 goto case;
             case SN_DOWN_TIME_DOWN:
-                multiSort!("a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) == 0", "a.tstamp > b.tstamp")(dr);
+                multiSort!("a.devId.setNumeric(false).opCmp(b.devId.setNumeric(false)) > 0", "a.tstamp > b.tstamp")(dr);
                 break;
             case SNN_UP_TIME_UP_NO_DUPS:
                 removeDups = true;
