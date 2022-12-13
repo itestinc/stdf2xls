@@ -109,7 +109,7 @@ import std.regex;
 import itestinc.StdfFile;
 class CmdOptions
 {
-    public static immutable string stdf2xlsx_version = "5.0.3";
+    public static immutable string stdf2xlsx_version = "5.0.4";
     string[] files;     // output filenames with full path prefix
     string[] paths;     // list of paths in which to search for files with wildcard match
     ulong p = 0;
