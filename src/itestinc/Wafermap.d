@@ -198,20 +198,20 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 			ws3.setRow(cast(uint)(i + offset_row), rowWidth);
 
 			// Label row numbers on each side of the wafermap.
-			ws1.write(cast(uint)(i + offset_row), cast(ushort)(offset_col - 1), i, waferRowNumberFmt);
-			ws1.write(cast(uint)(i + offset_row), cast(ushort)(col + offset_col), i, waferRowNumberFmt);
+			ws1.write(cast(uint)(i + offset_row), cast(ushort)(offset_col - 1), i+y_min, waferRowNumberFmt);
+			ws1.write(cast(uint)(i + offset_row), cast(ushort)(col + offset_col), i+y_min, waferRowNumberFmt);
 
-			ws3.write(cast(uint)(i + offset_row), cast(ushort)(offset_col - 1), i, waferRowNumberFmt);
-			ws3.write(cast(uint)(i + offset_row), cast(ushort)(col + offset_col), i, waferRowNumberFmt);
+			ws3.write(cast(uint)(i + offset_row), cast(ushort)(offset_col - 1), i+y_min, waferRowNumberFmt);
+			ws3.write(cast(uint)(i + offset_row), cast(ushort)(col + offset_col), i+y_min, waferRowNumberFmt);
 
 			foreach(j, val; row_arr) {
 
 				// Label column numbers on top and bottom of the wafermap.
-				ws1.write(cast(uint)(offset_row - 1), cast(ushort)(j + offset_col), j, waferColNumberFmt);
-				ws1.write(cast(uint)(row + offset_row), cast(ushort)(j + offset_col), j, waferColNumberFmt);
+				ws1.write(cast(uint)(offset_row - 1), cast(ushort)(j + offset_col), j+x_min, waferColNumberFmt);
+				ws1.write(cast(uint)(row + offset_row), cast(ushort)(j + offset_col), j+x_min, waferColNumberFmt);
 
-				ws3.write(cast(uint)(offset_row - 1), cast(ushort)(j + offset_col), j, waferColNumberFmt);
-				ws3.write(cast(uint)(row + offset_row), cast(ushort)(j + offset_col), j, waferColNumberFmt);
+				ws3.write(cast(uint)(offset_row - 1), cast(ushort)(j + offset_col), j+x_min, waferColNumberFmt);
+				ws3.write(cast(uint)(row + offset_row), cast(ushort)(j + offset_col), j+x_min, waferColNumberFmt);
 
 				switch(val) {
 					case  0: ws1.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferEmptyFmt); break;

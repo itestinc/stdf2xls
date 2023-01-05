@@ -973,6 +973,21 @@ are too many header items, the list will get truncated.  Additionally older vers
 supported a legacy format for header items.  The legacy format is still supported, but
 it is no longer documented.
 
+\subsection{\bf User-defined Data Values}
+Text records may also be used to define psuedo-tests.  These tests don't have limits,
+but can specify test results with formats other than float. A Datalog Text Record containing
+text data in a specific format will result in a test result showing up in the spreadsheet.
+The format is as follows:
+\begin{verbatim}
+TEXT_DATA : <test_name> : <value> [<units>] : <test_number> : <site_number> : <format> [ : <head_number>]
+\end{verbatim}
+Values in square brackets are optional.  The <format> can be one of the four literal values:
+"FLOAT", "HEX\_INT", "DEC\_INT", or "STRING".  Example:\\
+\begin{verbatim}
+TEXT_DATA : my_test : 0xFF3A : 1234 : 1 : STRING
+\end{verbatim}
+
+
 \section{\bf Wafermaps}
 This operation creates a wafer map in an excel spreadsheet where each hardware bin is represented by a cell.
 \subsection{\bf -w or \texttt{-{}-}genWafermaps}
