@@ -16,6 +16,19 @@ import std.algorithm: canFind;
 import std.array : replace;
 import std.algorithm.sorting : sort;
 
+private int getBin(const string val)
+{
+    import std.string; 
+    writeln("val = ", val);
+    long index = indexOf(val, '\\');
+    if (index < 0) return 65535;
+    writeln("index = ", index);
+    string b = val[index+1..$];
+    writeln("b = ", b);
+    int v = to!int(b);
+    writeln("v = ", v);
+    return v;
+}
 /**
 	Read from the STDF database to generate a wafer map in excel.
 	- option to dump wafer map in ascii ASE format
@@ -27,17 +40,20 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		ushort[] hwbin;		// hwbin.length=0
 		short[] x_coord;
 		short[] y_coord;
+        uint[] site;
 
 		// Retrieve wafer data from STDF database.
 		foreach(i, dr; stdfdb.deviceMap[hdr]) {
 			hwbin.length +=1;
 			x_coord.length +=1;
 			y_coord.length +=1;
+            site.length += 1;
 			if(dr.hwbin == 65535) { writeln("WARNING: One of your HW bins carries a value of -1. Something may have gone wrong during wafer probing."); }
 			else if(dr.hwbin > 65000) { writefln("WARNING: Your datalog contains an unusually high HW bin value that may have underflowed from a negative number: %s", dr.hwbin); }
 			hwbin[i] = cast(ushort)dr.hwbin;
 			x_coord[i] = cast(short)dr.devId.id.xy.x;
 			y_coord[i] = cast(short)dr.devId.id.xy.y;
+            site[i] = dr.site;
 		}
 
 		// Sort to get min and max coordinates.
@@ -59,13 +75,14 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 		// Create 2D array map of bins.
 		ushort col = cast(ushort)(x_max + 1);				// Excel 2007-2019: max rows = 2^20	= 1,048,576	-> uint @ 2^32
 		ushort row = cast(ushort)(y_max + 1);				// Excel 2007-2019: max cols = 2^14	= 16,384	-> ushort @ 2^16
-		ushort[][] matrix_org = new ushort[][](row,col);	// initial mat[][] = 0
-		foreach(i, bin; hwbin) {
-			matrix_org[y_shifted[i]][x_shifted[i]] = bin;
+		string[][] matrix_org = new string[][](row,col);	// initial mat[][] = 0
+		foreach(i, bin; hwbin) 
+        {
+			matrix_org[y_shifted[i]][x_shifted[i]] = "" ~ to!string(site[i]) ~ "\\" ~ to!string(bin);
 		}
 
 		// Rotate wafer according to option.
-		ushort[][] matrix;
+		string[][] matrix;
 		switch(options.rotateWafer)
 		{
 			case 0:
@@ -73,7 +90,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 				break;
 			case -270:
 			case 90:
-				ushort[][] matrix_rot90 = new ushort[][](col,row);
+				string[][] matrix_rot90 = new string[][](col,row);
 				rotate90(matrix_org, matrix_rot90);
 				matrix = matrix_rot90.dup;
 				if(row != col) {
@@ -84,13 +101,13 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 				break;
 			case -180:
 			case 180:
-				ushort[][] matrix_rot180 = new ushort[][](row,col);
+				string[][] matrix_rot180 = new string[][](row,col);
 				rotate180(matrix_org, matrix_rot180);
 				matrix = matrix_rot180.dup;
 				break;
 			case -90:
 			case 270:
-				ushort[][] matrix_rot270 = new ushort[][](col,row);
+				string[][] matrix_rot270 = new string[][](col,row);
 				rotate270(matrix_org, matrix_rot270);
 				matrix = matrix_rot270.dup;
 				if(row != col) {
@@ -212,8 +229,8 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 
 				ws3.write(cast(uint)(offset_row - 1), cast(ushort)(j + offset_col), j+x_min, waferColNumberFmt);
 				ws3.write(cast(uint)(row + offset_row), cast(ushort)(j + offset_col), j+x_min, waferColNumberFmt);
-
-				switch(val) {
+                int v = getBin(val);
+				switch(v) {
 					case  0: ws1.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferEmptyFmt); break;
 					case  1: ws1.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin01Fmt); bin1++; break;
 					case  2: ws1.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin02Fmt); bin2++; break;
@@ -234,7 +251,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 					default: ws1.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), val, waferBin16Fmt); bin16++;
 				}
 
-				switch(val) {
+				switch(v) {
 					case  0: ws3.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), "", waferEmptyFmt); break;
 					default: ws3.write(cast(uint)(i + offset_row), cast(ushort)(j + offset_col), "", blankBinFmt);
 				}
@@ -352,9 +369,12 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 				writeln("bad_bins: ", badbins);
 				writeln("total_bins: ", goodbins+badbins);
 
-				foreach(i, row_arr; matrix) {
-					foreach(j, val; row_arr) {
-						switch(val) {
+				foreach(i, row_arr; matrix) 
+                {
+					foreach(j, val; row_arr) 
+                    {
+                        int v = getBin(val);
+						switch(v) {
 							case 0: write("."); break;
 							case 1: write("1"); break;
 							default: write("X");
@@ -378,8 +398,10 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 				writeln("total_bins: ", goodbins+badbins);
 
 				foreach(i, row_arr; matrix) { write("RowData:");
-					foreach(j, val; row_arr) {
-						switch(val) {
+					foreach(j, val; row_arr) 
+                    {
+                        int v = getBin(val);
+						switch(v) {
 							case  0: write("__ "); break;
 							case  1: write("01 "); break;
 							case  2: write("02 "); break;
@@ -418,8 +440,11 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 				writeln("XDIES:");
 				writeln("YDIES:");
 				foreach(i, row_arr; matrix) { write("RowData:");
-					foreach(j, val; row_arr) {
-						switch(val) {
+					foreach(j, val; row_arr) 
+                    {
+                        int v = getBin(val);
+						switch(v) 
+                        {
 							case  0: write("___ "); break;
 							case  1: write("000 "); break;
 							case  2: write("002 "); break;
@@ -459,8 +484,10 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 				writeln("total_bins: ", goodbins+badbins);
 
 				foreach(i, row_arr; matrix) { write("[");
-					foreach(j, val; row_arr) {
-						switch(val) {
+					foreach(j, val; row_arr) 
+                    {
+                        int v = getBin(val);
+						switch(v) {
 							case 0: write(" "); break;
 							case 1: write("p"); break;
 							default: write("F");
@@ -471,8 +498,11 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 				}
 				write("\n");
 				foreach(i, row_arr; matrix) { write("[");
-					foreach(j, val; row_arr) {
-						switch(val) {
+					foreach(j, val; row_arr) 
+                    {
+                        int v = getBin(val);
+						switch(v) 
+                        {
 							case  0: write("  "); break;
 							case  1: write("01"); break;
 							case  2: write("02"); break;
@@ -509,7 +539,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
 /**
 	O(n^2)
 */
-private void transpose(ushort[][] a, ushort[][] a_trans) {
+private void transpose(string[][] a, string[][] a_trans) {
 	const ushort row = cast(ushort)a.length;
 	const ushort col = cast(ushort)a[0].length;
 
@@ -525,11 +555,11 @@ private void transpose(ushort[][] a, ushort[][] a_trans) {
 	1. reverse each row
 	2. transpose
 */
-public void rotate90(ushort[][] a, ushort[][] a_rot90) {
+public void rotate90(string[][] a, string[][] a_rot90) {
 	const ushort row = cast(ushort)a.length;
 	const ushort col = cast(ushort)a[0].length;
 
-	ushort[][] a_rev = new ushort[][](row,col);
+	string[][] a_rev = new string[][](row,col);
 	foreach(r, rows; a) {
 		a_rev[row - r - 1][] = rows;
 	}
@@ -541,10 +571,10 @@ public void rotate90(ushort[][] a, ushort[][] a_rot90) {
 	1. transpose
 	2. reverse each row (which is column after transposing)
 */
-public void rotate270(ushort[][] a, ushort[][] a_rot90) {
+public void rotate270(string[][] a, string[][] a_rot90) {
 	const ushort row = cast(ushort)a.length;
 	const ushort col = cast(ushort)a[0].length;
-	ushort[][] a_trans = new ushort[][](col,row);
+	string[][] a_trans = new string[][](col,row);
 	transpose(a, a_trans);
 	
 	const ushort new_row = cast(ushort)a_trans.length;
@@ -557,10 +587,10 @@ public void rotate270(ushort[][] a, ushort[][] a_rot90) {
 	rotate 180 clockwise:
 	1. rotate 90 twice
 */
-public void rotate180(ushort[][] a, ushort[][] a_rot180) {
+public void rotate180(string[][] a, string[][] a_rot180) {
 	const ushort row = cast(ushort)a.length;
 	const ushort col = cast(ushort)a[0].length;
-	ushort[][] temp = new ushort[][](col,row);
+	string[][] temp = new string[][](col,row);
 	rotate90(a, temp);
 	rotate90(temp, a_rot180);
 }
