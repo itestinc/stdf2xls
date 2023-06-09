@@ -109,7 +109,7 @@ import std.regex;
 import itestinc.StdfFile;
 class CmdOptions
 {
-    public static immutable string stdf2xlsx_version = "5.2.0";
+    public static immutable string stdf2xlsx_version = "5.2.1";
     string[] files;     // output filenames with full path prefix
     string[] paths;     // list of paths in which to search for files with wildcard match
     ulong p = 0;
@@ -134,6 +134,7 @@ class CmdOptions
     WafermapFormat_t wformat = WafermapFormat_t.ASY;
     bool pattern = false;
     bool showNum = false;
+    bool hwbin = false;
     int rotateWafer = 0;
     uint binCount = 0;
     double cutoff = 2.0;
@@ -324,6 +325,7 @@ class CmdOptions
             "wformat|f", "Specify the wafermap format for the ASCII dump (default:ASY)", &wformat,
             "pattern|P", "fill wafermap bins with patterns instead of colors", &pattern,
             "rotateWafer|R", "Rotate the wafer map clockwise in degrees: +/- 0|90|180|270", &rotateWafer,
+            "hwbin", "Use hardware bins on wafermap instead of software bins", &hwbin,
             "showNum|N", "Show the bin numbers on the wafer map, along with colors or patterns.", &showNum,
 
             "genHistograms|h", "Generate histogram(s)", &genHistogram,

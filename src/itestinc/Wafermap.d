@@ -50,7 +50,7 @@ public void genWafermap(CmdOptions options, StdfDB stdfdb, Config config)
             site.length += 1;
 			if(dr.hwbin == 65535) { writeln("WARNING: One of your HW bins carries a value of -1. Something may have gone wrong during wafer probing."); }
 			else if(dr.hwbin > 65000) { writefln("WARNING: Your datalog contains an unusually high HW bin value that may have underflowed from a negative number: %s", dr.hwbin); }
-			hwbin[i] = cast(ushort)dr.hwbin;
+			hwbin[i] = cast(ushort) (options.hwbin ? dr.hwbin : dr.swbin);
 			x_coord[i] = cast(short)dr.devId.id.xy.x;
 			y_coord[i] = cast(short)dr.devId.id.xy.y;
             site[i] = dr.site;
